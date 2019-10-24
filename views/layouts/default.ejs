@@ -26,8 +26,10 @@
       <a href="/dashboard/build" class="orange build action button <% if (!needsBuild) { %>hidden<% } %>">  <span>Site has changed, rebuild now.</span>
       </a>
       <a href="/" class="view action button <% if (needsBuild) { %>hidden<% } %>" target="_blank"><span>View</span></a>
-    <% } else { %>
+      <a href="/dashboard/deploy" class="deploy action button <% if (needsBuild) { %>hidden<% } %>"" target="_blank"><span>Deploy</span></a>
+      <% } else { %>
       <a href="/" class="view action button" target="_blank"><span>View</span></a>
+      <a href="/dashboard/deploy" class="deploy action button" target="_blank"><span>Deploy</span></a>
     <% } %>
   </header>
 
