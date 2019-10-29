@@ -120,6 +120,23 @@
         border-left-color: $red;
       }
     }
+
+    &.field__choice-checkbox, &.field__choice-toggle {
+      position: relative;
+      padding-left: 4.2rem;
+
+      .ui.checkbox {
+        position: absolute;
+        left: 0.8rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .ui.checkbox.toggle {
+        left: 0;
+      }
+
+    }
   }
 
   div.previewable {
