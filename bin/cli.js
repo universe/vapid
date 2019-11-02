@@ -132,7 +132,7 @@ program
     // TODO: Need Deployer to be more isolated, so it isn't aware of Section
     // and remove the need to connect to the DB
     vapid.db.connect();
-    await deployer.deploy(vapid.builder.tree, vapid.db.models.Section, deployContent);
+    await deployer.deploy(vapid.builder.tree, vapid.db.models.Template, deployContent);
 
     // TODO: Not sure why this is necessary
     process.exit(0);
