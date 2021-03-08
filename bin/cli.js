@@ -5,19 +5,18 @@ const program = require('commander');
 const updateNotifier = require('update-notifier');
 
 const pkg = require('../package.json');
-const services = require('../lib/services');
-const Generator = require('../lib/generator');
-const { Logger } = require('../lib/utils');
-const VapidServer = require('../lib/runners/VapidServer');
-const VapidBuilder = require('../lib/runners/VapidBuilder');
-const VapidDeployer = require('../lib/runners/VapidDeployer');
+// const Generator = require('../dist/generator');
+const { Logger } = require('../dist/utils');
+const { default: VapidServer } = require('../dist/runners/VapidServer');
+const { default: VapidBuilder } = require('../dist/runners/VapidBuilder');
+// const VapidDeployer = require('../dist/runners/VapidDeployer');
 
 function withVapid(command) {
   return async (target) => {
     try {
       const cwd = target instanceof program.Command ? process.cwd() : target;
+      process.env.TEMPLATES_PATH = path.join(cwd, 'www');
       const vapid = new VapidServer(cwd);
-
       updateNotifier({ pkg }).notify({ isGlobal: true });
       await command(vapid);
     } catch (err) {
@@ -38,7 +37,7 @@ program
   .command('new <target>')
   .description('create a new website')
   .action((target) => {
-    Generator.copyTo(target);
+    // Generator.copyTo(target);
 
     Logger.info('Site created.');
     Logger.extra([
@@ -56,11 +55,11 @@ program
   .command('start')
   .description('start the server')
   .action(withVapid(async (vapid) => {
-    const portInUse = await new services.PortChecker(vapid.config.port).perform();
+    // const portInUse = await new services.PortChecker(vapid.config.port).perform();
 
-    if (portInUse) {
-      throw new Error(`Could not start server, port ${vapid.config.port} is already in use.`);
-    }
+    // if (portInUse) {
+    //   throw new Error(`Could not start server, port ${vapid.config.port} is already in use.`);
+    // }
 
     Logger.info(`Starting the ${vapid.env} server...`);
     await vapid.start();
@@ -78,10 +77,10 @@ program
 program
   .command('deploy')
   .description('deploy to Vapid\'s hosting service')
-  .action(async (target) => {
-    const cwd = typeof target !== 'string' ? process.cwd() : target;
-    const vapid = new VapidDeployer(cwd);
-    await vapid.deploy();
+  .action(async (_target) => {
+    // const cwd = typeof target !== 'string' ? process.cwd() : target;
+    // const vapid = new VapidDeployer(cwd);
+    // await vapid.deploy();
     process.exit(0);
   });
 

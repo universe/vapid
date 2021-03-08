@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../lib/Database/providers/index.ts"],"names":[],"mappings":";;;;;;AAAA,mCAAoC;AAIlC,0FAJO,iBAAS,OAIP;AAHX,sEAA8C;AAI5C,yBAJK,wBAAc,CAIL","sourcesContent":["import { IProvider } from \"./types\";\nimport MemoryProvider from './MemoryProvider';\n\nexport {\n  IProvider,\n  MemoryProvider\n}\n"]}

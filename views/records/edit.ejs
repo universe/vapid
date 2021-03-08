@@ -55,7 +55,7 @@
     <% } %>
     <div class="content">
       <% if (template.hasFields) { %>
-        <% for (const { _name: fieldName } of template.sortedFields) { %>
+        <% for (const { _name: fieldName } of template.sortedFields()) { %>
           <%- Form.field(`content[${fieldName}]`, fieldName, template.fields[fieldName], record ? record.content[fieldName] : '', errors.content && errors.content[fieldName], { pages }) %>
         <% } %>
 

@@ -11,7 +11,8 @@
   },
   "scripts": {
     "lint": "eslint bin lib test",
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc -p tsconfig.json"
   },
   "engines": {
     "node": ">=8.9.0"
@@ -37,6 +38,8 @@
   "dependencies": {
     "@cannery/hoist": "^0.0.18",
     "@hapi/boom": "^7.4.2",
+    "@types/glob": "^7.1.3",
+    "@universe/util": "^0.2.5",
     "ace-builds": "^1.4.3",
     "aws4": "^1.7.0",
     "bcrypt": "^3.0.3",
@@ -49,10 +52,11 @@
     "form-data": "^2.3.2",
     "glob": "^7.1.2",
     "got": "^8.3.2",
-    "handlebars": "^4.5.1",
+    "handlebars": "^4.7.7",
+    "image-size": "^0.8.3",
     "inquirer": "^5.2.0",
     "jquery": "^3.3.1",
-    "koa": "^2.5.2",
+    "koa": "^2.13.1",
     "koa-better-flash": "^0.0.3",
     "koa-bodyparser": "^4.2.0",
     "koa-busboy": "^1.1.1",
@@ -78,7 +82,7 @@
     "netrc": "^0.1.4",
     "p-limit": "^2.0.0",
     "passport-local": "^1.0.0",
-    "pluralize": "^7.0.0",
+    "pluralize": "^8.0.0",
     "quill": "^1.3.6",
     "quill-button": "^0.0.7",
     "quill-hr": "^0.0.4",
@@ -96,13 +100,20 @@
     "tui-image-editor": "^3.9.0",
     "turbolinks": "^5.2.0",
     "umzug": "^2.1.0",
-    "unfurl.js": "^1.1.6",
+    "unfurl.js": "5.2.5",
     "update-notifier": "^2.5.0",
     "webpack": "^4.8.2",
-    "write-pkg": "^3.1.0",
-    "image-size": "^0.8.3"
+    "write-pkg": "^3.1.0"
   },
   "devDependencies": {
+    "@types/koa": "^2.13.1",
+    "@types/koa-router": "^7.4.1",
+    "@types/livereload": "^0.9.0",
+    "@types/md5-file": "^4.0.2",
+    "@types/mkdirp": "^1.0.1",
+    "@types/pluralize": "^0.0.29",
+    "@types/sass": "^1.16.0",
+    "@types/webpack": "^4.41.26",
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.11.0",
@@ -110,6 +121,7 @@
     "faker": "^4.1.0",
     "jest": "^24.1.0",
     "recursive-readdir": "^2.2.2",
-    "supertest": "^3.0.0"
+    "supertest": "^3.0.0",
+    "typescript": "^4.2.3"
   }
 }

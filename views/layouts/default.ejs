@@ -20,7 +20,7 @@
   </div>
   <header class="navbar">
     <a href="/dashboard/account/edit" class="account">
-      <img src="<%- user.gravatar %>">
+      <img src="user.gravatar">
     </a>
 
     <h2>
@@ -67,23 +67,9 @@
           <div class="item">
             <div class="header">Collections</div>
             <div class="menu">
-              <% collections.forEach(s => { if (s.hasPage) { return } %>
+              <% collections.forEach(s => { if (s.hasBasePage) { return } %>
                 <a href="/dashboard/collection/<%- s.name %>" class="<% if (typeof template !== 'undefined' && s.id == template.id) { %>active <% } %>item">
                   <%- include(`../../assets/dashboard/images/collection.svg`) %>
-                  <%- s.label %>
-                </a>
-              <% }) %>
-            </div>
-          </div>
-          <% } %>
-
-          <% if (forms.length) { %>
-          <div class="item">
-            <div class="header">Forms</div>
-            <div class="menu">
-              <% forms.forEach(s => { %>
-                <a href="/dashboard/forms/<%- s.name %>" class="<% if (typeof template !== 'undefined' && s.id == template.id) { %>active <% } %>item">
-                  <%- include('../../assets/dashboard/images/form.svg') %>
                   <%- s.label %>
                 </a>
               <% }) %>
