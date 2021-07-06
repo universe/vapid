@@ -48,7 +48,7 @@ export abstract class BaseDirective<DirectiveType = string> {
     pages: [],
   };
 
-  constructor(params = {}, meta = {}) {
+  init(params = {}, meta = {}): this {
     this.meta = { ...this.meta, ...meta };
 
     // Separate options and attributes, discarding ones that aren't explicity specified
@@ -60,6 +60,7 @@ export abstract class BaseDirective<DirectiveType = string> {
         this.attrs[key] = coerced;
       }
     }
+    return this;
   }
 
   /**
@@ -83,8 +84,8 @@ export abstract class BaseDirective<DirectiveType = string> {
    */
   abstract input(name: string, value: DirectiveType): string;
 
-  preview(value = this.options.default): string {
-    return escape(`${value}`);
+  preview(value: DirectiveType | undefined): string {
+    return escape(`${value || this.options.default}`);
   }
 
   async render(value = this.options.default): Promise<string | BlockRenderer> {

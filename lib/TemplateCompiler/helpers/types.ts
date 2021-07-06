@@ -1,24 +1,22 @@
-import { SafeString } from 'handlebars';
 import { PageType } from '../../Database/models/Template';
-
-export interface IAlias {
-  name: string;
-  type: PageType;
-  isPrivate: boolean;
-};
+import { ASTv1 } from '@glimmer/syntax';
+import { SimpleDocumentFragment } from '@simple-dom/interface';
 
 export type BlockNodes =
-    hbs.AST.MustacheStatement
-  | hbs.AST.BlockStatement
-  | hbs.AST.PartialStatement
-  | hbs.AST.PartialBlockStatement
-  | hbs.AST.SubExpression;
+    ASTv1.MustacheStatement
+  | ASTv1.BlockStatement
+  | ASTv1.PartialStatement
+  | ASTv1.SubExpression;
+
+export interface NeutrinoHelperOptions {
+  block?: (blockParams?: any[], data?: Record<string, any>) => SimpleDocumentFragment;
+  inverse?: (blockParams?: any[], data?: Record<string, any>) => SimpleDocumentFragment;
+}
 
 export interface NeutrinoHelper {
   isField: boolean;
   isBranch: false | PageType;
-  run(...args: any[]): string | SafeString;
-  blockParam(idx: number, node: BlockNodes): IAlias | undefined;
+  run(params: any[], hash: Record<string, any>, options: NeutrinoHelperOptions): string | SimpleDocumentFragment | void;
   getType(expr: ParsedExpr): string | null;
 }
 
@@ -31,4 +29,14 @@ export interface ParsedExpr {
   hash: Record<string, any>;
   isPrivate: boolean;
   type: string;
+}
+
+export class SafeString {
+  private str: string;
+  constructor(str: string) {
+    this.str = str;
+  }
+  toString(): string {
+    return '' + this.str;
+  }
 }

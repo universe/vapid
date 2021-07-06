@@ -49,7 +49,7 @@ class Logger {
      * @param {string} err
      */
     static error(err) {
-        console.log(colors_1.default.bold.red(`ERROR: ${err}`));
+        console.error(colors_1.default.bold.red(`ERROR: ${err}`));
     }
     /**
      * @static

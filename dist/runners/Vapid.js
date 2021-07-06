@@ -80,8 +80,8 @@ class Vapid {
         this.env = process.env.NODE_ENV || 'development';
         this.isDev = (this.env === 'development' || this.env === 'test');
         this.config = Object.assign({}, this.config, options);
-        this.url = this.isDev ? `localhost:${this.config.port}` : (options.url || homepage);
-        this.prodUrl = options.url || homepage;
+        this.domain = this.isDev ? `localhost:${this.config.port}` : (options.domain || homepage);
+        this.prodUrl = options.domain || homepage;
         this.paths = getProjectPaths(cwd, this.config.dataPath);
         // Initialize database.
         // const dbConfig = this.config.database;
@@ -89,7 +89,6 @@ class Vapid {
         //   dbConfig.storage = path.resolve(this.paths.data, 'vapid.sqlite');
         // }
         this.provider = new providers_1.MemoryProvider({});
-        console.log('NEW PROVIDER');
         this.database = new Database_1.default(this.provider);
     }
 }

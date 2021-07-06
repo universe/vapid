@@ -122,9 +122,7 @@ class VapidServer extends Vapid_1.default {
             this.server = http.createServer(app.callback());
             yield this.database.start();
             // Build if necessary
-            if (this.buildOnStart) {
-                yield this.database.rebuild();
-            }
+            yield this.database.rebuild();
             // If watcher is present, attach its WebSocket server
             // and register the callback
             if (this.watcher) {

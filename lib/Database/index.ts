@@ -1,13 +1,18 @@
 import { EventEmitter } from 'events';
 import * as path from 'path';
+import * as fs from 'fs';
 import * as glob from 'glob';
 import * as assert from 'assert';
 
 import { TemplateCompiler } from '../TemplateCompiler';
-import { ITemplate, Template } from './models/Template';
+import { ITemplate, PageType, Template } from './models/Template';
 import { IProvider } from './providers';
 
-const vapidCompiler = new TemplateCompiler();
+function componentLookup(tag: string): string {
+  return fs.readFileSync(path.join(process.env.TEMPLATES_PATH, 'components', `${tag}.html`), 'utf8');
+}
+
+const vapidCompiler = new TemplateCompiler(componentLookup);
 
 /**
  * Crawls templates, and creates object representing the data model
@@ -20,6 +25,7 @@ function parse(): Record<string, ITemplate> {
   const templates = glob.sync(path.resolve(process.env.TEMPLATES_PATH, '**/*.html'));
   for (const tpl of templates) {
     const parsed = vapidCompiler.parseFile(tpl).data;
+    console.log(tpl, parsed['collection:endorsements'], parsed['collection:collection']);
     for (const [parsedName, parsedTemplate] of Object.entries(parsed)) {
       // We merge discovered fields across files, so we gradually collect configurations
       // for all sections here. Get or create this shared object as needed.
@@ -40,6 +46,7 @@ function parse(): Record<string, ITemplate> {
 
       // For every field discovered in the content block, track them in the section.
       for (const [, field] of Object.entries(parsedTemplate.fields)) {
+        if (!field) { continue; }
         const old = finalTemplate.fields[field.key];
         finalTemplate.fields[field.key] = {
           // Merge with previous values if this field has been seen already.
@@ -49,9 +56,8 @@ function parse(): Record<string, ITemplate> {
           priority: field.priority || 0,
           label: field.label || '',
           key: field.key,
-          options: { ...(old.options || {}), ...field.options },
+          options: { ...(old?.options || {}), ...field.options },
         };
-        // console.log(section.fields[fieldAttrs.key]);
       }
     }
   }
@@ -71,14 +77,36 @@ export default class Database extends EventEmitter {
     this.provider = provider;
   }
 
-  async start() { await this.provider.start(); }
+  async start() {
+    await this.provider.updateTemplate({
+      id: 1,
+      sortable: false,
+      type: PageType.PAGE,
+      name: 'index',
+      options: {},
+      fields: {},
+    });
+
+    await this.provider.updateRecord({
+      id: 1,
+      templateId: 1,
+      parentId: null,
+      content: {},
+      metadata: {},
+      position: 0,
+      slug: 'index',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await this.provider.start();
+  }
   async stop() { await this.provider.stop(); }
 
   /**
    * Parses templates and updates the database
    */
   async rebuild() {
-
     if (!this.previous) {
       const templates = await this.provider.getAllTemplates();
       this.previous = templates.reduce<Record<string, Template>>((memo, template) => {

@@ -23,7 +23,7 @@ export interface ITemplate {
   name: string;
   sortable: boolean;
   options: Json;
-  fields: Record<string, IField>;
+  fields: Record<string, IField | undefined>;
   type: PageType;
 }
 
@@ -32,7 +32,7 @@ export class Template implements ITemplate {
   name: string;
   sortable: boolean;
   options: Json;
-  fields: Record<string, IField>
+  fields: Record<string, IField | undefined>
   type: PageType;
 
   constructor(data: ITemplate) {
@@ -77,16 +77,6 @@ export class Template implements ITemplate {
   }
 
   /**
-   * Pluralized type
-   *
-   * @return {string}
-   */
-  typePlural() {
-    return pluralize.plural(this.type);
-  }
-
-
-  /**
    * Table column
    * Primarily used by dashboard index page
    *
@@ -96,8 +86,8 @@ export class Template implements ITemplate {
     return Object.keys(this.fields).sort((key1, key2) => {
       const val1 = this.fields[key1];
       const val2 = this.fields[key2];
-      if ((val1.priority || Infinity) > (val2.priority || Infinity)) { return 1; }
-      if ((val1.priority || Infinity) < (val2.priority || Infinity)) { return -1; }
+      if ((val1?.priority || Infinity) > (val2?.priority || Infinity)) { return 1; }
+      if ((val1?.priority || Infinity) < (val2?.priority || Infinity)) { return -1; }
       if (key1 === 'title' || key1 === 'name') { return -1; }
       if (key2 === 'title' || key2 === 'name') { return 1; }
       if (key1 === key2) { return 0; }
@@ -111,7 +101,7 @@ export class Template implements ITemplate {
    * @return {array}
    */
   tableColumnsHeaders() {
-    return this.tableColumns().map(key => this.fields[key].label || toTitleCase(key));
+    return this.tableColumns().map(key => this.fields[key]?.label || toTitleCase(key));
   }
 
   /**
@@ -135,16 +125,10 @@ export class Template implements ITemplate {
   }
 
   isCollection() { return this.type === 'collection'; }
+  hasCollection() { fs.existsSync(path.join(process.env.TEMPLATES_PATH, 'collections', `${this.name}.html`)); }
 
   isPage() { return this.type === 'page'; }
-
-  hasRecordPage() {
-    return fs.existsSync(path.join(process.env.TEMPLATES_PATH, 'collections', `${this.name}.html`));
-  }
-
-  hasBasePage() {
-    return fs.existsSync(path.join(process.env.TEMPLATES_PATH, `${this.name}.html`));
-  }
+  hasPage() { return fs.existsSync(path.join(process.env.TEMPLATES_PATH, `${this.name}.html`)); }
 
   /**
    * If this template has a backing view to render a dedicated page.
@@ -172,18 +156,15 @@ export class Template implements ITemplate {
       label: this.label(),
       labelSingular: this.labelSingular(),
       typeSingular: this.typeSingular(),
-      typePlural: this.typePlural(),
       tableColumns: this.tableColumns(),
       tableColumnsHeaders: this.tableColumnsHeaders(),
       hasFields: this.hasFields(),
       sortedFields: this.sortedFields(),
       isCollection: this.isCollection(),
+      hasCollection: this.hasCollection(),
       isPage: this.isPage(),
-      hasRecordPage: this.hasRecordPage(),
-      hasBasePage: this.hasBasePage(),
+      hasPage: this.hasPage(),
       hasView: this.hasView(),
     }
   }
-
-
 }

@@ -39,9 +39,7 @@ const fs = __importStar(require("fs"));
 const models_1 = require("../models");
 const types_1 = require("./types");
 let AUTO_INCREMENT = 2;
-function getNextId() {
-    return AUTO_INCREMENT++;
-}
+const getNextId = () => AUTO_INCREMENT++;
 class MemoryProvider extends types_1.IProvider {
     constructor() {
         super(...arguments);
@@ -64,24 +62,6 @@ class MemoryProvider extends types_1.IProvider {
                 }
                 catch (_a) { }
             }
-            yield this.updateTemplate({
-                id: 1,
-                sortable: false,
-                type: "page" /* PAGE */,
-                name: 'index',
-                options: {},
-                fields: {},
-            });
-            yield this.updateRecord({
-                id: 1,
-                content: {},
-                metadata: {},
-                templateId: 1,
-                position: 0,
-                slug: 'index',
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-            });
         });
     }
     stop() {
@@ -94,6 +74,12 @@ class MemoryProvider extends types_1.IProvider {
                 };
                 fs.writeFileSync(this.config.path, JSON.stringify(data, null, 2));
             }
+        });
+    }
+    log() {
+        console.log({
+            templates: [...__classPrivateFieldGet(this, _templates).values()],
+            records: [...__classPrivateFieldGet(this, _records).values()],
         });
     }
     getAllTemplates() {
@@ -114,9 +100,7 @@ class MemoryProvider extends types_1.IProvider {
     getTemplateByName(name, type) {
         return __awaiter(this, void 0, void 0, function* () {
             for (const [_, template] of __classPrivateFieldGet(this, _templates)) {
-                console.log(template, name, type, template.name === name && template.type === type);
                 if (template.name === name && template.type === type) {
-                    console.log('returning');
                     return template;
                 }
             }
@@ -142,10 +126,8 @@ class MemoryProvider extends types_1.IProvider {
     }
     getRecordBySlug(slug) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('FIND', slug, __classPrivateFieldGet(this, _records).size, __classPrivateFieldGet(this, _records));
             for (const [_, record] of __classPrivateFieldGet(this, _records)) {
-                console.log(slug, record, record.slug === slug);
-                if (record.slug === slug) {
+                if (record.slug === slug || (slug === '' && record.slug === 'index')) {
                     return record;
                 }
             }
@@ -175,6 +157,17 @@ class MemoryProvider extends types_1.IProvider {
             return res;
         });
     }
+    getChildren(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const res = [];
+            for (const [_, record] of __classPrivateFieldGet(this, _records)) {
+                if (record && record.parentId === id) {
+                    res.push(record);
+                }
+            }
+            return res;
+        });
+    }
     /**
      * Update a section's attributes
      * Primarily used by the Vapid module when rebuilding the site
@@ -184,7 +177,6 @@ class MemoryProvider extends types_1.IProvider {
             const old = (yield this.getTemplateByName(update.name, update.type)) || null;
             const template = new models_1.Template(update);
             template.id = (old === null || old === void 0 ? void 0 : old.id) || update.id || getNextId();
-            console.log(template);
             __classPrivateFieldGet(this, _templates).set(template.id, template);
             return template;
         });
@@ -197,23 +189,26 @@ class MemoryProvider extends types_1.IProvider {
         return __awaiter(this, void 0, void 0, function* () {
             const old = (yield this.getRecordById(update.id)) || null;
             const template = yield this.getTemplateById(update.templateId);
-            console.log(update.templateId, template);
             if (!template) {
                 throw new Error(`Error creating record. Unknown template id ${update.templateId}`);
             }
             const record = new models_1.Record(update, template);
             record.id = (old === null || old === void 0 ? void 0 : old.id) || update.id || getNextId();
+            console.log(old, update, record);
+            record.updatedAt = Date.now();
+            record.createdAt = record.createdAt || Date.now();
             __classPrivateFieldGet(this, _records).set(record.id, record);
             return record;
         });
     }
-    getCollectionByName(name) {
+    deleteTemplate(templateId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const template = yield this.getTemplateByName(name, "collection" /* COLLECTION */);
-            return template ? {
-                template: template,
-                records: yield this.getRecordsByTemplateId(template.id),
-            } : null;
+            __classPrivateFieldGet(this, _templates).delete(templateId);
+        });
+    }
+    deleteRecord(recordId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            __classPrivateFieldGet(this, _records).delete(recordId);
         });
     }
 }

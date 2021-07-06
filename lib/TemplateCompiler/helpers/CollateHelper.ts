@@ -1,17 +1,16 @@
-import { NeutrinoHelper } from './types';
+import { NeutrinoHelper, SafeString } from './types';
 
-import * as Handlebars from 'handlebars';
 import { toKebabCase } from '@universe/util';
+import { PageType } from '../../Database/models';
 
 const CollateHelper: NeutrinoHelper = {
   isField: false,
-  isBranch: false,
+  isBranch: PageType.COLLECTION,
   getType() { return 'collate'; },
-  blockParam() { return undefined; },
-  run(collection, options) {
+  run([collection], hash={}, options) {
     const values = new Set();
     let out = '';
-    const prop = (options.hash || {}).key;
+    const prop = hash.key;
 
     if (!prop) {
       throw new Error('You must provide a key to the `{{collate}}` helper.');
@@ -20,24 +19,21 @@ const CollateHelper: NeutrinoHelper = {
     for (const record of collection) {
       let value = typeof record[prop] === 'function' ? record[prop]() : record[prop];
       if (!Array.isArray(value)) { value = value ? [value] : []; }
-      if (!value.length && options.hash.default) {
+      if (!value.length && hash.default) {
         values.add(undefined);
       }
       for (let v of value) {
-        if (v instanceof Handlebars.SafeString) { v = v.toString(); }
+        if (v instanceof SafeString) { v = v.toString(); }
         values.add(v);
       }
     }
 
     for (const value of values) {
-      const context = {
-        blockParams: [{
-          value,
-          name: value || options.hash.default,
-          slug: value ? toKebabCase(`${value}`) : toKebabCase(options.hash.default),
-        }],
-      };
-      out += options.fn(this, context);
+      out += options.block?.([{
+        value,
+        name: value || hash.default,
+        slug: value ? toKebabCase(`${value}`) : toKebabCase(hash.default),
+      }]);
     }
     return out;
   }

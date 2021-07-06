@@ -19,10 +19,6 @@
     <button class="image-editor__save" id="image-editor-save">Save</button>
   </div>
   <header class="navbar">
-    <a href="/dashboard/account/edit" class="account">
-      <img src="user.gravatar">
-    </a>
-
     <h2>
       <a href="/dashboard" class="switch-website"><%- siteName %></a>
     </h2>
@@ -30,10 +26,10 @@
     <% if (showBuild) { %>
       <a href="/dashboard/build" class="orange build action button <% if (!needsBuild) { %>hidden<% } %>">  <span>Site has changed, rebuild now.</span>
       </a>
-      <a href="/" class="view action button <% if (needsBuild) { %>hidden<% } %>" target="_blank"><span>Preview</span></a>
+      <a href="<%- record ? record.permalink : '/' %>" class="view action button <% if (needsBuild) { %>hidden<% } %>" target="_blank"><span>Preview</span></a>
       <a href="/dashboard/deploy" class="deploy action button <% if (needsBuild) { %>hidden<% } %>" target="_blank"><span>Deploy</span></a>
     <% } else { %>
-      <a href="/" class="view action button" target="_blank"><span>Preview</span></a>
+      <a href="<%- record ? record.permalink : '/' %>" class="view action button" target="_blank"><span>Preview</span></a>
       <a href="/dashboard/deploy" class="deploy action button" target="_blank"><span>Deploy</span></a>
     <% } %>
   </header>
@@ -47,30 +43,30 @@
             <div class="header">Pages</div>
             <div class="menu sortable">
               <% pages.forEach(s => { if (!s.isNavigation) { return; }%>
-              <a href="/dashboard/pages/<%- s.slug %>" data-id="<%- s.id %>" class="<% if (typeof record !== 'undefined' && s.id == record.id) { %>active <% } %>item">
+              <a href="/dashboard/page<%- s.permalink %>" data-id="<%- s.id %>" class="<% if (record && s.id == record.id) { %>active <% } %>item">
                 <%- s.hasCollection ? include(`../../assets/dashboard/images/collection.svg`) : include(`../../assets/dashboard/images/page.svg`) %>
                 <%- s.name %>
               </a>
               <% }) %>
               <hr class="sidebar__divider" />
               <% pages.forEach(s => { if (s.isNavigation) { return; } %>
-                <a href="/dashboard/pages/<%- s.slug %>" data-id="<%- s.id %>" class="<% if (typeof record !== 'undefined' && s.id == record.id) { %>active <% } %>item">
+                <a href="/dashboard/page<%- s.permalink %>" data-id="<%- s.id %>" class="<% if (record && s.id == record.id) { %>active <% } %>item">
                   <%- s.hasCollection ? include(`../../assets/dashboard/images/collection.svg`) : include(`../../assets/dashboard/images/page.svg`) %>
                   <%- s.name %>
                 </a>
               <% }) %>
             </div>
-            <a href="/dashboard/pages" class="sidebar__add-page">Add a Page</a>
+            <a href="/dashboard/new" class="sidebar__add-page">Add a Page</a>
           </div>
 
           <% if (collections.length) { %>
           <div class="item">
             <div class="header">Collections</div>
             <div class="menu">
-              <% collections.forEach(s => { if (s.hasBasePage) { return } %>
+              <% collections.forEach(s => { if (s.hasPage) { return } %>
                 <a href="/dashboard/collection/<%- s.name %>" class="<% if (typeof template !== 'undefined' && s.id == template.id) { %>active <% } %>item">
                   <%- include(`../../assets/dashboard/images/collection.svg`) %>
-                  <%- s.label %>
+                  <%- s.name %>
                 </a>
               <% }) %>
             </div>

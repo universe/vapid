@@ -1,3 +1,3 @@
 import { NeutrinoHelper } from './types';
-declare const LinkHelper: NeutrinoHelper;
-export default LinkHelper;
+declare const ImageHelper: NeutrinoHelper;
+export default ImageHelper;

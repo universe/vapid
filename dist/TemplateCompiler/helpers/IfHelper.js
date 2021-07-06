@@ -4,22 +4,19 @@ const IfHelper = {
     isField: false,
     isBranch: false,
     getType() { return 'if'; },
-    blockParam() { return undefined; },
-    run(input, ...args) {
-        let condition = input;
+    run(params, _hash, options) {
+        let [condition, ifValue, elseValue] = params;
         if (`${condition}`.startsWith('data:')) {
             condition = false;
         }
-        const options = args.pop();
-        const [ifValue, elseValue] = args;
-        if (!options.fn) {
+        if (!options.block) {
             return condition ? ifValue : elseValue;
         }
         if (condition) {
-            return options.fn(this);
+            return options.block();
         }
         if (options.inverse) {
-            return options.inverse(this);
+            return options.inverse();
         }
         return '';
     }

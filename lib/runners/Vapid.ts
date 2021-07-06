@@ -73,7 +73,7 @@ export default class Vapid {
   name: string;
   env: 'production' | 'development' | 'test';
   isDev: boolean;
-  url: string;
+  domain: string;
   prodUrl: string;
   paths: VapidProjectPaths;
   provider: IProvider;
@@ -104,8 +104,8 @@ export default class Vapid {
     this.env = process.env.NODE_ENV || 'development';
     this.isDev = (this.env === 'development' || this.env === 'test');
     this.config = Object.assign({}, this.config, options);
-    this.url = this.isDev ? `localhost:${this.config.port}` : (options.url || homepage);
-    this.prodUrl = options.url || homepage;
+    this.domain = this.isDev ? `localhost:${this.config.port}` : (options.domain || homepage);
+    this.prodUrl = options.domain || homepage;
     this.paths = getProjectPaths(cwd, this.config.dataPath);
 
     // Initialize database.
@@ -114,7 +114,6 @@ export default class Vapid {
     //   dbConfig.storage = path.resolve(this.paths.data, 'vapid.sqlite');
     // }
     this.provider = new MemoryProvider({});
-    console.log('NEW PROVIDER');
     this.database = new Database(this.provider);
   }
 }

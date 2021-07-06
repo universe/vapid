@@ -32,11 +32,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const md5_file_1 = __importDefault(require("md5-file"));
-const pluralize = __importStar(require("pluralize"));
 const util_1 = require("@universe/util");
 const utils_1 = require("../../../utils");
 const path_1 = require("path");
-const assert_1 = __importDefault(require("assert"));
 const url_1 = __importDefault(require("url"));
 const fs_1 = require("fs");
 const hoist_1 = require("@cannery/hoist");
@@ -48,10 +46,58 @@ const koa_router_1 = __importDefault(require("koa-router"));
 const paths_1 = require("../../../utils/paths");
 const Record_1 = require("../../../Database/models/Record");
 const Template_1 = require("../../../Database/models/Template");
-// import services from '../../../services';
 const VapidBuilder_1 = __importDefault(require("../../VapidBuilder"));
 const middleware_1 = __importDefault(require("../middleware"));
+const directives = __importStar(require("../../../directives"));
 const form_1 = __importDefault(require("../../../form"));
+function stampRecord(template) {
+    return {
+        id: NaN,
+        templateId: template.id,
+        parentId: null,
+        position: 0,
+        slug: '',
+        content: {},
+        metadata: {},
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+    };
+}
+function updateRecordPosition(db, record, from = null, to = null, nav = null) {
+    return __awaiter(this, void 0, void 0, function* () {
+        record = record;
+        from = from ? parseInt(`${from}`, 10) : null;
+        to = to ? parseInt(`${to}`, 10) : null;
+        nav = !!(nav === 'true' || nav === true);
+        const template = yield db.getTemplateById(record.templateId);
+        if (!template) {
+            return;
+        }
+        const templateType = template.type;
+        const siblings = (templateType === 'page' ? yield db.getRecordsByType("page" /* PAGE */) : yield db.getRecordsByTemplateId(template.id))
+            .sort((a, b) => (a.position > b.position ? 1 : -1));
+        if (from && isNaN(from) && to && isNaN(to)) {
+            const maxPosition = siblings.map(s => s.position).sort().pop() || 0;
+            record.position = maxPosition + 1;
+            yield db.updateRecord(record);
+        }
+        else {
+            const items = siblings.filter(obj => obj.id !== record.id);
+            items.splice(to || 0, 0, record);
+            const promises = [];
+            items.forEach((item, position) => {
+                item.position = position;
+                promises.push(db.updateRecord(item));
+            });
+            yield Promise.all(promises);
+            if (typeof nav === 'boolean') {
+                const metadata = record.metadata = record.metadata || {};
+                metadata.isNavigation = nav;
+                yield db.updateRecord(record);
+            }
+        }
+    });
+}
 /**
  * Dashboard
  * Server routes for authenticating, installing, and managing content
@@ -74,79 +120,19 @@ class Dashboard {
         * BEFORE ACTIONS
         */
         const defaultSection = (ctx, next) => __awaiter(this, void 0, void 0, function* () {
-            ctx.state.record = (yield this.provider.getIndex()) || (yield this.provider.getGeneral());
-            ctx.state.template = ctx.state.record.template;
+            const record = (yield this.provider.getIndex()) || (yield this.provider.getGeneral());
+            ctx.state.template = record && record.template.toJSON();
+            ctx.state.record = record === null || record === void 0 ? void 0 : record.toJSON();
             yield next();
         });
-        const findPage = (ctx, next) => __awaiter(this, void 0, void 0, function* () {
-            const permalink = ctx.params[0].split('/').filter(Boolean).join('/');
-            console.log(permalink);
-            const record = yield paths_1.getRecordFromPath(permalink, this.provider);
-            if (record) {
-                ctx.state.template = record.template;
-                ctx.state.record = record;
-                yield next();
-            }
-            else {
-                throw boom_1.default.notFound(`Template ${ctx.params.type}:${ctx.params.name} not found`);
-            }
-        });
-        const findSection = (ctx, next) => __awaiter(this, void 0, void 0, function* () {
-            const type = pluralize.singular(ctx.params.type);
-            const { name } = ctx.params;
-            const template = yield this.provider.getTemplateByName(name, type);
-            if (template) {
-                // TODO: This seems to be the only way to get the defaultScope/ordering to work
-                const records = yield this.provider.getRecordsByTemplateId(template.id);
-                template.records = records;
-                ctx.state.template = template;
-                yield next();
-            }
-            else {
-                throw boom_1.default.notFound(`Template ${ctx.params.type}:${ctx.params.name} not found`);
-            }
-        });
-        const findRecord = (ctx, next) => __awaiter(this, void 0, void 0, function* () {
-            const record = yield this.provider.getRecordById(ctx.params.id);
-            if (record) {
-                ctx.state.record = record;
-                ctx.state.template = record.template;
-                yield next();
-            }
-            else {
-                throw boom_1.default.notFound(`Record ${ctx.params.type}:${ctx.params.name}:${ctx.params.id} not found`);
-            }
-        });
-        const _newRecordAction = (ctx, options = {}, errors) => __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
-            const body = ctx.request.body;
-            let { template, record } = ctx.state;
-            record = record || (yield this.provider.updateRecord({
-                id: -1,
-                content: body.content || {},
-                metadata: body.metadata || {},
-                templateId: template.id,
-                position: 0,
-                slug: '',
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-            }));
-            const title = options.title || template.type === 'setting'
-                ? template.labelSingular
-                : `New ${template.labelSingular} ${template.type === 'page' ? 'Page' : ''}`;
-            yield ctx.render('records/edit', title, Object.assign({ isNewRecord: true, collection: (_a = (yield this.provider.getTemplateByName(template.name, "collection" /* COLLECTION */))) === null || _a === void 0 ? void 0 : _a.toJSON(), page: (_b = (yield this.provider.getTemplateByName(template.name, "page" /* PAGE */))) === null || _b === void 0 ? void 0 : _b.toJSON(), template: template === null || template === void 0 ? void 0 : template.toJSON(), record: record === null || record === void 0 ? void 0 : record.toJSON(), action: router.url('records#create', template.typePlural, template.name), errors: Array.isArray(errors) ? _errors(errors) : undefined, Form: form_1.default }, options));
-        });
-        const _editRecordAction = (ctx, record, errors = []) => __awaiter(this, void 0, void 0, function* () {
-            var _c, _d;
-            const { template } = ctx.state;
-            yield ctx.render('records/edit', template.type === 'page' ? record.name() : record.nameSingular(), {
-                isNewRecord: false,
-                collection: (_c = (yield this.provider.getTemplateByName(template.name, "collection" /* COLLECTION */))) === null || _c === void 0 ? void 0 : _c.toJSON(),
-                page: (_d = (yield this.provider.getTemplateByName(template.name, "page" /* PAGE */))) === null || _d === void 0 ? void 0 : _d.toJSON(),
-                template: template === null || template === void 0 ? void 0 : template.toJSON(),
-                record: record === null || record === void 0 ? void 0 : record.toJSON(),
-                action: router.url('records#update', { type: template.typePlural, name: template.name, id: record.id || '0' }),
-                deletePath: router.url('records#delete', { type: template.typePlural, name: template.name, id: record.id || '0' }),
+        const _editRecordAction = (ctx, type, pageRecord, template, record, errors = []) => __awaiter(this, void 0, void 0, function* () {
+            const name = type === 'page' ? record === null || record === void 0 ? void 0 : record.name() : record === null || record === void 0 ? void 0 : record.nameSingular();
+            const title = record && isNaN(record === null || record === void 0 ? void 0 : record.id) ? `New ${name}${type === 'page' ? 'Page' : ''}` : name;
+            return yield ctx.render('records/edit', title, {
+                isNewRecord: !record,
+                pageRecord: (pageRecord === null || pageRecord === void 0 ? void 0 : pageRecord.toJSON()) || null,
+                template: template.toJSON(),
+                record: (record === null || record === void 0 ? void 0 : record.toJSON()) || null,
                 errors: _errors(errors),
                 Form: form_1.default,
             });
@@ -206,17 +192,13 @@ class Dashboard {
         * ROOT
         */
         this.router.get('root', '/', defaultSection, (ctx) => __awaiter(this, void 0, void 0, function* () {
-            console.log(ctx.state.template);
-            ctx.redirect(router.url('sections#index', { type: ctx.state.template.typePlural(), name: ctx.state.template.name }));
+            ctx.redirect(router.url('sections#index', { type: ctx.state.template.type, name: ctx.state.template.name }));
         }));
         this.router.use((ctx, next) => __awaiter(this, void 0, void 0, function* () {
             // For the nav menu
-            ctx.state.settings = yield this.provider.getTemplatesByType("settings" /* SETTINGS */);
-            // Get all page records.
-            const pages = [...yield this.provider.getRecordsByType("page" /* PAGE */)].map(p => p.toJSON());
-            const collections = yield this.provider.getTemplatesByType("collection" /* COLLECTION */);
-            ctx.state.pages = pages;
-            ctx.state.collections = collections.map(c => c.toJSON());
+            ctx.state.settings = yield (yield this.provider.getTemplatesByType("settings" /* SETTINGS */)).map(s => s.toJSON());
+            ctx.state.pages = [...yield this.provider.getRecordsByType("page" /* PAGE */)].map(p => p.toJSON());
+            ctx.state.collections = (yield this.provider.getTemplatesByType("collection" /* COLLECTION */)).map(s => s.toJSON());
             ctx.state.showBuild = this.options.local;
             ctx.state.needsBuild = this.db.isDirty();
             yield next();
@@ -235,7 +217,6 @@ class Dashboard {
                 throw err;
             }
             const siteUrl = yield hoist_1.deploy(staticBuildPath, undefined, undefined, console, false);
-            console.log('site url', siteUrl);
             yield hoist_1.makePublic(staticBuildPath);
             ctx.redirect(siteUrl);
         }));
@@ -246,10 +227,10 @@ class Dashboard {
             yield this.db.rebuild();
             // TODO: Not nuts about hard-coding paths here
             const redirectTo = yield (() => __awaiter(this, void 0, void 0, function* () {
-                var _e, _f;
+                var _a, _b;
                 try {
                     const referer = ctx.get('Referrer');
-                    const matches = referer ? (_f = (_e = url_1.default.parse(referer)) === null || _e === void 0 ? void 0 : _e.path) === null || _f === void 0 ? void 0 : _f.match(/\/dashboard\/(records|templates)\/(\d+)/) : null;
+                    const matches = referer ? (_b = (_a = url_1.default.parse(referer)) === null || _a === void 0 ? void 0 : _a.path) === null || _b === void 0 ? void 0 : _b.match(/\/dashboard\/(records|templates)\/(\d+)/) : null;
                     if (!matches || !matches.length) {
                         return router.url('root', {});
                     }
@@ -267,84 +248,12 @@ class Dashboard {
         /*
         * RECORDS
         */
-        router.get('records#new', '/:type/:name/records/new', findSection, (ctx) => __awaiter(this, void 0, void 0, function* () {
-            yield _newRecordAction(ctx, {}, []);
-        }));
-        router.get('collection#view', '/:type/:name/records/:id', findRecord, (ctx) => __awaiter(this, void 0, void 0, function* () {
-            return _editRecordAction(ctx, ctx.state.record);
-        }));
         // TODO: Re-add Re-ordering.
         router.post('records#reorder', '/records/reorder', (ctx) => __awaiter(this, void 0, void 0, function* () {
-            // const { id, from, to, nav } = ctx.request.body;
-            // const record = await this.provider.getRecordById(id);
-            // await new services.RecordPositionUpdater(record, from, to, nav).perform(db);
+            const { id, from, to, nav } = ctx.request.body;
+            const record = yield this.provider.getRecordById(id);
+            record && (yield updateRecordPosition(this.provider, record, from, to, nav));
             ctx.status = 200;
-        }));
-        router.post('records#create', '/:type/:name/records', findSection, (ctx) => __awaiter(this, void 0, void 0, function* () {
-            const template = ctx.state.template;
-            let record;
-            try {
-                const { content, metadata } = yield _content(ctx);
-                record = yield this.provider.updateRecord({
-                    id: -1,
-                    position: 0,
-                    slug: '',
-                    content,
-                    metadata,
-                    templateId: template.id,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                });
-                ctx.state.record = record;
-                // If the template is sortable, append the record
-                if (template.sortable) {
-                    // await new services.RecordPositionUpdater(record).perform();
-                }
-                ctx.flash('success', `Created ${record.nameSingular}`);
-                const name = template.type === 'page' ? record.safeSlug() : template.name;
-                return ctx.redirect(router.url('sections#index', { type: template.typePlural(), name }));
-            }
-            catch (err) {
-                console.error(err);
-                if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-                    ctx.flash('error', 'Please fix the following errors, then resubmit.');
-                    yield _newRecordAction(ctx, {}, err.errors);
-                }
-                else {
-                    throw err;
-                }
-            }
-        }));
-        router.post('records#update', '/:type/:name/records/:id', findRecord, (ctx) => __awaiter(this, void 0, void 0, function* () {
-            const { record } = ctx.state;
-            try {
-                const { template } = record;
-                const { content, metadata } = yield _content(ctx);
-                // If new record is not equal to the old one, update the record in our DB.
-                try {
-                    assert_1.default.deepStrictEqual(record.content, content);
-                    assert_1.default.deepStrictEqual(record.metadata, metadata);
-                }
-                catch (_err) {
-                    yield record.update({ content, metadata });
-                    ctx.flash('success', `Updated ${record.nameSingular}`);
-                }
-                if (template.type !== 'page') {
-                    ctx.redirect(router.url('sections#index', { type: template.typePlural(), name: template.name }));
-                }
-                else {
-                    ctx.redirect(router.url('sections#index', { type: template.typePlural(), name: record.safeSlug() }));
-                }
-            }
-            catch (err) {
-                if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-                    ctx.flash('error', 'Please fix the following errors, then resubmit.');
-                    yield _editRecordAction(ctx, record, err.errors);
-                }
-                else {
-                    throw err;
-                }
-            }
         }));
         router.post('image#upload', '/upload', (ctx) => __awaiter(this, void 0, void 0, function* () {
             const files = ctx.request.files || [];
@@ -363,72 +272,152 @@ class Dashboard {
                 data: { url: `/uploads/${fileUrl}` },
             };
         }));
-        router.get('records#delete', '/:type/:name/records/:id/delete', findRecord, (ctx) => __awaiter(this, void 0, void 0, function* () {
-            const title = ctx.state.template.labelSingular;
-            yield ctx.render('records/delete', `Delete ${title}`);
-        }));
-        router.post('/:type/:name/records/:id/delete', findRecord, (ctx) => __awaiter(this, void 0, void 0, function* () {
-            yield ctx.state.record.destroy();
-            ctx.flash('success', `Deleted ${ctx.state.record.nameSingular}`);
-            if (ctx.state.template.type === 'page') {
-                ctx.redirect('/dashboard');
-            }
-            else {
-                ctx.redirect(router.url('sections#index', { type: ctx.state.template.typePlural(), name: ctx.state.template.name }));
-            }
-        }));
         /*
         * GROUPS
         */
-        router.get('sections#pages', '/pages', (ctx) => __awaiter(this, void 0, void 0, function* () {
+        router.get('sections#pages', '/new', (ctx) => __awaiter(this, void 0, void 0, function* () {
             // Else, this is a single-record type of template. Render the edit page.
-            const templates = [];
-            for (const t of yield this.provider.getTemplatesByType("page" /* PAGE */)) {
-                templates.push(t);
-            }
+            const templates = yield this.provider.getTemplatesByType("page" /* PAGE */);
+            ctx.state.record = null;
             return ctx.render('records/templates', 'New Page', { templates });
         }));
-        router.get('sections#page', '/pages/(.*)', findPage, (ctx) => __awaiter(this, void 0, void 0, function* () {
-            const { record } = ctx.state;
-            // Else, this is a single-record type of template. Render the edit page.
-            return _editRecordAction(ctx, record);
-        }));
-        router.get('sections#index', '/:type/:name', findSection, (ctx, errors) => __awaiter(this, void 0, void 0, function* () {
-            var _g, _h;
-            const { template } = ctx.state;
-            // If there are no records created for this template type yet, render the new record page.
-            if (template.records.length === 0) {
-                return ctx.redirect(router.url('records#new', template.typePlural, template.name));
-                // If this is the type of template that contain multiple records, render the records list page.
+        router.get('records#new', '/new/:type/(.*)', (ctx) => __awaiter(this, void 0, void 0, function* () {
+            const type = ctx.params.type;
+            let slug = ctx.params[0] || 'index';
+            if (slug.endsWith('/')) {
+                slug = slug.slice(0, -1);
             }
-            else if (template.type === 'collection') {
-                const tableAction = ctx.state.template.sortable ? 'draggable' : 'sortable';
-                return ctx.render('records/index', ctx.state.template.label, {
-                    collection: (_g = (yield this.provider.getTemplateByName(template.name, "collection" /* COLLECTION */))) === null || _g === void 0 ? void 0 : _g.toJSON(),
-                    page: (_h = (yield this.provider.getTemplateByName(template.name, "page" /* PAGE */))) === null || _h === void 0 ? void 0 : _h.toJSON(),
+            if (slug === '' || slug === '/') {
+                slug = 'index';
+            }
+            let record = slug ? yield paths_1.getRecordFromPath(slug, this.provider) : null;
+            let template = record ? yield this.provider.getTemplateById(record.templateId) : yield this.provider.getTemplateByName(slug, type);
+            template = template ? yield this.provider.getTemplateByName(template.name, type) : null;
+            if (!template) {
+                throw boom_1.default.notFound(`Template ${ctx.params.type}:${ctx.params.name} not found`);
+            }
+            const tmpl = (yield this.provider.getTemplateById(template.id));
+            const tmpRecord = stampRecord(tmpl);
+            tmpRecord.parentId = type === "collection" /* COLLECTION */ ? (record === null || record === void 0 ? void 0 : record.id) || null : null;
+            record = yield this.provider.updateRecord(tmpRecord);
+            return _editRecordAction(ctx, type, record, template, new Record_1.Record(tmpRecord, tmpl), []);
+        }));
+        router.post('records#update', '/:type/(.*)', (ctx) => __awaiter(this, void 0, void 0, function* () {
+            let slug = ctx.params[0] || 'index';
+            if (slug.endsWith('/')) {
+                slug = slug.slice(0, -1);
+            }
+            if (slug === '' || slug === '/') {
+                slug = 'index';
+            }
+            const type = ctx.params.type;
+            let record = slug ? yield paths_1.getRecordFromPath(slug, this.provider) : null;
+            let template = record ? yield this.provider.getTemplateById(record.templateId) : yield this.provider.getTemplateByName(slug, type);
+            template = template ? yield this.provider.getTemplateByName(template.name, type) : null;
+            if (!template) {
+                throw boom_1.default.notFound(`Template ${ctx.params.type}:${ctx.params.name} not found`);
+            }
+            record = record || new Record_1.Record(stampRecord(template), template);
+            try {
+                const { content, metadata, isDelete } = yield _content(template, record, (ctx.request.body || {}), ctx.request.files);
+                if (record && isDelete) {
+                    yield this.provider.deleteRecord(record.id);
+                    ctx.flash('success', `Deleted ${record.nameSingular}`);
+                    (template.type === 'page') ? ctx.redirect('/dashboard') : ctx.redirect(`/dashboard/${template.type}${template.name}`);
+                    return;
+                }
+                if (type === "collection" /* COLLECTION */ && (record === null || record === void 0 ? void 0 : record.template.type) !== type) {
+                    record = yield this.provider.updateRecord(Object.assign(Object.assign({}, record), { content,
+                        metadata, parentId: (record === null || record === void 0 ? void 0 : record.id) || null }));
+                    console.log('RECORD', record);
+                    // If the template is sortable, append the record
+                    if (template.sortable) {
+                        yield updateRecordPosition(this.provider, record);
+                    }
+                    ctx.flash('success', `Created ${record.nameSingular()}`);
+                }
+                else {
+                    record = yield this.provider.updateRecord(Object.assign(Object.assign({}, record), { content, metadata }));
+                    ctx.flash('success', `Updated ${record.nameSingular()}`);
+                }
+                console.log('WAT', record, record.permalink());
+                const name = template.type !== 'settings' ? record.permalink() : `/${template.name}`;
+                return ctx.redirect(`/dashboard/${template.type}${name}`);
+            }
+            catch (err) {
+                console.error('erro', err);
+                if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
+                    ctx.flash('error', 'Please fix the following errors, then resubmit.');
+                    // await _editRecordAction(ctx, record.toJSON(), err.errors);
+                }
+                else {
+                    throw err;
+                }
+            }
+        }));
+        router.get('sections#index', '/:type/(.*)', (ctx, errors) => __awaiter(this, void 0, void 0, function* () {
+            var _c, _d;
+            let slug = ctx.params[0] || 'index';
+            if (slug.endsWith('/')) {
+                slug = slug.slice(0, -1);
+            }
+            if (slug === '' || slug === '/') {
+                slug = 'index';
+            }
+            const type = ctx.params.type;
+            const record = slug ? yield paths_1.getRecordFromPath(slug, this.provider) : null;
+            let template = record ? yield this.provider.getTemplateById(record.templateId) : yield this.provider.getTemplateByName(slug, type);
+            template = template ? yield this.provider.getTemplateByName(template.name, type) : null;
+            if (!template) {
+                throw boom_1.default.notFound(`Template ${ctx.params.type}:${ctx.params.name} not found`);
+            }
+            ctx.state.template = template.toJSON();
+            ctx.state.record = (record === null || record === void 0 ? void 0 : record.toJSON()) || null;
+            // If this is the type of template that contain multiple records, render the records list page.
+            if (type === 'collection' && (!record || !(record === null || record === void 0 ? void 0 : record.template.isCollection()))) {
+                const tableAction = template.sortable ? 'draggable' : 'sortable';
+                const records = (yield this.provider.getRecordsByTemplateId(template.id)).map(r => r.toJSON());
+                return ctx.render('records/index', template.label(), {
+                    page: (_c = (yield this.provider.getTemplateByName(template.name, "page" /* PAGE */))) === null || _c === void 0 ? void 0 : _c.toJSON(),
+                    collection: (_d = (yield this.provider.getTemplateByName(template.name, "collection" /* COLLECTION */))) === null || _d === void 0 ? void 0 : _d.toJSON(),
+                    pageRecord: ((record === null || record === void 0 ? void 0 : record.toJSON()) || null),
+                    record: null,
+                    template: template.toJSON(),
                     tableAction,
+                    records: records,
                     csrf: ctx.csrf || '',
                     Form: form_1.default,
-                    errors: Array.isArray(errors) ? _errors(errors) : null,
+                    errors: _errors(errors),
+                    previewContent: ((record, fieldName, section) => {
+                        const directive = directives.find(section.fields[fieldName]);
+                        /* @ts-ignore */
+                        const rendered = directive.preview(record.content[fieldName]);
+                        return rendered && rendered.length > 140 ? `${rendered.slice(0, 140)}...` : rendered;
+                    })
                 });
             }
+            // If there are no records created for this template type yet, render the new record page.
+            if (!record) {
+                // @ts-ignore
+                return ctx.redirect(router.url('records#new', template.type, template.name));
+            }
+            const pageRecord = type === "page" /* PAGE */ ? record : (record.parentId ? yield this.provider.getRecordById(record.parentId) : null);
             // Else, this is a single-record type of template. Render the edit page.
-            return _editRecordAction(ctx, template.records[0]);
+            return _editRecordAction(ctx, type, pageRecord, template, record);
         }));
-        function _content(ctx) {
+        function _content(template, record, body, files) {
             return __awaiter(this, void 0, void 0, function* () {
                 const metadataFields = ['name', 'slug', 'title', 'description', 'redirectUrl'];
-                const body = ctx.request.body;
-                const allowedFields = new Set(Object.keys(ctx.state.template.fields));
+                const allowedFields = new Set(Object.keys(template.fields));
                 const promises = [];
-                const content = ctx.state.record ? Object.assign({}, ctx.state.record.content || {}) : {};
+                const content = Object.assign({}, (record === null || record === void 0 ? void 0 : record.content) || {});
                 // Only make allowed fields available.
                 if (body.content) {
                     for (const field of allowedFields) {
                         content[field] = body.content[field];
                     }
                 }
-                const metadata = ctx.state.record ? Object.assign({}, ctx.state.record.metadata || {}) : {};
+                const metadata = Object.assign({}, (record === null || record === void 0 ? void 0 : record.metadata) || {});
                 // Only make allowed fields available.
                 if (body.metadata) {
                     for (const field of metadataFields) {
@@ -437,10 +426,10 @@ class Dashboard {
                 }
                 // Pre-processing the slug here instead of just in the SQL hook helps with database cache busting.
                 if (metadata.slug) {
-                    metadata.slug = metadata.slug.replace(/^\/+/, '');
+                    metadata.slug = `${metadata.slug || ''}`.replace(/^\/+/, '');
                 }
                 // Save files
-                for (const file of ctx.request.files) {
+                for (const file of files) {
                     const fieldName = file.fieldname.match(/content\[(.*)\]/)[1];
                     if (allowedFields.has(fieldName)) {
                         promises.push(_saveFile(file).then((c) => { content[fieldName] = c; }));
@@ -451,7 +440,7 @@ class Dashboard {
                 for (const fieldName of Object.keys(body._destroy || {})) {
                     delete content[fieldName];
                 }
-                return { content, metadata };
+                return { content, metadata, isDelete: body._delete === 'true' };
             });
         }
         const _saveFile = (file) => __awaiter(this, void 0, void 0, function* () {

@@ -38,17 +38,11 @@ export default class ImageDirective extends BaseDirective<ImageDirectiveValue> {
      *
      * eslint-disable class-methods-use-this
      */
-    input(name: string, value?: {
-        src: string;
-        type: ImageType;
-        width: number;
-        height: number;
-        aspectRatio: number;
-    }): string;
+    input(name: string, value?: ImageDirectiveValue | null): string;
     /**
      * Renders <img> tag or raw src
      */
-    render(value: ImageDirectiveValue): Promise<{
+    render(value?: ImageDirectiveValue): Promise<{
         src: string;
         width: number | undefined;
         height: number | undefined;
@@ -62,6 +56,6 @@ export default class ImageDirective extends BaseDirective<ImageDirectiveValue> {
      * @param {string} fileName
      * @return {string}
      */
-    preview(value: ImageDirectiveValue): string;
+    preview(value?: ImageDirectiveValue): string;
 }
 export {};

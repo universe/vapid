@@ -1,13 +1,25 @@
 import { Json } from '@universe/util';
 import Router from 'koa-router';
 import { Record } from '../../../Database/models/Record';
+import { Template } from '../../../Database/models/Template';
 import Database from '../../../Database';
 import { IProvider } from '../../../Database/providers';
+declare type JSONRecord = ReturnType<Record["toJSON"]>;
+declare type JSONTemplate = ReturnType<Template["toJSON"]>;
+interface AppState {
+    pages: JSONRecord[];
+    settings: JSONTemplate[];
+    collections: JSONTemplate[];
+    showBuild: boolean;
+    needsBuild: boolean;
+    template: JSONTemplate;
+    record: JSONRecord | null;
+}
 interface IKoaContext {
     csrf: string | undefined;
     flash: (type: 'success' | 'error' | 'warning', message: string) => void;
     render: (relPath: string, title: string, locals?: Json) => Promise<void>;
-    pages: Record[];
+    pages: JSONRecord[];
 }
 interface DashboardOptions {
     local: boolean;
@@ -42,6 +54,6 @@ export default class Dashboard {
     /**
      * Returns routes
      */
-    get routes(): Router.IMiddleware<any, IKoaContext>;
+    get routes(): Router.IMiddleware<AppState, IKoaContext>;
 }
 export {};

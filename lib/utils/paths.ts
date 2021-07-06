@@ -1,5 +1,4 @@
 import * as path from 'path';
-import Boom from '@hapi/boom';
 import { IProvider } from '../Database/providers';
 import { PageType } from '../Database/models/Template';
 import { Record } from '../Database/models/Record';
@@ -41,27 +40,17 @@ export function isAssetPath(filePath: string) {
 };
 
 
-/**
- * Asserts that a given path is a public asset path. Throws if is private.
- *
- * @param {string} path
- */
-export function assertPublicPath(filePath: string) {
-  const fileName = path.basename(filePath);
-  const char = fileName.slice(0, 1);
-
-  if (char === '_' || char === '.') {
-    throw Boom.notFound('Filenames starting with an underscore or period are private, and cannot be served.');
-  }
-};
-
 export async function getRecordFromPath(permalink: string, db: IProvider): Promise<Record | null> {
+
+  // Alias root requests.
+  if (permalink.endsWith('/')) { permalink = permalink.slice(0, -1); }
+  if (permalink === '' || permalink === '/') { permalink = 'index'; }
+
   // If we have an exact match, opt for that.
   const record = await db.getRecordBySlug(permalink);
-  console.log(record);
   if (record) { return record; }
 
-  // If a slug doesn't match perfectly, then any slashes in the name must come from a
+  // If a slug doesn't match perfectly, then any slashes in the name might come from a
   // collection specifier. Parse this like a collection record.
   if (permalink.includes('/')) {
     const segments = permalink.split('/');
@@ -82,12 +71,5 @@ export async function getRecordFromPath(permalink: string, db: IProvider): Promi
   // Otherwise, this is a {template_name}-{record_id} slug for a page. Grab the ID.
   const parts = permalink.split('-');
   const id = parts.length > 1 ? parts.pop() : null;
-  if (id) {
-    return await db.getRecordById(parseInt(id, 10));
-  }
-
-  const name = parts.join('-') || 'index';
-  const template = await db.getTemplateByName(name, PageType.PAGE);
-  if (!template) { return null; }
-  return await db.getRecordsByTemplateId(template.id)[0]; // TODO: Order ID ascending.
+  return id ? await db.getRecordById(parseInt(id, 10)) : null;
 };

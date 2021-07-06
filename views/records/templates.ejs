@@ -8,7 +8,7 @@
   <ul class="page-templates__list">
     <% for (template of templates) { if (!template.hasView) { continue; } %>
       <li class="page-templates__template">
-        <a href="/dashboard/pages/<%- template.name %>/records/new"><%- template.name === 'index' ? 'Home' : template.name %></a>
+        <a href="/dashboard/new/page/<%- template.name %>"><%- template.name === 'index' ? 'Home' : template.name %></a>
       </li>
     <% } %>
   </ul>

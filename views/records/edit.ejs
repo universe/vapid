@@ -7,16 +7,16 @@
       <li><button class="small button" id="page-settings">Settings</button></li>
     </ul>
   <% } %>
-  <% if (collection && page) { %>
+  <% if (pageRecord) { %>
     <ul class="sub-menu">
-      <li><a href="/dashboard/pages/<%- page.safeSlug %>" class="<%- (template.type === 'page' ? 'active' : '') %>">Page</a></li>
-      <li><a href="/dashboard/collection/<%- template.name %>" class="<%- (template.type === 'collection' ? 'active' : '') %>">Records</a></li>
+      <li><a href="/dashboard/page<%- pageRecord.permalink %>" class="<%- (template.type === 'page' ? 'active' : '') %>">Page</a></li>
+      <li><a href="/dashboard/collection<%- pageRecord.permalink %>" class="<%- (template.type === 'collection' ? 'active' : '') %>">Records</a></li>
     </ul>
   <% } %>
 </h1>
 
 <section class="section">
-  <form class="form" action="<%- action %>" method="post" enctype="multipart/form-data" data-autosave="true" novalidate>
+  <form class="form" action="/dashboard/<%- template.type %><%- (template.type !== 'settings' && pageRecord) ? pageRecord.permalink : `/${template.name}` %>" id="edit-form" method="post" enctype="multipart/form-data" data-autosave="true" novalidate>
     <% if (template.hasView) { %>
       <section class="metadata <%- isNewRecord ? 'open' : '' %>">
         <div class="content">
@@ -28,11 +28,11 @@
               help: 'Human readable name used for site navigation.'
             }, (record) ? record.metadata.name : '', errors.hasOwnProperty('metadata[name]') && errors['metadata[name]'], { pages }) %>
             <%- Form.field(`metadata[slug]`, 'slug', {
+              type: 'url',
               default: record && record.defaultSlug,
               required: false,
               help: 'The URL where this page can be found.',
-              type: 'url',
-              prefix: '/' + (record.template.type === 'collection' ? (record.template.name + '/') : ''),
+              prefix: '/' + (template.type === 'collection' ? (pageRecord ? pageRecord.permalink : template.name) : ''),
             }, record && record.safeSlug, errors.slug, { pages }) %>
             <%- Form.field(`metadata[title]`, 'title', {
               default: record && record.defaultTitle,
@@ -49,13 +49,20 @@
               required: false,
               help: "Redirect this page to a new location."
             }, record && record.metadata.redirectUrl, errors.redirectUrl, { pages }) %>
+            <%- Form.field(`metadata[createdAt]`, 'createdAt', {
+              type: 'date',
+              time: true,
+              default: record && record.createdAt,
+              required: false,
+              help: "Date created."
+            }, record && record.metadata.createdAt, errors.createdAt, { pages }) %>
           </div>
         </div>
       </section>
     <% } %>
     <div class="content">
       <% if (template.hasFields) { %>
-        <% for (const { _name: fieldName } of template.sortedFields()) { %>
+        <% for (const { _name: fieldName } of template.sortedFields) { %>
           <%- Form.field(`content[${fieldName}]`, fieldName, template.fields[fieldName], record ? record.content[fieldName] : '', errors.content && errors.content[fieldName], { pages }) %>
         <% } %>
 
@@ -66,23 +73,14 @@
       <% } %>
 
       <div class="submit field" style="overflow: hidden;">
-        <input class="button floated right" type="submit" value="<%- template.type === 'form' ?'Submit' : 'Save' %>">
+        <input class="button floated right" type="submit" value="Save">
         <% if (!isNewRecord && (template.type === 'collection' || template.type === 'page')) { %>
-          <a href="<%- deletePath %>" class="floated left basic red button">Delete</a>
+          <input type="submit" class="floated left basic red button" onClick="javascript:document.getElementById('delete-record').value = 'true';" value="Delete" />
         <% } %>
 
+        <input type="hidden" id="delete-record" name="_delete" value="false">
         <input type="hidden" name="_csrf" value="<%- csrf %>">
-        <% if (template.type === 'form') { %>
-          <input type="hidden" name="_subject" value="<%- subject %>" />
-          <input type="hidden" name="_next" value="<%- next %>" />
-          <input type="text" name="_gotcha" style="display:none">
-        <% } %>
       </div>
-
-      <% if (template.type === 'form') { %>
-        <br>
-        <p><em>Note: This preview form may not resemble the one rendered on your site.</em></p>
-      <% } %>
     </div>
   </form>
 </section>

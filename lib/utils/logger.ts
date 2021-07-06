@@ -48,7 +48,7 @@ export default class Logger {
    * @param {string} err
    */
   static error(err: Error) {
-    console.log(colors.bold.red(`ERROR: ${err}`));
+    console.error(colors.bold.red(`ERROR: ${err}`));
   }
 
   /**

@@ -1,7 +1,8 @@
+import * as path from 'path';
 import flash from 'koa-better-flash';
 import CSRF from 'koa-csrf';
 import koaLog from 'koa-log';
-import { Paths } from '../../../utils';
+import Boom from '@hapi/boom';
 import Koa from 'koa';
 import helmet  from 'koa-helmet';
 import sess from 'koa-session';
@@ -11,6 +12,7 @@ import imageProcessing from './imageProcessing';
 import assets from './assets';
 import favicon from './favicon';
 
+const PRIVATE_FILE_PREFIXES = new Set([ '_', '.' ])
 
 export default {
   assets,
@@ -29,7 +31,9 @@ export default {
 
   // Throw 404 if the path starts with an underscore or period
   privateFiles: async function privateFiles(ctx: Koa.Context, next: () => Promise<void>) {
-    Paths.assertPublicPath(ctx.path);
+    if (PRIVATE_FILE_PREFIXES.has(path.basename(ctx.path)[0])) {
+      throw Boom.notFound('Filenames starting with an underscore or period are private, and cannot be served.');
+    }
     await next();
   },
 

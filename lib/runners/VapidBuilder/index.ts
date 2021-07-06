@@ -10,6 +10,8 @@ import { Logger, Paths } from '../../utils';
 import makeWebpackConfig from '../../webpack_config';
 import Vapid from '../Vapid';
 
+const PRIVATE_FILE_PREFIXES = new Set([ '_', '.' ])
+
 /**
  * This is the Vapid static site builder.
  * The `VapidBuilder` class extends the base `Vapid` project class
@@ -73,7 +75,8 @@ export default class VapidBuilder extends Vapid {
     for (const asset of assets.found) {
       const isAsset = Paths.isAssetPath(asset);
       if (isAsset === false || typeof isAsset === 'string') { continue; }
-      try { Paths.assertPublicPath(asset); } catch (err) { continue; }
+      // Ignore private files.
+      if (PRIVATE_FILE_PREFIXES.has(path.basename(asset)[0])) { continue; }
       const out = path.join(dest, path.relative(this.paths.www, asset));
       mkdirp.sync(path.dirname(out));
       fs.copyFileSync(asset, out);

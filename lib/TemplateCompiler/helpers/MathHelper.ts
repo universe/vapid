@@ -12,14 +12,15 @@ const eq = {
   floor: (a: number) => Math.floor(a),
 };
 
+type MathParams = [method: keyof typeof eq , a: number, b: number];
+
 const MathHelper: NeutrinoHelper = {
   isField: false,
   isBranch: false,
   getType() { return 'math'; },
-  run(method: keyof typeof eq , a: number, b: number) {
+  run([method, a, b]: MathParams) {
     return `${eq[method](a, b)}`;
   },
-  blockParam() { return undefined; }
 }
 
 export default MathHelper;

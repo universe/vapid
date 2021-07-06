@@ -47,7 +47,7 @@ export default class ImageDirective extends BaseDirective<ImageDirectiveValue> {
    *
    * eslint-disable class-methods-use-this
    */
-  input(name: string, value = this.options.default) {
+  input(name: string, value: ImageDirectiveValue | null = null ) {
     const inputs = `<input type="file" name="${name}" accept="image/*" >
                   <input type="hidden" name="${name}" value="${value}">`;
     const src = value ? `/uploads/${value}` : '';
@@ -72,7 +72,7 @@ export default class ImageDirective extends BaseDirective<ImageDirectiveValue> {
   /**
    * Renders <img> tag or raw src
    */
-  async render(value: ImageDirectiveValue) {
+  async render(value: ImageDirectiveValue = this.options.default) {
     const src = value.src?.indexOf('data:') === -1
       ? `/uploads/${value.src}`
       : value.src;
@@ -96,8 +96,8 @@ export default class ImageDirective extends BaseDirective<ImageDirectiveValue> {
    * @param {string} fileName
    * @return {string}
    */
-  preview(value: ImageDirectiveValue) {
-    const src = value.src?.indexOf('data:') === -1
+  preview(value: ImageDirectiveValue = this.options.default) {
+    const src = value?.src?.indexOf('data:') === -1
       ? `/uploads/${value.src}`
       : value.src;
     return `<img src="${src}" />`;

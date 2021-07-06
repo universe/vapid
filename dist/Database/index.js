@@ -30,11 +30,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
 const glob = __importStar(require("glob"));
 const assert = __importStar(require("assert"));
 const TemplateCompiler_1 = require("../TemplateCompiler");
 const Template_1 = require("./models/Template");
-const vapidCompiler = new TemplateCompiler_1.TemplateCompiler();
+function componentLookup(tag) {
+    return fs.readFileSync(path.join(process.env.TEMPLATES_PATH, 'components', `${tag}.html`), 'utf8');
+}
+const vapidCompiler = new TemplateCompiler_1.TemplateCompiler(componentLookup);
 /**
  * Crawls templates, and creates object representing the data model
  *
@@ -46,6 +50,7 @@ function parse() {
     const templates = glob.sync(path.resolve(process.env.TEMPLATES_PATH, '**/*.html'));
     for (const tpl of templates) {
         const parsed = vapidCompiler.parseFile(tpl).data;
+        console.log(tpl, parsed['collection:endorsements'], parsed['collection:collection']);
         for (const [parsedName, parsedTemplate] of Object.entries(parsed)) {
             // We merge discovered fields across files, so we gradually collect configurations
             // for all sections here. Get or create this shared object as needed.
@@ -63,11 +68,13 @@ function parse() {
             Object.assign(finalTemplate.options, parsedTemplate.options);
             // For every field discovered in the content block, track them in the section.
             for (const [, field] of Object.entries(parsedTemplate.fields)) {
+                if (!field) {
+                    continue;
+                }
                 const old = finalTemplate.fields[field.key];
                 finalTemplate.fields[field.key] = Object.assign(Object.assign({}, (old || {})), { 
                     // Default to `type: text` if not specified.
-                    type: field.type || 'text', priority: field.priority || 0, label: field.label || '', key: field.key, options: Object.assign(Object.assign({}, (old.options || {})), field.options) });
-                // console.log(section.fields[fieldAttrs.key]);
+                    type: field.type || 'text', priority: field.priority || 0, label: field.label || '', key: field.key, options: Object.assign(Object.assign({}, ((old === null || old === void 0 ? void 0 : old.options) || {})), field.options) });
             }
         }
     }
@@ -83,7 +90,28 @@ class Database extends events_1.EventEmitter {
         this.provider = provider;
     }
     start() {
-        return __awaiter(this, void 0, void 0, function* () { yield this.provider.start(); });
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.provider.updateTemplate({
+                id: 1,
+                sortable: false,
+                type: "page" /* PAGE */,
+                name: 'index',
+                options: {},
+                fields: {},
+            });
+            yield this.provider.updateRecord({
+                id: 1,
+                templateId: 1,
+                parentId: null,
+                content: {},
+                metadata: {},
+                position: 0,
+                slug: 'index',
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+            });
+            yield this.provider.start();
+        });
     }
     stop() {
         return __awaiter(this, void 0, void 0, function* () { yield this.provider.stop(); });

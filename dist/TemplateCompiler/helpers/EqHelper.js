@@ -4,8 +4,7 @@ const EqHelper = {
     isField: false,
     isBranch: false,
     getType() { return 'eq'; },
-    blockParam() { return undefined; },
-    run(value1, value2) {
+    run([value1, value2]) {
         return value1 === value2 ? 'true' : 'false';
     },
 };

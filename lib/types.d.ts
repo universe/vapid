@@ -1,20 +1,3 @@
-declare namespace hbs.AST {
-  interface Expression {
-    type: 'Expression';
-    data: Record<string, any>;
-    original: string;
-  }
-  interface Hash {
-    default: string;
-  }
-  interface Program {
-    type: 'Program';
-  }
-  interface Statement {
-    type: 'Statement';
-  }
-}
-
 declare module 'mini-css-extract-plugin';
 declare module '@hapi/boom';
 declare module 'ejs';

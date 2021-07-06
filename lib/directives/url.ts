@@ -18,9 +18,8 @@ export default class UrlDirective extends BaseDirective {
   }
 
   input(name: string, value = '') {
-
     if (value === this.options.default) { value = ''; }
 
-    return `<div class="input__url"><span>${this.options.prefix || ''}</span><input type="url" name="${name}" placeholder="${escape(this.options.default)}" value="${escape(value)}" ${this.htmlAttrs}></div>`;
+    return `<div class="input__url"><span>${this.options.prefix || ''}</span><input type="url" name="${name}" placeholder="${escape(this.options.default)}" value="${escape(value)}" ${this.htmlAttrs()}></div>`;
   }
 }

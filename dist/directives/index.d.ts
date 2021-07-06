@@ -1,10 +1,17 @@
-import Handlebars from 'handlebars';
+import ChoiceDirective from './choice';
+import ColorDirective from './color';
+import DateDirective from './date';
+import HtmlDirective from './html';
+import ImageDirective from './image';
+import LinkDirective from './link';
+import NumberDirective from './number';
 import TextDirective from './text';
 import UrlDirective from './url';
-import NumberDirective from './number';
-import LinkDirective from './link';
-import ImageDirective from './image';
 declare const DIRECTIVES: {
+    readonly choice: typeof ChoiceDirective;
+    readonly color: typeof ColorDirective;
+    readonly date: typeof DateDirective;
+    readonly html: typeof HtmlDirective;
     readonly text: typeof TextDirective;
     readonly url: typeof UrlDirective;
     readonly number: typeof NumberDirective;
@@ -22,6 +29,5 @@ declare type Directives = typeof DIRECTIVES;
 export declare function find(params?: {
     type?: string;
 }, meta?: {}): InstanceType<Directives[keyof Directives]>;
-export declare function helper(value: any, attrs: Record<string, string>, meta: Record<string, string>): () => Promise<string | import("./base").BlockRenderer> | Handlebars.SafeString;
-export declare function get(name: string): any;
+export declare function helper(value: any, attrs: Record<string, string>, meta: Record<string, string>): Promise<() => any>;
 export {};

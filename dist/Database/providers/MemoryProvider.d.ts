@@ -1,4 +1,4 @@
-import { Collection, PageType, ITemplate, Template, IRecord, Record as DBRecord } from '../models';
+import { PageType, ITemplate, Template, IRecord, Record as DBRecord } from '../models';
 import { IProvider } from './types';
 export interface MemoryProviderConfig {
     path?: string;
@@ -7,6 +7,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
     #private;
     start(): Promise<void>;
     stop(): Promise<void>;
+    log(): void;
     getAllTemplates(): Promise<Template[]>;
     getAllRecords(): Promise<DBRecord[]>;
     getTemplateById(id: number): Promise<Template | null>;
@@ -16,6 +17,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
     getRecordBySlug(slug: string): Promise<DBRecord | null>;
     getRecordsByTemplateId(id: number): Promise<DBRecord[]>;
     getRecordsByType(type: PageType): Promise<DBRecord[]>;
+    getChildren(id: number): Promise<DBRecord[]>;
     /**
      * Update a section's attributes
      * Primarily used by the Vapid module when rebuilding the site
@@ -26,5 +28,6 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
      * Primarily used by the Vapid module when rebuilding the site
      */
     updateRecord(update: IRecord): Promise<DBRecord>;
-    getCollectionByName(name: string): Promise<Collection | null>;
+    deleteTemplate(templateId: number): Promise<void>;
+    deleteRecord(recordId: number): Promise<void>;
 }

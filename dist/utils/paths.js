@@ -27,13 +27,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRecordFromPath = exports.assertPublicPath = exports.isAssetPath = exports.getDashboardPaths = void 0;
+exports.getRecordFromPath = exports.isAssetPath = exports.getDashboardPaths = void 0;
 const path = __importStar(require("path"));
-const boom_1 = __importDefault(require("@hapi/boom"));
 const HTML_FILE_EXTS = { '': 1, '.html': 1 };
 const SASS_FILE_EXTS = { '.scss': 1, '.sass': 1 };
 /**
@@ -69,29 +65,21 @@ function isAssetPath(filePath) {
 }
 exports.isAssetPath = isAssetPath;
 ;
-/**
- * Asserts that a given path is a public asset path. Throws if is private.
- *
- * @param {string} path
- */
-function assertPublicPath(filePath) {
-    const fileName = path.basename(filePath);
-    const char = fileName.slice(0, 1);
-    if (char === '_' || char === '.') {
-        throw boom_1.default.notFound('Filenames starting with an underscore or period are private, and cannot be served.');
-    }
-}
-exports.assertPublicPath = assertPublicPath;
-;
 function getRecordFromPath(permalink, db) {
     return __awaiter(this, void 0, void 0, function* () {
+        // Alias root requests.
+        if (permalink.endsWith('/')) {
+            permalink = permalink.slice(0, -1);
+        }
+        if (permalink === '' || permalink === '/') {
+            permalink = 'index';
+        }
         // If we have an exact match, opt for that.
         const record = yield db.getRecordBySlug(permalink);
-        console.log(record);
         if (record) {
             return record;
         }
-        // If a slug doesn't match perfectly, then any slashes in the name must come from a
+        // If a slug doesn't match perfectly, then any slashes in the name might come from a
         // collection specifier. Parse this like a collection record.
         if (permalink.includes('/')) {
             const segments = permalink.split('/');
@@ -113,15 +101,7 @@ function getRecordFromPath(permalink, db) {
         // Otherwise, this is a {template_name}-{record_id} slug for a page. Grab the ID.
         const parts = permalink.split('-');
         const id = parts.length > 1 ? parts.pop() : null;
-        if (id) {
-            return yield db.getRecordById(parseInt(id, 10));
-        }
-        const name = parts.join('-') || 'index';
-        const template = yield db.getTemplateByName(name, "page" /* PAGE */);
-        if (!template) {
-            return null;
-        }
-        return yield db.getRecordsByTemplateId(template.id)[0]; // TODO: Order ID ascending.
+        return id ? yield db.getRecordById(parseInt(id, 10)) : null;
     });
 }
 exports.getRecordFromPath = getRecordFromPath;

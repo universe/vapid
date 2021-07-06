@@ -1,4 +1,4 @@
-import { Collection, Template, ITemplate, PageType, IRecord, Record  } from '../models';
+import { Template, ITemplate, PageType, IRecord, Record  } from '../models';
 
 export abstract class IProvider<Config = any> {
   config: Config;
@@ -7,6 +7,7 @@ export abstract class IProvider<Config = any> {
   }
   abstract start(): Promise<void>;
   abstract stop(): Promise<void>;
+  abstract log(): void;
 
   async getIndex(): Promise<Record | null> {
     const template = await this.getTemplateByName('index', PageType.PAGE);
@@ -22,7 +23,6 @@ export abstract class IProvider<Config = any> {
 
   abstract getAllTemplates(): Promise<Template[]>;
   abstract getAllRecords(): Promise<Record[]>;
-  abstract getCollectionByName(name: string): Promise<Collection | null>;
 
   abstract getTemplateById(id: number): Promise<Template | null>;
   abstract getTemplateByName(name: string, type: PageType): Promise<Template | null>;
@@ -32,7 +32,11 @@ export abstract class IProvider<Config = any> {
   abstract getRecordBySlug(slug: string): Promise<Record | null>;
   abstract getRecordsByTemplateId(id: number): Promise<Record[]>;
   abstract getRecordsByType(type: PageType): Promise<Record[]>;
+  abstract getChildren(id: number): Promise<Record[]>;
 
   abstract updateTemplate(template: ITemplate): Promise<Template>;
   abstract updateRecord(record: IRecord): Promise<Record>;
+
+  abstract deleteTemplate(templateId: number): Promise<void>;
+  abstract deleteRecord(recordId: number): Promise<void>;
 }

@@ -1,11 +1,10 @@
 import { NeutrinoHelper } from './types';
 
 const DateHelper: NeutrinoHelper = {
-  isField: false,
+  isField: true,
   isBranch: false,
   getType() { return 'date'; },
-  blockParam() { return undefined; },
-  run(value) {
+  run([value]) {
     return value ? value.toLocaleString('en-us', {
       weekday: 'long',
       year: 'numeric',

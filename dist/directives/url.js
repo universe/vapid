@@ -24,7 +24,7 @@ class UrlDirective extends base_1.BaseDirective {
         if (value === this.options.default) {
             value = '';
         }
-        return `<div class="input__url"><span>${this.options.prefix || ''}</span><input type="url" name="${name}" placeholder="${lodash_escape_1.default(this.options.default)}" value="${lodash_escape_1.default(value)}" ${this.htmlAttrs}></div>`;
+        return `<div class="input__url"><span>${this.options.prefix || ''}</span><input type="url" name="${name}" placeholder="${lodash_escape_1.default(this.options.default)}" value="${lodash_escape_1.default(value)}" ${this.htmlAttrs()}></div>`;
     }
 }
 exports.default = UrlDirective;

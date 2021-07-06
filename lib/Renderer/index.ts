@@ -1,11 +1,8 @@
 import * as fs from 'fs';
 import {
   join,
-  parse,
-  relative,
   resolve,
 } from 'path';
-import { GlobSync } from 'glob';
 import Boom from '@hapi/boom';
 import Koa from 'koa';
 
@@ -25,7 +22,7 @@ async function makeHelpers(record: DBRecord, template: Template, pages: Record<s
   /* eslint-disable-next-line no-param-reassign */
   record.template = template; // Required for permalink getter
   for (const key of Object.keys(content)) {
-    out[key] = helper(content[key], fields[key] as any, pages);
+    out[key] = await helper(content[key], fields[key] as any, pages);
   }
 
   out[TemplateCompiler.DATA_SYMBOL] = await record.getMetadata('/', provider);
@@ -68,20 +65,12 @@ export async function renderContent(this: Vapid, uriPath: string) {
     throw Boom.notFound('Template file not found');
   }
 
-  const partials = {};
-  for (const partial of new GlobSync(resolve(this.paths.www, '**/_*.html')).found) {
-    const desc = parse(partial);
-    const name = join(relative(this.paths.www, desc.dir), desc.name.slice(1));
-    partials[name] = fs.readFileSync(partial, 'utf8');
+  const componentLookup = (tag: string): string => {
+    return fs.readFileSync(join(process.env.TEMPLATES_PATH, 'components', `${tag}.html`), 'utf8');
   }
 
-  const compiler = new TemplateCompiler(partials);
-  const {
-    name,
-    type,
-    data,
-    ast,
-  } = compiler.parseFile(pagePath);
+  const compiler = new TemplateCompiler(componentLookup);
+  const { name, type, data, ast } = compiler.parseFile(pagePath);
 
   // Fetch all renderable pages.
   const pages = await this.provider.getRecordsByType(PageType.PAGE);
@@ -97,25 +86,15 @@ export async function renderContent(this: Vapid, uriPath: string) {
   // Create our page context data.
   const pageMeta = await Promise.all(pages.map(p => p.getMetadata(uriPath, this.provider)));
   const pageData = await makeHelpers(record, template, { pages: pageMeta }, this.provider);
-  const context = {};
+  const context = { this: {} };
   for (const key of Object.keys(pageData)) {
-    context[key] = pageData[key];
+    context.this[key] = pageData[key];
   }
 
   /* eslint-disable no-await-in-loop */
   for (const model of Object.values(data)) {
     if (model.type === 'page') { continue; }
     // Fetch all templates where the type and model name match.
-    // (await Template.findAll({
-    //   order: [['records', 'position', 'ASC']],
-    //   where: { type: model.type, name: model.name },
-    //   include: [
-    //     {
-    //       model: Record,
-    //       as: 'records',
-    //     },
-    //   ],
-    // })) || [];
     const templates = [await this.provider.getTemplateByName(model.name, model.type)];
     const _records = await Promise.all(templates.map(async (t) => {
       if(!t) { return; }
@@ -135,7 +114,7 @@ export async function renderContent(this: Vapid, uriPath: string) {
     navigation,
     page: await record.getMetadata(uriPath, this.provider),
     site: {
-      url: this.url,
+      domain: this.domain,
       name: this.name,
     },
   });
@@ -155,7 +134,7 @@ export function renderError(this: any, err: Error, request: Koa.Request) {
   let status = error.output.statusCode;
   let rendered;
   let errorFile;
-  console.log(error)
+
   if (process.env.NODE_ENV === 'development' && status !== 404) {
     errorFile = resolve(viewsPath, 'errors', 'trace.html');
     rendered = new TemplateCompiler().renderFile(errorFile, {

@@ -4,6 +4,7 @@ import { IProvider } from "../providers";
 export interface IRecord {
     id: number;
     templateId: number;
+    parentId: number | null;
     content: Json;
     metadata: Json;
     position: number;
@@ -14,31 +15,31 @@ export interface IRecord {
 export interface SerializedRecord {
     id: number;
     name: string;
-    url: string | null;
     slug: string | null;
-    isNavigation: boolean;
-    isActive: boolean;
     title: string | null;
     description: string | null;
     redirectUrl: string | null;
-    hasSubNav: boolean;
-    subNav: SerializedRecord[];
+    isNavigation: boolean;
+    isActive: boolean;
+    isParentActive: boolean;
+    hasChildren: boolean;
+    children: SerializedRecord[];
     createdAt: number;
     updatedAt: number;
-    hasCollection: boolean;
     template: string;
 }
 export declare class Record implements IRecord {
     constructor(data: IRecord, template: Template);
-    template: Template;
     id: number;
     templateId: number;
+    parentId: number | null;
     createdAt: number;
     updatedAt: number;
     content: Json;
     metadata: Json;
     position: number;
     slug: string;
+    template: Template;
     isFirst(): boolean;
     defaultName(): string;
     name(): string;
@@ -56,28 +57,29 @@ export declare class Record implements IRecord {
      * @return {string}
      */
     nameSingular(): string;
-    getMetadata(currentUrl: string, provider?: IProvider): Promise<SerializedRecord>;
+    getMetadata(currentUrl: string, provider: IProvider): Promise<SerializedRecord>;
     toJSON(): {
         id: number;
+        createdAt: number;
+        updatedAt: number;
         template: {
             id: number;
             name: string;
             sortable: boolean;
             options: Json;
-            fields: globalThis.Record<string, import("./Template").IField>;
+            fields: globalThis.Record<string, import("./Template").IField | undefined>;
             type: import("./Template").PageType;
             label: string;
             labelSingular: string;
             typeSingular: string;
-            typePlural: string;
             tableColumns: string[];
             tableColumnsHeaders: string[];
             hasFields: boolean;
             sortedFields: import("./Template").IField[];
             isCollection: boolean;
+            hasCollection: void;
             isPage: boolean;
-            hasRecordPage: boolean;
-            hasBasePage: boolean;
+            hasPage: boolean;
             hasView: boolean;
         };
         templateId: number;

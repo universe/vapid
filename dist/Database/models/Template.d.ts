@@ -17,7 +17,7 @@ export interface ITemplate {
     name: string;
     sortable: boolean;
     options: Json;
-    fields: Record<string, IField>;
+    fields: Record<string, IField | undefined>;
     type: PageType;
 }
 export declare class Template implements ITemplate {
@@ -25,7 +25,7 @@ export declare class Template implements ITemplate {
     name: string;
     sortable: boolean;
     options: Json;
-    fields: Record<string, IField>;
+    fields: Record<string, IField | undefined>;
     type: PageType;
     constructor(data: ITemplate);
     static identifier(template: ITemplate): string;
@@ -48,12 +48,6 @@ export declare class Template implements ITemplate {
      * @return {string}
      */
     typeSingular(): string;
-    /**
-     * Pluralized type
-     *
-     * @return {string}
-     */
-    typePlural(): string;
     /**
      * Table column
      * Primarily used by dashboard index page
@@ -80,9 +74,9 @@ export declare class Template implements ITemplate {
      */
     sortedFields(): IField[];
     isCollection(): boolean;
+    hasCollection(): void;
     isPage(): boolean;
-    hasRecordPage(): boolean;
-    hasBasePage(): boolean;
+    hasPage(): boolean;
     /**
      * If this template has a backing view to render a dedicated page.
      *
@@ -94,20 +88,19 @@ export declare class Template implements ITemplate {
         name: string;
         sortable: boolean;
         options: Json;
-        fields: Record<string, IField>;
+        fields: Record<string, IField | undefined>;
         type: PageType;
         label: string;
         labelSingular: string;
         typeSingular: string;
-        typePlural: string;
         tableColumns: string[];
         tableColumnsHeaders: string[];
         hasFields: boolean;
         sortedFields: IField[];
         isCollection: boolean;
+        hasCollection: void;
         isPage: boolean;
-        hasRecordPage: boolean;
-        hasBasePage: boolean;
+        hasPage: boolean;
         hasView: boolean;
     };
 }

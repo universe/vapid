@@ -41,6 +41,7 @@ const Renderer_1 = require("../../Renderer");
 const utils_1 = require("../../utils");
 const webpack_config_1 = __importDefault(require("../../webpack_config"));
 const Vapid_1 = __importDefault(require("../Vapid"));
+const PRIVATE_FILE_PREFIXES = new Set(['_', '.']);
 /**
  * This is the Vapid static site builder.
  * The `VapidBuilder` class extends the base `Vapid` project class
@@ -98,10 +99,8 @@ class VapidBuilder extends Vapid_1.default {
                 if (isAsset === false || typeof isAsset === 'string') {
                     continue;
                 }
-                try {
-                    utils_1.Paths.assertPublicPath(asset);
-                }
-                catch (err) {
+                // Ignore private files.
+                if (PRIVATE_FILE_PREFIXES.has(path.basename(asset)[0])) {
                     continue;
                 }
                 const out = path.join(dest, path.relative(this.paths.www, asset));

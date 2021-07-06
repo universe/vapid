@@ -7,6 +7,7 @@ import { IProvider } from "../providers";
 export interface IRecord {
   id: number;
   templateId: number;
+  parentId: number | null;
   content: Json;
   metadata: Json;
   position: number;
@@ -18,18 +19,17 @@ export interface IRecord {
 export interface SerializedRecord {
   id: number;
   name: string;
-  url: string | null;
   slug: string | null;
-  isNavigation: boolean;
-  isActive: boolean;
   title: string | null;
   description: string | null;
   redirectUrl: string | null;
-  hasSubNav: boolean;
-  subNav: SerializedRecord[];
+  isNavigation: boolean;
+  isActive: boolean;
+  isParentActive: boolean;
+  hasChildren: boolean;
+  children: SerializedRecord[];
   createdAt: number;
   updatedAt: number;
-  hasCollection: boolean;
   template: string;
 };
 
@@ -39,6 +39,7 @@ export class Record implements IRecord {
     this.template = template;
     this.id = data.id;
     this.templateId = data.templateId;
+    this.parentId = data.parentId;
     this.content = data.content;
     this.metadata = data.metadata;
     this.position = data.position;
@@ -47,9 +48,9 @@ export class Record implements IRecord {
     this.updatedAt = data.updatedAt || Date.now();
   }
 
-  template: Template;
-  id: number = 0;
+  id: number;
   templateId: number;
+  parentId: number | null;
   createdAt: number;
   updatedAt: number;
   content: Json;
@@ -57,12 +58,15 @@ export class Record implements IRecord {
   position: number;
   slug: string;
 
+  template: Template;
+
   isFirst() {
     return this.id === 0;
   }
 
   defaultName(): string {
-    const defaultName = this.template.name === 'index' ? 'Home' : this.template.name;
+    let defaultName = this.template.name === 'index' ? 'Home' : this.template.name;
+    if (this.template.type === 'collection') { defaultName = pluralize.singular(defaultName); }
     return this.isFirst() ? defaultName : `${defaultName} ${this.id}`;
   }
 
@@ -74,10 +78,12 @@ export class Record implements IRecord {
   }
 
   defaultSlug() {
-    const name = toKebabCase(this.content.title as string || this.content.name as string || '');
+    let name = this.content.title as string || this.content.name as string || '';
+    name = name || (this.template.isCollection()) ? pluralize.singular(this.template.name) : this.template.name;
+    name = toKebabCase(name);
     if (this.isFirst() && this.template.name === 'index') { return ''; }
-    // if (this.isFirst && name) { return name; }
-    return `${name || this.template.name}-${this.id}`;
+    if (this.isFirst() && name) { return name; }
+    return `${name}-${this.id}`;
   }
 
   safeSlug() {
@@ -106,35 +112,37 @@ export class Record implements IRecord {
     return pluralize.singular(this.name());
   }
 
-  async getMetadata(currentUrl: string, provider?: IProvider): Promise<SerializedRecord> {
+  async getMetadata(currentUrl: string, provider: IProvider): Promise<SerializedRecord> {
     const permalink = this.permalink();
-    const collection = provider ? await provider.getCollectionByName(this.template.name) : null;
+    const children = await provider.getChildren(this.id) || null;
     return {
       id: this.id,
       name: this.name(),
-      url: this.template.hasView() ? this.permalink() : null,
-      slug: this.template.hasView() ? this.safeSlug() : null,
+      template: this.template.name,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      slug: this.template.hasView() ? this.permalink() : null,
       isNavigation: !!this.metadata.isNavigation,
-      isActive: permalink === '/' ? (permalink === currentUrl || currentUrl === 'index') : currentUrl.indexOf(permalink) === 0,
+      hasChildren: !!children.length,
+      children: await Promise.all(children.filter(r => r.id !== this.id).map(r => r.getMetadata(currentUrl, provider))),
+      isActive: permalink === '/' ? (permalink === currentUrl || currentUrl === 'index') : currentUrl === permalink,
+      isParentActive: permalink === '/' ? (permalink === currentUrl || currentUrl === 'index') : currentUrl.indexOf(permalink) === 0,
+
       title: this.metadata.title as string || null,
       description: this.metadata.description as string || null,
       redirectUrl: this.metadata.redirectUrl as string || null,
-      hasSubNav: !!(collection && collection.records.length && collection.template.hasView()),
-      subNav: await Promise.all(((collection || {}).records || []).map(r => r.getMetadata(currentUrl))),
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-      hasCollection: !!collection,
-      template: this.template.name,
     };
   }
 
   toJSON() {
     return {
       id: this.id,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
       template: this.template.toJSON(),
       templateId: this.templateId,
-      content: this.content,
-      metadata: this.metadata,
+      content: this.content || {},
+      metadata: this.metadata || {},
       position: this.position,
       slug: this.slug,
       isFirst: this.isFirst(),

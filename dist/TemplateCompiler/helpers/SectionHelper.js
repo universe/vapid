@@ -16,10 +16,11 @@ const SectionHelper = {
         if (idx > 0) {
             return undefined;
         }
+        const param = node.params[0];
         return {
-            name: node.params[0].original,
+            name: param.original,
             type: "settings" /* SETTINGS */,
-            isPrivate: !!node.params[0].data,
+            isPrivate: !!param.data,
         };
     }
 };

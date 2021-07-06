@@ -15,10 +15,9 @@ const MathHelper = {
     isField: false,
     isBranch: false,
     getType() { return 'math'; },
-    run(method, a, b) {
+    run([method, a, b]) {
         return `${eq[method](a, b)}`;
     },
-    blockParam() { return undefined; }
 };
 exports.default = MathHelper;
 //# sourceMappingURL=MathHelper.js.map

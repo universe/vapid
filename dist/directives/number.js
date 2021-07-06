@@ -28,7 +28,7 @@ class NumberDirective extends base_1.BaseDirective {
     input(name, value = this.options.default) {
         const type = this.options.range ? 'range' : 'number';
         const label = this.options.range ? `<div class="ui left pointing basic label">${value || '—'}</div>` : '';
-        return `<input type="${type}" name="${name}" value="${value}" ${this.htmlAttrs}>${label}`;
+        return `<input type="${type}" name="${name}" value="${value}" ${this.htmlAttrs()}>${label}`;
     }
 }
 exports.default = NumberDirective;

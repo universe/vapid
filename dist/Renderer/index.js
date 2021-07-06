@@ -34,7 +34,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.renderError = exports.renderContent = void 0;
 const fs = __importStar(require("fs"));
 const path_1 = require("path");
-const glob_1 = require("glob");
 const boom_1 = __importDefault(require("@hapi/boom"));
 const TemplateCompiler_1 = require("../TemplateCompiler");
 const utils_1 = require("../utils");
@@ -48,7 +47,7 @@ function makeHelpers(record, template, pages, provider) {
         /* eslint-disable-next-line no-param-reassign */
         record.template = template; // Required for permalink getter
         for (const key of Object.keys(content)) {
-            out[key] = directives_1.helper(content[key], fields[key], pages);
+            out[key] = yield directives_1.helper(content[key], fields[key], pages);
         }
         out[TemplateCompiler_1.TemplateCompiler.DATA_SYMBOL] = yield record.getMetadata('/', provider);
         return out;
@@ -87,14 +86,11 @@ function renderContent(uriPath) {
         if (!pagePath) {
             throw boom_1.default.notFound('Template file not found');
         }
-        const partials = {};
-        for (const partial of new glob_1.GlobSync(path_1.resolve(this.paths.www, '**/_*.html')).found) {
-            const desc = path_1.parse(partial);
-            const name = path_1.join(path_1.relative(this.paths.www, desc.dir), desc.name.slice(1));
-            partials[name] = fs.readFileSync(partial, 'utf8');
-        }
-        const compiler = new TemplateCompiler_1.TemplateCompiler(partials);
-        const { name, type, data, ast, } = compiler.parseFile(pagePath);
+        const componentLookup = (tag) => {
+            return fs.readFileSync(path_1.join(process.env.TEMPLATES_PATH, 'components', `${tag}.html`), 'utf8');
+        };
+        const compiler = new TemplateCompiler_1.TemplateCompiler(componentLookup);
+        const { name, type, data, ast } = compiler.parseFile(pagePath);
         // Fetch all renderable pages.
         const pages = yield this.provider.getRecordsByType("page" /* PAGE */);
         // Generate our navigation menu.
@@ -109,9 +105,9 @@ function renderContent(uriPath) {
         // Create our page context data.
         const pageMeta = yield Promise.all(pages.map(p => p.getMetadata(uriPath, this.provider)));
         const pageData = yield makeHelpers(record, template, { pages: pageMeta }, this.provider);
-        const context = {};
+        const context = { this: {} };
         for (const key of Object.keys(pageData)) {
-            context[key] = pageData[key];
+            context.this[key] = pageData[key];
         }
         /* eslint-disable no-await-in-loop */
         for (const model of Object.values(data)) {
@@ -119,16 +115,6 @@ function renderContent(uriPath) {
                 continue;
             }
             // Fetch all templates where the type and model name match.
-            // (await Template.findAll({
-            //   order: [['records', 'position', 'ASC']],
-            //   where: { type: model.type, name: model.name },
-            //   include: [
-            //     {
-            //       model: Record,
-            //       as: 'records',
-            //     },
-            //   ],
-            // })) || [];
             const templates = [yield this.provider.getTemplateByName(model.name, model.type)];
             const _records = yield Promise.all(templates.map((t) => __awaiter(this, void 0, void 0, function* () {
                 if (!t) {
@@ -146,7 +132,7 @@ function renderContent(uriPath) {
             navigation,
             page: yield record.getMetadata(uriPath, this.provider),
             site: {
-                url: this.url,
+                domain: this.domain,
                 name: this.name,
             },
         });
@@ -168,7 +154,6 @@ function renderError(err, request) {
     let status = error.output.statusCode;
     let rendered;
     let errorFile;
-    console.log(error);
     if (process.env.NODE_ENV === 'development' && status !== 404) {
         errorFile = path_1.resolve(viewsPath, 'errors', 'trace.html');
         rendered = new TemplateCompiler_1.TemplateCompiler().renderFile(errorFile, {

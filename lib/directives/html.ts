@@ -1,18 +1,9 @@
 import escape from 'lodash.escape';
-const markdown = require('markdown-it');
-const sanitizeHtml = require('sanitize-html');
+import markdown from 'markdown-it';
+import sanitizeHtml from 'sanitize-html';
+import { SafeString } from '../TemplateCompiler/helpers';
 
-/**
- * Defaults
- *
- * @option {string|boolean} [editor='wysiwyg'] - determines the input type
- */
-const DEFAULTS = {
-  options: {
-    editor: 'wysiwyg',
-    images: false,
-  },
-};
+import { BaseDirective, DirectiveAttrs } from './base';
 
 const ICONS = {
   hr: '<svg width="25px" height="25px"><g fill-rule="evenodd"><path d="M8.45 12H5.3c-.247 0-.45.224-.45.5 0 .274.203.5.45.5h5.4c.247 0 .45-.226.45-.5 0-.276-.203-.5-.45-.5H8.45z"></path><path d="M17.45 12H14.3c-.247 0-.45.224-.45.5 0 .274.203.5.45.5h5.4c.248 0 .45-.226.45-.5 0-.276-.202-.5-.45-.5h-2.25z"></path></g></svg>',
@@ -34,80 +25,90 @@ const ICONS = {
   `,
 };
 
+export default class ColorDirective extends BaseDirective {
 
-module.exports = (BaseDirective) => {
-  /*
-   * HTML and/or Markdown
+  options = {
+    default: '',
+    label: '',
+    help: '',
+    priority: 0,
+    editor: 'wysiwyg',
+    images: false,
+  }
+
+  attrs: DirectiveAttrs = {
+    required: false,
+    placeholder: '',
+  }
+
+  /**
+   * Returns a Trix or ACE editor, depending on the options
+   *
+   * @param {string} name
+   * @param {string} [value='']
+   * @return rendered input
    */
-  class HTMLDirective extends BaseDirective {
-    /**
-     * @static
-     *
-     * @return {Object} default attrs and options
-     */
-    static get DEFAULTS() {
-      return DEFAULTS;
-    }
-
-    /**
-     * Returns a Trix or ACE editor, depending on the options
-     *
-     * @param {string} name
-     * @param {string} [value='']
-     * @return rendered input
-     */
-    input(name, value = this.options.default) {
-      // TODO: Maybe a help link to a Markdown cheat sheet?
-      switch (this.options.editor) {
-        case 'wysiwyg':
-          return `
-            <ul class="wysiwyg-blocks" tabindex="-1">
-              <li><a href="#" class="wysiwyg-blocks__block wysiwyg-blocks__block--btn">Button${ICONS.btn}</a></li>
-              <li><a href="#" class="wysiwyg-blocks__block wysiwyg-blocks__block--hr">Divider${ICONS.hr}</a></li>
-              <li><a href="#" class="wysiwyg-blocks__block wysiwyg-blocks__block--img">Image${ICONS.img}</a></li>
-              <li><a href="#" class="wysiwyg-blocks__block wysiwyg-blocks__block--video">Video${ICONS.vid}</a></li>
-            </ul>
-            <div class="wysiwyg" data-images="${this.options.images}">${value}</div>
-            <input id="${name}" type="hidden" name="${name}" value="${escape(value)}">`;
-        default:
-          return `
-            <div class="ace_editor"></div>
-            <textarea name="${name}">${value}</textarea>`;
-      }
-    }
-
-    /**
-     * Renders HTML
-     * Allows Markdown if given the option
-     *
-     * @param {string} value
-     * @return {string} rendered HTML
-     */
-    render(value = this.options.default) {
-      switch (this.options.editor) {
-        case 'wysiwyg':
-          return value.replace('<p><br></p>', '');
-        case 'markdown':
-          return markdown({
-            html: true,
-            breaks: true,
-          }).render(value);
-        default:
-          return value;
-      }
-    }
-
-    /**
-     * Strips HTML out for simple preview
-     *
-     * @param {string} value
-     * @return {string} plain text
-     */
-    preview(value) {
-      const dirty = this.render(value);
-      return sanitizeHtml(dirty, { allowedTags: [] });
+  input(name: string, value = this.options.default) {
+    // TODO: Maybe a help link to a Markdown cheat sheet?
+    switch (this.options.editor) {
+      case 'wysiwyg':
+        return `
+          <ul class="wysiwyg-blocks" tabindex="-1">
+            <li><a href="#" class="wysiwyg-blocks__block wysiwyg-blocks__block--btn">Button${ICONS.btn}</a></li>
+            <li><a href="#" class="wysiwyg-blocks__block wysiwyg-blocks__block--hr">Divider${ICONS.hr}</a></li>
+            <li><a href="#" class="wysiwyg-blocks__block wysiwyg-blocks__block--img">Image${ICONS.img}</a></li>
+            <li><a href="#" class="wysiwyg-blocks__block wysiwyg-blocks__block--video">Video${ICONS.vid}</a></li>
+          </ul>
+          <div class="wysiwyg" data-images="${this.options.images}">${value}</div>
+          <input id="${name}" type="hidden" name="${name}" value="${escape(value)}">`;
+      default:
+        return `
+          <div class="ace_editor"></div>
+          <textarea name="${name}">${value}</textarea>`;
     }
   }
 
-  return HTMLDirective;
-};
+  /**
+   * Renders HTML
+   * Allows Markdown if given the option
+   *
+   * @param {string} value
+   * @return {string} rendered HTML
+   */
+  async render(value = this.options.default) {
+    switch (this.options.editor) {
+      case 'wysiwyg':
+        return new SafeString(value.replace('<p><br></p>', ''));
+      case 'markdown':
+        return new SafeString(markdown({
+          html: true,
+          breaks: true,
+        }).render(value));
+      default:
+        return new SafeString(value);
+    }
+  }
+
+  /**
+   * Strips HTML out for simple preview
+   *
+   * @param {string} value
+   * @return {string} plain text
+   */
+  preview(value: string = '') {
+    let dirty: string;
+    switch (this.options.editor) {
+      case 'wysiwyg':
+        dirty = value.replace('<p><br></p>', '');
+      case 'markdown':
+        dirty = markdown({
+          html: true,
+          breaks: true,
+        }).render(value);
+      default:
+        dirty = value;
+    }
+
+    return sanitizeHtml(dirty, { allowedTags: [] });
+  }
+}

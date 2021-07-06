@@ -44,7 +44,7 @@ export default class Vapid {
     name: string;
     env: 'production' | 'development' | 'test';
     isDev: boolean;
-    url: string;
+    domain: string;
     prodUrl: string;
     paths: VapidProjectPaths;
     provider: IProvider;

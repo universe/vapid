@@ -29,10 +29,10 @@ class TextDirective extends base_1.BaseDirective {
             value = '';
         }
         if (this.options.long) {
-            return `<textarea name=${name} ${this.htmlAttrs} placeholder="${lodash_escape_1.default(this.options.default)}" resize=false>${value}</textarea>`;
+            return `<textarea name=${name} ${this.htmlAttrs()} placeholder="${lodash_escape_1.default(this.options.default)}" resize=false>${value}</textarea>`;
         }
         const type = name.toLowerCase() === 'content[email]' ? 'email' : 'text';
-        return `<input type="${type}" name="${name}" placeholder="${lodash_escape_1.default(this.options.default)}" value="${lodash_escape_1.default(value)}" ${this.htmlAttrs}>`;
+        return `<input type="${type}" name="${name}" placeholder="${lodash_escape_1.default(this.options.default)}" value="${lodash_escape_1.default(value)}" ${this.htmlAttrs()}>`;
     }
 }
 exports.default = TextDirective;

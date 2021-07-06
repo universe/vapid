@@ -34,10 +34,10 @@ const pluralize = __importStar(require("pluralize"));
 ;
 class Record {
     constructor(data, template) {
-        this.id = 0;
         this.template = template;
         this.id = data.id;
         this.templateId = data.templateId;
+        this.parentId = data.parentId;
         this.content = data.content;
         this.metadata = data.metadata;
         this.position = data.position;
@@ -49,7 +49,10 @@ class Record {
         return this.id === 0;
     }
     defaultName() {
-        const defaultName = this.template.name === 'index' ? 'Home' : this.template.name;
+        let defaultName = this.template.name === 'index' ? 'Home' : this.template.name;
+        if (this.template.type === 'collection') {
+            defaultName = pluralize.singular(defaultName);
+        }
         return this.isFirst() ? defaultName : `${defaultName} ${this.id}`;
     }
     name() {
@@ -59,12 +62,16 @@ class Record {
         return util_1.toTitleCase(this.metadata.name || this.slug || this.defaultName());
     }
     defaultSlug() {
-        const name = util_1.toKebabCase(this.content.title || this.content.name || '');
+        let name = this.content.title || this.content.name || '';
+        name = name || (this.template.isCollection()) ? pluralize.singular(this.template.name) : this.template.name;
+        name = util_1.toKebabCase(name);
         if (this.isFirst() && this.template.name === 'index') {
             return '';
         }
-        // if (this.isFirst && name) { return name; }
-        return `${name || this.template.name}-${this.id}`;
+        if (this.isFirst() && name) {
+            return name;
+        }
+        return `${name}-${this.id}`;
     }
     safeSlug() {
         const customSlug = (this.slug || '').replace(`{${this.template.id}}`, '');
@@ -94,33 +101,34 @@ class Record {
     getMetadata(currentUrl, provider) {
         return __awaiter(this, void 0, void 0, function* () {
             const permalink = this.permalink();
-            const collection = provider ? yield provider.getCollectionByName(this.template.name) : null;
+            const children = (yield provider.getChildren(this.id)) || null;
             return {
                 id: this.id,
                 name: this.name(),
-                url: this.template.hasView() ? this.permalink() : null,
-                slug: this.template.hasView() ? this.safeSlug() : null,
+                template: this.template.name,
+                createdAt: this.createdAt,
+                updatedAt: this.updatedAt,
+                slug: this.template.hasView() ? this.permalink() : null,
                 isNavigation: !!this.metadata.isNavigation,
-                isActive: permalink === '/' ? (permalink === currentUrl || currentUrl === 'index') : currentUrl.indexOf(permalink) === 0,
+                hasChildren: !!children.length,
+                children: yield Promise.all(children.filter(r => r.id !== this.id).map(r => r.getMetadata(currentUrl, provider))),
+                isActive: permalink === '/' ? (permalink === currentUrl || currentUrl === 'index') : currentUrl === permalink,
+                isParentActive: permalink === '/' ? (permalink === currentUrl || currentUrl === 'index') : currentUrl.indexOf(permalink) === 0,
                 title: this.metadata.title || null,
                 description: this.metadata.description || null,
                 redirectUrl: this.metadata.redirectUrl || null,
-                hasSubNav: !!(collection && collection.records.length && collection.template.hasView()),
-                subNav: yield Promise.all(((collection || {}).records || []).map(r => r.getMetadata(currentUrl))),
-                createdAt: this.createdAt,
-                updatedAt: this.updatedAt,
-                hasCollection: !!collection,
-                template: this.template.name,
             };
         });
     }
     toJSON() {
         return {
             id: this.id,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
             template: this.template.toJSON(),
             templateId: this.templateId,
-            content: this.content,
-            metadata: this.metadata,
+            content: this.content || {},
+            metadata: this.metadata || {},
             position: this.position,
             slug: this.slug,
             isFirst: this.isFirst(),

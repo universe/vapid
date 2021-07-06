@@ -3,9 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DateHelper = exports.ImageHelper = exports.LinkHelper = exports.MathHelper = exports.EqHelper = exports.EachHelper = exports.CollateHelper = exports.UnlessHelper = exports.IfHelper = exports.CollectionHelper = exports.SectionHelper = void 0;
-var SectionHelper_1 = require("./SectionHelper");
-Object.defineProperty(exports, "SectionHelper", { enumerable: true, get: function () { return __importDefault(SectionHelper_1).default; } });
+exports.DateHelper = exports.ImageHelper = exports.LinkHelper = exports.MathHelper = exports.EqHelper = exports.EachHelper = exports.CollateHelper = exports.UnlessHelper = exports.IfHelper = exports.CollectionHelper = exports.SafeString = void 0;
+var types_1 = require("./types");
+Object.defineProperty(exports, "SafeString", { enumerable: true, get: function () { return types_1.SafeString; } });
 var CollectionHelper_1 = require("./CollectionHelper");
 Object.defineProperty(exports, "CollectionHelper", { enumerable: true, get: function () { return __importDefault(CollectionHelper_1).default; } });
 var IfHelper_1 = require("./IfHelper");

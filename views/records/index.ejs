@@ -8,46 +8,55 @@
     </ul>
   <% } %>
 
-  <% if (collection && page) { %>
+  <% if (pageRecord) { %>
     <ul class="sub-menu">
-      <li><a href="/dashboard/pages/<%- page.safeSlug %>">Page</a></li>
-      <li><a href="/dashboard/collection/<%- template.name %>" class="active">Records</a></li>
+      <li><a href="/dashboard/page<%- pageRecord.permalink %>">Page</a></li>
+      <li><a href="/dashboard/collection<%- pageRecord.permalink %>" class="active">Records</a></li>
     </ul>
   <% } %>
 </div>
 
 <section class="section">
-  <% if (page) { %>
-    <form class="form" action="/dashboard/pages/<%- page.template.name %>/records/<%- page.id %>" method="post" enctype="multipart/form-data" data-autosave="true" novalidate>
+  <% if (pageRecord) { %>
+    <form class="form" action="/dashboard/<%- template.type %><%- pageRecord ? pageRecord.permalink : `/${template.name}` %>" method="post" enctype="multipart/form-data" data-autosave="true" novalidate>
       <section class="metadata">
         <div class="content">
           <h3>Page Settings</h3>
           <div class="metadata__split-section">
             <%- Form.field(`metadata[name]`, 'name', {
-              default: page && page.defaultName,
+              default: pageRecord && pageRecord.defaultName,
               required: false,
               help: 'Human readable name used for site navigation.'
-            }, (page) ? page.metadata.name : '', errors.hasOwnProperty('metadata[name]') && errors['metadata[name]'], { pages }) %>
+            }, pageRecord.metadata.name || '', errors.hasOwnProperty('metadata[name]') && errors['metadata[name]'], { pages }) %>
             <%- Form.field(`metadata[slug]`, 'slug', {
-              default: page && page.defaultSlug,
+              type: 'url',
+              default: pageRecord && pageRecord.defaultSlug,
               required: false,
-              help: 'The URL where this page can be found.'
-            }, page && page.metadata.slug, errors.slug, { pages }) %>
+              help: 'The URL where this page can be found.',
+              prefix: '/',
+            }, pageRecord.metadata.slug, errors.slug, { pages }) %>
             <%- Form.field(`metadata[title]`, 'title', {
-              default: page && page.defaultTitle,
+              default: pageRecord && pageRecord.defaultTitle,
               required: false,
               help: "This page's title, as will appear in search results."
-            }, page && page.metadata.title, errors.title, { pages }) %>
+            }, pageRecord.metadata.title, errors.title, { pages }) %>
             <%- Form.field(`metadata[description]`, 'description', {
-              default: page && page.defaultDescription,
+              default: pageRecord && pageRecord.defaultDescription,
               required: false,
               help: "This page's description, as will appear in search results."
-            }, page && page.metadata.description, errors.description, { pages }) %>
+            }, pageRecord.metadata.description, errors.description, { pages }) %>
             <%- Form.field(`metadata[redirectUrl]`, 'redirectUrl', {
-              default: page && page.redirectUrl,
+              default: pageRecord && pageRecord.redirectUrl,
               required: false,
               help: "Redirect this page to a new location."
-            }, page && page.metadata.redirectUrl, errors.redirectUrl, { pages }) %>
+            }, pageRecord.metadata.redirectUrl, errors.redirectUrl, { pages }) %>
+            <%- Form.field(`metadata[createdAt]`, 'createdAt', {
+              type: 'date',
+              time: true,
+              default: pageRecord && pageRecord.createdAt,
+              required: false,
+              help: "Date created."
+            }, pageRecord.metadata.createdAt, errors.createdAt, { pages }) %>
           </div>
           <input type="hidden" name="_csrf" value="<%- csrf %>">
           <input type="submit" class="button">
@@ -56,7 +65,7 @@
     </form>
   <% } %>
   <div class="wide content">
-    <a href="/dashboard/<%- template.typePlural %>/<%- template.name %>/records/new" class="small button button--right">New <%- template.labelSingular %></a>
+    <a href="/dashboard/new/collection<%- pageRecord ? pageRecord.permalink : `/${template.name}` %>" class="small button button--right">New <%- template.labelSingular %></a>
     <table class="preview table <%- tableAction %>">
       <thead>
         <tr>
@@ -67,13 +76,13 @@
         </tr>
       </thead>
       <tbody>
-        <% template.records.forEach(record => { %>
+        <% records.forEach(record => { %>
         <tr data-id="<%- record.id %>">
           <% template.tableColumns.forEach(key => { %>
-          <td><%- record.previewContent(key.toLowerCase(), template) %></td>
+          <td><%- previewContent(record, key.toLowerCase(), template) %></td>
           <% }) %>
           <td class="right aligned">
-            <a href="/dashboard/<%- template.typePlural %>/<%- template.name %>/records/<%- record.id %>" class="small basic button">
+            <a href="/dashboard/<%- template.type %><%- record.permalink %>" class="small basic button">
               Edit
             </a>
           </td>

@@ -23,6 +23,7 @@ function withVapid(command) {
       // TODO: Deployer throws err.message, handle better
       const message = err.response && err.response.body ? err.response.body.message : err.message;
       Logger.error(message);
+      console.error(err);
       process.exit(1);
     }
   };

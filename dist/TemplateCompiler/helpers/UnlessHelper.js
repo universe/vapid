@@ -8,14 +8,12 @@ const UnlessHelper = {
     isField: false,
     isBranch: false,
     getType() { return null; },
-    run(input, ...args) {
-        let condition = input;
+    run([condition, value1, value2]) {
         if (`${condition}`.startsWith('data:')) {
             condition = false;
         }
-        return IfHelper_1.default.run.call(this, !condition, ...args);
+        return IfHelper_1.default.run.call(this, [!condition, value1, value2]);
     },
-    blockParam() { return undefined; }
 };
 exports.default = UnlessHelper;
 //# sourceMappingURL=UnlessHelper.js.map

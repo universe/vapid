@@ -65,14 +65,6 @@ class Template {
         return pluralize.singular(this.type);
     }
     /**
-     * Pluralized type
-     *
-     * @return {string}
-     */
-    typePlural() {
-        return pluralize.plural(this.type);
-    }
-    /**
      * Table column
      * Primarily used by dashboard index page
      *
@@ -82,10 +74,10 @@ class Template {
         return Object.keys(this.fields).sort((key1, key2) => {
             const val1 = this.fields[key1];
             const val2 = this.fields[key2];
-            if ((val1.priority || Infinity) > (val2.priority || Infinity)) {
+            if (((val1 === null || val1 === void 0 ? void 0 : val1.priority) || Infinity) > ((val2 === null || val2 === void 0 ? void 0 : val2.priority) || Infinity)) {
                 return 1;
             }
-            if ((val1.priority || Infinity) < (val2.priority || Infinity)) {
+            if (((val1 === null || val1 === void 0 ? void 0 : val1.priority) || Infinity) < ((val2 === null || val2 === void 0 ? void 0 : val2.priority) || Infinity)) {
                 return -1;
             }
             if (key1 === 'title' || key1 === 'name') {
@@ -106,7 +98,7 @@ class Template {
      * @return {array}
      */
     tableColumnsHeaders() {
-        return this.tableColumns().map(key => this.fields[key].label || util_1.toTitleCase(key));
+        return this.tableColumns().map(key => { var _a; return ((_a = this.fields[key]) === null || _a === void 0 ? void 0 : _a.label) || util_1.toTitleCase(key); });
     }
     /**
      * Quick way to check if Template has any fields
@@ -127,13 +119,9 @@ class Template {
             .sort((a, b) => (parseInt(`${a.priority}`, 10) < parseInt(`${b.priority}`, 10) ? -1 : 1));
     }
     isCollection() { return this.type === 'collection'; }
+    hasCollection() { fs.existsSync(path.join(process.env.TEMPLATES_PATH, 'collections', `${this.name}.html`)); }
     isPage() { return this.type === 'page'; }
-    hasRecordPage() {
-        return fs.existsSync(path.join(process.env.TEMPLATES_PATH, 'collections', `${this.name}.html`));
-    }
-    hasBasePage() {
-        return fs.existsSync(path.join(process.env.TEMPLATES_PATH, `${this.name}.html`));
-    }
+    hasPage() { return fs.existsSync(path.join(process.env.TEMPLATES_PATH, `${this.name}.html`)); }
     /**
      * If this template has a backing view to render a dedicated page.
      *
@@ -159,15 +147,14 @@ class Template {
             label: this.label(),
             labelSingular: this.labelSingular(),
             typeSingular: this.typeSingular(),
-            typePlural: this.typePlural(),
             tableColumns: this.tableColumns(),
             tableColumnsHeaders: this.tableColumnsHeaders(),
             hasFields: this.hasFields(),
             sortedFields: this.sortedFields(),
             isCollection: this.isCollection(),
+            hasCollection: this.hasCollection(),
             isPage: this.isPage(),
-            hasRecordPage: this.hasRecordPage(),
-            hasBasePage: this.hasBasePage(),
+            hasPage: this.hasPage(),
             hasView: this.hasView(),
         };
     }

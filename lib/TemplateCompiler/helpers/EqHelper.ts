@@ -4,8 +4,7 @@ const EqHelper: NeutrinoHelper = {
   isField: false,
   isBranch: false,
   getType() { return 'eq'; },
-  blockParam() { return undefined; },
-  run(value1: unknown, value2: unknown): string {
+  run([value1, value2]): string {
     return value1 === value2 ? 'true' : 'false';
   },
 };

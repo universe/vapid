@@ -32,7 +32,7 @@ export declare abstract class BaseDirective<DirectiveType = string> {
     meta: {
         pages: Record[];
     };
-    constructor(params?: {}, meta?: {});
+    init(params?: {}, meta?: {}): this;
     /**
      * Converts attrs object into HTML key=value attributes
      * Typically used by the input method
@@ -43,7 +43,7 @@ export declare abstract class BaseDirective<DirectiveType = string> {
      * Typically used in the dashboard forms, or front-end contact forms
      */
     abstract input(name: string, value: DirectiveType): string;
-    preview(value?: DirectiveType): string;
+    preview(value: DirectiveType | undefined): string;
     render(value?: DirectiveType): Promise<string | BlockRenderer>;
     serialize(value?: DirectiveType): DirectiveType;
 }

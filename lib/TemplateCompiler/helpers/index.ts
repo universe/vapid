@@ -1,5 +1,4 @@
-export { NeutrinoHelper, IAlias, ParsedExpr } from './types';
-export { default as SectionHelper } from './SectionHelper';
+export { NeutrinoHelper, ParsedExpr, SafeString } from './types';
 export { default as CollectionHelper } from './CollectionHelper';
 export { default as IfHelper } from './IfHelper';
 export { default as UnlessHelper } from './UnlessHelper';

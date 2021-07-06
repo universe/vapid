@@ -16,10 +16,4 @@ export declare function getDashboardPaths(): {
  * @returns {boolean | string} Will return a string if there is a human readable error.
  */
 export declare function isAssetPath(filePath: string): string | boolean;
-/**
- * Asserts that a given path is a public asset path. Throws if is private.
- *
- * @param {string} path
- */
-export declare function assertPublicPath(filePath: string): void;
 export declare function getRecordFromPath(permalink: string, db: IProvider): Promise<Record | null>;

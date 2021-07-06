@@ -103,9 +103,7 @@ export default class VapidServer extends Vapid {
     await this.database.start();
 
     // Build if necessary
-    if (this.buildOnStart) {
-      await this.database.rebuild();
-    }
+    await this.database.rebuild();
 
     // If watcher is present, attach its WebSocket server
     // and register the callback

@@ -33,10 +33,12 @@ function coerceType(val) {
  * These are the crux of Vapid, allowing templates to specify input attributes and render content.
  */
 class BaseDirective {
-    constructor(params = {}, meta = {}) {
+    constructor() {
         this.meta = {
             pages: [],
         };
+    }
+    init(params = {}, meta = {}) {
         this.meta = Object.assign(Object.assign({}, this.meta), meta);
         // Separate options and attributes, discarding ones that aren't explicity specified
         for (const [key, value] of Object.entries(params)) {
@@ -48,6 +50,7 @@ class BaseDirective {
                 this.attrs[key] = coerced;
             }
         }
+        return this;
     }
     /**
      * Converts attrs object into HTML key=value attributes
@@ -62,8 +65,8 @@ class BaseDirective {
         }, []);
         return pairs.join(' ');
     }
-    preview(value = this.options.default) {
-        return lodash_escape_1.default(`${value}`);
+    preview(value) {
+        return lodash_escape_1.default(`${value || this.options.default}`);
     }
     render(value = this.options.default) {
         return __awaiter(this, void 0, void 0, function* () {

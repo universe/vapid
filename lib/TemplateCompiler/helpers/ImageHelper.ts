@@ -1,17 +1,13 @@
 import { NeutrinoHelper } from './types';
-import * as directives from '../../directives';
 
-const LinkHelper: NeutrinoHelper = {
-  getType() { return 'image'; },
-  run(value, options) {
-    const image = directives.get('image').normalize((typeof value === 'function') ? value() : value);
-    const context = { blockParams: [image] };
-    // if (!image.url || !link.name) { return options.inverse ? options.inverse(this) : ''; }
-    return image ? options.fn(this, context) : '';
-  },
-  isField: false,
+const ImageHelper: NeutrinoHelper = {
+  isField: true,
   isBranch: false,
-  blockParam() { return undefined; },
+  getType() { return 'image'; },
+  run([image], _hash, options) {
+    if (!image) { return options.inverse ? options.inverse() : ''; }
+    return image ? options.block?.([image]) : '';
+  },
 };
 
-export default LinkHelper;
+export default ImageHelper;
