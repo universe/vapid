@@ -3,7 +3,7 @@ const { resolve } = require('path');
 const tmp = require('tmp');
 
 const Builder = require('../lib/Database/Builder');
-const { Utils } = require('../lib/utils');
+const { Utils } = require('../lib/generator');
 
 const templatesDir = resolve(__dirname, 'fixtures', 'builder');
 
@@ -30,7 +30,7 @@ describe('#tree', () => {
     fs.writeFileSync(resolve(tmpDir, 'new.html'), newHTML);
     expect(builder.tree).toMatchSnapshot();
 
-    Utils.removeFiles(tmpDir);
+    fs.rmdirSync(tmpDir, { recursive: true });
   });
 
   test('correctly creates fields in general when only referenced in a section', () => {
@@ -48,7 +48,7 @@ describe('#tree', () => {
     expect(Object.keys(builder.tree.general.fields)).toEqual(['name', 'foo', 'bar']);
     expect(Object.keys(builder.tree.child.fields)).toEqual([]);
 
-    Utils.removeFiles(tmpDir);
+    fs.rmdirSync(tmpDir, { recursive: true });
   });
 });
 

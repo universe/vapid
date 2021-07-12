@@ -1,0 +1,88 @@
+.button {
+  display: inline-block;
+  min-width: 11.1rem;
+  padding: 1.2rem 2rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1em;
+  text-align: center;
+  text-decoration: none;
+  color: white;
+  border: none;
+  border-radius: 2px;
+  white-space: nowrap;
+  cursor: pointer;
+  background-color: var(--purple-light);
+  background-image: linear-gradient(to bottom, transparent, var(--purple));
+
+  outline: none;
+  transition: background-color .15s, color .15s;
+}
+
+.button:hover {
+  background-color: var(--purple);
+  text-decoration: none;
+}
+
+.button.disabled {
+  background: var(--grey);
+  cursor: default;
+}
+
+.button.small {
+  min-width: 7rem;
+  padding: 0.6rem 1rem;
+  font-size: 1.4rem;
+}
+
+.button.basic {
+  color: var(--purple);
+  border: 1px solid var(--purple);
+  background: white;
+}
+
+.button.basic:hover {
+  color: white;
+  background: var(--purple);
+}
+
+.button.orange {
+  color: white;
+  background-color: var(--orange);
+  background-image: linear-gradient(to bottom, transparent, var(--orange-dark));
+  border: 1px solid var(--orange-darker);
+}
+
+.button.orange:hover {
+  background-color: var(--orange-dark);
+}
+
+.button.red {
+  background-color: var(--red-darker);
+  background-image: linear-gradient(to bottom, var(--red-dark), transparent);
+}
+
+.button.red:hover {
+  background-color: var(--red-dark);
+}
+
+.button.basic.red {
+  color: var(--red);
+  background: white;
+  border-color: var(--red);
+}
+
+.button.basic.red:hover {
+  color: white;
+  background: red;
+}
+
+.button.block {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.button.button--right {
+  float: right;
+}

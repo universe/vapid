@@ -6,7 +6,9 @@
     "no-use-before-define": "off",
     "no-continue": "off",
     "no-restricted-syntax": ["off", "ForOfLoop"],
-    "no-restricted-globals": ["off", "isNaN"]
+    "no-restricted-globals": ["off", "isNaN"],
+    "class-methods-use-this": "off",
+    "no-param-reassign": "off"
   },
   "env": {
     "jest/globals": true

@@ -6,7 +6,7 @@ const tmp = require('tmp');
 const { existsSync, statSync } = require('fs');
 const { join, resolve } = require('path');
 const imageSize = require('image-size');
-const Utils = require('../lib/utils');
+const fs = require('fs');
 
 let app;
 let server;
@@ -51,7 +51,7 @@ describe('image processing', () => {
   });
 
   afterAll(() => {
-    Utils.removeFiles(tmpDir);
+    fs.rmdirSync(tmpDir, { recursive: true });
   });
 
   // TODO: Is there a better way to test next() being called than 404?

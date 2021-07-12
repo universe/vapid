@@ -1,0 +1,25 @@
+footer {
+  padding: 3rem 0 6rem;
+  text-align: center;
+}
+
+footer .vapid {
+  display: inline-block;
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--grey);
+}
+
+footer .vapid svg {
+  width: 5.2rem;
+  margin-right: 0.5rem;
+}
+
+footer .vapid svg path {
+  fill: var(--grey-dark);
+}
+
+footer .vapid:hover svg path {
+  fill: var(--grey-darkest);
+}

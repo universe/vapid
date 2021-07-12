@@ -1,0 +1,118 @@
+{{#if error}}
+  {{{body}}}
+{{else}}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{title}} | Vapid Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="csrf-token" content="{{csrf}}">
+  <link rel="stylesheet" href="https://uicdn.toast.com/tui-image-editor/latest/tui-image-editor.css">
+  <link rel="stylesheet" href="/dashboard/static/stylesheets/dashboard.css" data-turbolinks-track="reload">
+  <script src="/dashboard/static/javascripts/dashboard.js" data-turbolinks-track="reload"></script>
+  <script>
+    document.write('<script async deferred src="//' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>')
+  </script>
+</head>
+<body class="dashboard">
+  <div class="image-editor" id="image-editor">
+    <div id="tui-image-editor"></div>
+    <button class="image-editor__discard" id="image-editor-discard">Discard</button>
+    <button class="image-editor__save" id="image-editor-save">Save</button>
+  </div>
+  <header class="navbar">
+    <h2>
+      <a href="/dashboard" class="switch-website">{{siteName}}</a>
+    </h2>
+
+    {{#if showBuild}}
+      <a href="/dashboard/build" class="orange build action button {{#unless needsBuild}}hidden{{/unless}}">  <span>Site has changed, rebuild now.</span></a>
+      <a href="{{#if record}}{{record.permalink}}{{else}}/{{/if}}" class="view action button {{#if needsBuild}}hidden{{/if}}" target="_blank"><span>Preview</span></a>
+      <a href="/dashboard/deploy" class="deploy action button {{#if needsBuild}}hidden{{/if}}" target="_blank"><span>Deploy</span></a>
+    {{else}}
+      <a href="{{#if record}}{{record.permalink}}{{else}}/{{/if}}" class="view action button" target="_blank"><span>Preview</span></a>
+      <a href="/dashboard/deploy" class="deploy action button" target="_blank"><span>Deploy</span></a>
+    {{/if}}
+  </header>
+
+  <div>
+    <div class="left rail">
+      <nav class="sidebar">
+        <div>
+
+          <div class="item">
+            <div class="header">Pages</div>
+            <div class="menu sortable">
+              {{#each pages}}
+                {{#if isNavigation}}
+                  <a href="/dashboard/page{{permalink}}" data-id="{{id}}" class="{{#if (eq ../page.id id)}}active{{/if}} item">
+                    <img src="{{#if hasCollection}}/dashboard/static/images/collection.svg{{else}}/dashboard/static/images/page.svg{{/if}}" />
+                    {{#if name}}{{name}}{{else}}Home{{/if}}
+                  </a>
+                {{/if}}
+              {{/each}}
+              <hr class="sidebar__divider" />
+              {{#each pages}}
+                {{#unless isNavigation}}
+                  <a href="/dashboard/page{{permalink}}" data-id="{{id}}" class="{{#if (eq ../page.id id)}}active{{/if}} item">
+                    <img src="{{#if hasCollection}}/dashboard/static/images/collection.svg{{else}}/dashboard/static/images/page.svg{{/if}}" />
+                    {{#if name}}{{name}}{{else}}Home{{/if}}
+                  </a>
+                {{/unless}}
+              {{/each}}
+            </div>
+            <a href="/dashboard/new" class="sidebar__add-page">Add a Page</a>
+          </div>
+
+          {{#if collections}}
+            <div class="item">
+              <div class="header">Collections</div>
+              <div class="menu">
+                {{#each collections}}
+                  {{#unless hasPage}}
+                    <a href="/dashboard/collection/{{name}}" class="{{#if (eq ../collectionTemplate.id id)}}active{{/if}} item">
+                      <img src="/dashboard/static/images/collection.svg" />
+                      {{name}}
+                    </a>
+                  {{/unless}}
+                {{/each}}
+              </div>
+            </div>
+          {{/if}}
+
+          {{#if settings}}
+            <div class="item">
+              <div class="header">Settings</div>
+              <div class="menu">
+                {{#each settings}}
+                  <a href="/dashboard/settings/{{name}}" class="{{#if (eq ../pageTemplate.id id)}}active{{/if}} item">
+                    <img src="/dashboard/static/images/settings.svg" />
+                    {{name}}
+                  </a>
+                {{/each}}
+              </div>
+            </div>
+          {{/if}}
+
+        </div>
+      </nav>
+    </div>
+
+    <main>
+      {{{body}}}
+    </main>
+
+    <div class="right rail"></div>
+  </div>
+
+  <footer>
+    <a href="https://www.vapid.com" class="vapid">
+      <img src="/dashboard/static/images/logo.svg" />
+    </a>
+  </footer>
+</body>
+</html>
+{{/if}}

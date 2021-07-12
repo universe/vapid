@@ -1,0 +1,326 @@
+.form {
+	/** * Semantic UI overrides */
+}
+ .form input, .form textarea, .form .wysiwyg {
+	 font-family: inherit;
+	 font-size: inherit;
+	 -webkit-appearance: none;
+	 -moz-appearance: none;
+	 appearance: none;
+	 outline: none;
+}
+ .form .wysiwyg::after {
+	 content: "";
+	 display: table;
+	 clear: both;
+}
+ .form input:not(.button), .form textarea {
+	 display: block;
+	 width: 100%;
+	 padding: 1rem 1rem 1.1rem;
+	 border: 1px solid var(--grey-light);
+	 border-radius: 2px;
+}
+ .form input:not(.button)::-webkit-input-placeholder, .form textarea::-webkit-input-placeholder {
+	 color: var(--grey);
+}
+ .form input:not(.button)::-moz-placeholder, .form textarea::-moz-placeholder {
+	 color: var(--grey);
+}
+ .form input:not(.button):-ms-input-placeholder, .form textarea:-ms-input-placeholder {
+	 color: var(--grey);
+}
+ .form input:not(.button):-moz-placeholder, .form textarea:-moz-placeholder {
+	 color: var(--grey);
+}
+ .form .wysiwyg, .form .ace_editor {
+	font-size: inherit;
+	min-height: 10rem;
+	border: 1px solid var(--grey-light);
+	border-radius: 2px;
+	height: 300px;
+}
+
+.ace-editor__textarea {
+	opacity: 0.001;
+	position: absolute;
+	width: 1px;
+	height: 1px;
+}
+
+ .form .ql-toolbar {
+	 border-radius: 2px 2px 0 0;
+}
+ .form .wysiwyg {
+	 border-radius: 0 0 2px 2px;
+}
+ .form .fieldset {
+	 border: 0;
+	 margin-left: 2.4rem;
+}
+ .form .fieldset label {
+	 margin-top: 1.2rem;
+}
+ .form .fieldset small {
+	 display: block;
+}
+ .form .field, .form .fields {
+	 margin-bottom: 4rem;
+}
+ .form .field.submit, .form .fields.submit {
+	 margin-top: -2rem;
+	 margin-bottom: 0;
+	 position: sticky;
+	 bottom: 0;
+	 padding: 1.2rem 0;
+	 background: white;
+	 z-index: 999;
+}
+ .form .field.inline, .form .fields.inline {
+	 margin-bottom: 0;
+}
+ .form .field.inline input.button, .form .fields.inline input.button {
+	 margin-top: 1rem;
+}
+ @media (min-width: 768px) {
+	 .form .field.inline, .form .fields.inline {
+		 display: flex;
+		 margin-bottom: 1em;
+	}
+	 .form .field.inline input.button, .form .fields.inline input.button {
+		 margin-top: 0;
+		 margin-left: 1rem;
+	}
+}
+ .form .field label, .form .fields label {
+	 display: block;
+	 font-size: 1.6rem;
+	 font-weight: 600;
+	 margin-bottom: 1rem;
+}
+ .form .field label.hidden, .form .fields label.hidden {
+	 font-size: 0;
+	 width: 0;
+	 margin-bottom: 0;
+}
+ .form .field label + small, .form .fields label + small {
+	 margin-top: -1rem;
+	 margin-bottom: 1rem;
+}
+ .form .field label small, .form .fields label small {
+	 display: block;
+	 font-size: 1.2rem;
+	 font-weight: 400;
+	 color: var(--grey-dark);
+}
+ .form .field.required label:after, .form .fields.required label:after {
+	 display: inline-block;
+	 content: '*';
+	 color: var(--red);
+	 margin-left: 0.5rem;
+}
+ .form .field > small, .form .fields > small {
+	 display: block;
+	 font-size: 1.2rem;
+	 color: var(--grey-dark);
+}
+ .form .field > small.error-message, .form .fields > small.error-message {
+	 color: var(--red);
+	 margin-top: 0.5rem;
+}
+ .form .field.error .wysiwyg, .form .fields.error .wysiwyg, .form .field.error .ace_editor, .form .fields.error .ace_editor, .form .field.error .previewable, .form .fields.error .previewable, .form .field.error .dropdown.selection, .form .fields.error .dropdown.selection, .form .field.error .ui.checkbox label:before, .form .fields.error .ui.checkbox label:before, .form .field.error input:not(.button), .form .fields.error input:not(.button) {
+	 background-color: var(--red-lighter);
+	 border-color: var(--red);
+}
+ .form .field.error .ql-toolbar, .form .fields.error .ql-toolbar {
+	 border-top-color: var(--red);
+	 border-right-color: var(--red);
+	 border-left-color: var(--red);
+}
+ .form .field__choice {
+	 position: relative;
+	 display: flex;
+	 flex-flow: column;
+	 padding: 0 0 0 3.2rem;
+	 border: 1px solid var(--grey-light);
+	 border-radius: 8px;
+	 user-select: none;
+}
+ .form .field__choice .checkbox.checkbox--single {
+	 position: absolute;
+	 top: 50%;
+	 transform: translateY(-50%);
+	 left: 1.4rem;
+}
+ .form .field__choice .checkbox--multiple {
+	 margin-left: -14px;
+}
+ .form .field__choice > label {
+	 cursor: pointer;
+	 margin: 0;
+	 padding: 1.2rem;
+}
+ .form .field__choice .ui.dropdown {
+	 width: calc(100% - 1.2rem);
+	 margin-bottom: 1.2rem;
+}
+ .form .field__link fieldset {
+	 position: relative;
+	 padding: 1.2rem;
+	 border: 1px solid var(--grey-light);
+	 border-radius: 8px;
+	 user-select: none;
+	 margin-left: 0;
+}
+ .form .field__link label {
+	 margin-top: 0;
+}
+ .form .field__link select {
+	 -webkit-appearance: none;
+	 appearance: none;
+	 font: inherit;
+	 width: calc(50% - 1.2rem);
+	 border: 1px solid var(--grey-light);
+	 padding: 1.2rem 3.2rem 1.2rem 1.2rem;
+	 line-height: 1;
+	 background: white;
+	 border-radius: 2px;
+	 float: left;
+   background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23909eb2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+	 background-position: center right 1rem;
+	 background-size: 1.2rem;
+	 background-repeat: no-repeat;
+	 color: var(--grey);
+}
+ .form .field__link select.selected {
+	 color: var(--grey-darkest);
+}
+ .form .field__link input[type=text] {
+	 margin-bottom: 1.2rem;
+}
+ .form .field__link input[type=url] {
+	 width: calc(50% - 1.2rem);
+	 float: right;
+}
+ .form .field__link span {
+	 width: 2.4rem;
+	 font: inherit;
+	 padding: 1.2rem 0;
+	 display: inline-block;
+	 text-align: center;
+	 line-height: 1;
+	 color: var(--grey-dark);
+}
+ .form .field__link.required fieldset label::after {
+	 display: none;
+}
+ .form div.previewable {
+	 border: 1px solid rgba(34, 36, 38, .15);
+	 border-radius: 2px;
+	 position: relative;
+	 width: 100%;
+	 padding: 0 0 56.25% 0;
+	 height: 0;
+}
+ .form div.previewable::before {
+	 content: "Upload an Image";
+	 position: absolute;
+	 width: 100%;
+	 height: 100%;
+	 top: 0;
+	 left: 0;
+	 display: flex;
+	 justify-content: center;
+	 align-items: center;
+	 font-size: 2.4rem;
+	 color: var(--grey-light);
+	 background: var(--grey-lightest);
+	 z-index: 0;
+}
+ .form div.previewable input:first-of-type {
+	 padding: 0;
+	 border: 0;
+	 position: absolute;
+	 top: 0;
+	 left: 0;
+	 bottom: 0;
+	 right: 0;
+	 opacity: 0;
+	 cursor: pointer;
+	 z-index: 1;
+}
+ .form div.previewable .preview {
+	 display: block;
+	 margin: 0;
+	 object-fit: contain;
+	 object-position: center;
+	 position: absolute;
+	 width: calc(100% - 2.4rem);
+	 height: calc(100% - 2.4rem);
+	 top: 1.2rem;
+	 left: 1.2rem;
+	 border-radius: 3px;
+	 z-index: 0;
+	 background: var(--grey-lightest);
+}
+ .form div.previewable .preview[src=""], .form div.previewable .preview[src=""] + .ui.checkbox {
+	 display: none;
+}
+ .form div.previewable .ui.checkbox {
+	 position: absolute;
+	 bottom: 1.2rem;
+	 right: 1.2rem;
+	 margin: 0;
+	 padding: 0.8rem 1.2rem;
+	 border-radius: 4px;
+	 background-color: rgba(0, 0, 0, .85);
+	 z-index: 2;
+}
+ .form div.previewable .ui.checkbox label {
+	 margin: 0;
+	 color: white;
+	 padding: 0;
+	 font-weight: 600;
+}
+ .form div.previewable .ui.checkbox label::before {
+	 display: none;
+}
+ .form .ui.checkbox {
+	 display: block;
+	 margin-bottom: 0.5rem;
+}
+ .form .ui.checkbox:after {
+	 display: none;
+}
+ .form .ui.label:hover {
+	 text-decoration: none;
+}
+ .form .input__url {
+	 display: flex;
+	 justify-content: center;
+	 align-items: center;
+	 font-size: 1.4rem;
+}
+ .form .input__url span {
+	 display: inline-block;
+	 width: 100%;
+	 padding: 1rem 1rem 1.2rem;
+	 border: 1px solid #c9d4e3;
+	 border-radius: 2px;
+	 box-sizing: border-box;
+	 background: white;
+	 width: fit-content;
+	 padding-right: 1rem;
+	 border-right: transparent;
+	 height: 4rem;
+	 border-radius: 2px 0 0 2px;
+	 position: relative;
+	 z-index: 1;
+	 color: black;
+	 background: rgba(0, 0, 0, .05);
+}
+ .form .input__url input {
+	 padding-left: 0.8rem;
+	 border-left: transparent;
+	 border-radius: 0 2px 2px 0;
+}

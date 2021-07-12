@@ -1,29 +1,28 @@
 #!/usr/bin/env node
 const path = require('path');
+const logger = require('pino')();
 
 const program = require('commander');
 const updateNotifier = require('update-notifier');
 
 const pkg = require('../package.json');
-const services = require('../lib/services');
-const Generator = require('../lib/generator');
-const { Logger } = require('../lib/utils');
-const VapidServer = require('../lib/runners/VapidServer');
-const VapidBuilder = require('../lib/runners/VapidBuilder');
-const VapidDeployer = require('../lib/runners/VapidDeployer');
+// const Generator = require('../dist/generator');
+const { default: VapidServer } = require('../dist/runners/VapidServer');
+const { default: VapidBuilder } = require('../dist/runners/VapidBuilder');
+// const VapidDeployer = require('../dist/runners/VapidDeployer');
 
 function withVapid(command) {
   return async (target) => {
     try {
       const cwd = target instanceof program.Command ? process.cwd() : target;
+      process.env.TEMPLATES_PATH = path.join(cwd, 'www');
       const vapid = new VapidServer(cwd);
-
       updateNotifier({ pkg }).notify({ isGlobal: true });
       await command(vapid);
     } catch (err) {
       // TODO: Deployer throws err.message, handle better
       const message = err.response && err.response.body ? err.response.body.message : err.message;
-      Logger.error(message);
+      logger.error(message);
       process.exit(1);
     }
   };
@@ -38,10 +37,10 @@ program
   .command('new <target>')
   .description('create a new website')
   .action((target) => {
-    Generator.copyTo(target);
+    // Generator.copyTo(target);
 
-    Logger.info('Site created.');
-    Logger.extra([
+    logger.info('Site created.');
+    logger.extra([
       'To start the server now, run:',
       `  vapid start ${target}`,
     ]);
@@ -56,18 +55,10 @@ program
   .command('start')
   .description('start the server')
   .action(withVapid(async (vapid) => {
-    const portInUse = await new services.PortChecker(vapid.config.port).perform();
-
-    if (portInUse) {
-      throw new Error(`Could not start server, port ${vapid.config.port} is already in use.`);
-    }
-
-    Logger.info(`Starting the ${vapid.env} server...`);
+    logger.info(`Starting the ${vapid.env} server...`);
     await vapid.start();
-    Logger.extra([
-      `View your website at ${vapid.url}`,
-      'Ctrl + C to quit',
-    ]);
+    logger.info(`View your website at localhost:${vapid.config.port}`);
+    logger.info('Ctrl + C to quit');
   }));
 
 /**
@@ -78,10 +69,10 @@ program
 program
   .command('deploy')
   .description('deploy to Vapid\'s hosting service')
-  .action(async (target) => {
-    const cwd = typeof target !== 'string' ? process.cwd() : target;
-    const vapid = new VapidDeployer(cwd);
-    await vapid.deploy();
+  .action(async (_target) => {
+    // const cwd = typeof target !== 'string' ? process.cwd() : target;
+    // const vapid = new VapidDeployer(cwd);
+    // await vapid.deploy();
     process.exit(0);
   });
 
@@ -111,7 +102,7 @@ program
 program
   .command('*', { noHelp: true })
   .action(() => {
-    Logger.error(`Command "${process.argv[2]}" not found.`);
+    logger.error(new Error(`Command "${process.argv[2]}" not found.`));
     program.help();
   });
 
