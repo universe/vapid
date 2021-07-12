@@ -1,5 +1,5 @@
-import { Template, ITemplate, PageType, IField } from './Template';
-import { Record, IRecord} from './Record';
+import { Template, ITemplate, PageType, IField, isPageType } from './Template';
+import { Record, IRecord, stampRecord } from './Record';
 
 export {
   Template,
@@ -8,4 +8,6 @@ export {
   IField,
   Record,
   IRecord,
+  stampRecord,
+  isPageType,
 }

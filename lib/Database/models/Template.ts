@@ -10,6 +10,9 @@ export const enum PageType {
   COMPONENT = 'component',
 }
 
+export function isPageType(value: any): value is PageType {
+  return value === PageType.SETTINGS || value === PageType.COLLECTION || value === PageType.PAGE || value === PageType.COMPONENT;
+}
 export interface IField {
   type: string;
   priority: number;
@@ -18,8 +21,19 @@ export interface IField {
   options: Record<string, string | number | boolean | null>;
 }
 
+export function stampField(field: Partial<IField> = {}) {
+  return {
+    type: 'text',
+    priority: 0,
+    label: '',
+    key: 'field',
+    options: {},
+    ...field,
+  }
+}
+
 export interface ITemplate {
-  id?: number;
+  id: number;
   name: string;
   sortable: boolean;
   options: Json;
@@ -27,8 +41,20 @@ export interface ITemplate {
   type: PageType;
 }
 
+export function stampTemplate(template: Partial<ITemplate> = {}) {
+  return {
+    id: NaN,
+    name: '',
+    sortable: false,
+    options: {},
+    fields: {},
+    type: PageType.PAGE,
+    ...template,
+  };
+}
+
 export class Template implements ITemplate {
-  id: number = 0;
+  id: number = NaN;
   name: string;
   sortable: boolean;
   options: Json;
@@ -36,11 +62,12 @@ export class Template implements ITemplate {
   type: PageType;
 
   constructor(data: ITemplate) {
-    this.name = data.name;
-    this.sortable = data.sortable;
-    this.options = data.options;
-    this.fields = data.fields
+    this.id = data.id;
     this.type = data.type
+    this.name = data.name;
+    this.options = data.options;
+    this.sortable = data.sortable;
+    this.fields = data.fields
   }
 
   static identifier(template: ITemplate): string {
@@ -124,11 +151,58 @@ export class Template implements ITemplate {
       .sort((a, b) => (parseInt(`${a.priority}`, 10) < parseInt(`${b.priority}`, 10) ? -1 : 1));
   }
 
+  metaFields(): IField[] {
+   return [
+      {
+        type: 'text',
+        priority: 0,
+        label: '',
+        key: 'name',
+        options: { help: 'Human readable name used for site navigation.' },
+      }, {
+        type: 'url',
+        priority: 1,
+        label: '',
+        key: 'slug',
+        options: {
+          type: 'url',
+          help: 'The URL where this page can be found.',
+          prefix: '/' + (this.type === 'collection' ? (null ? ({} as any)?.permalink : this.name) : ''),
+          // default: record && record.defaultSlug,
+        },
+      }, {
+        type: 'text',
+        priority: 2,
+        label: '',
+        key: 'title',
+        options: { help: "This page's title, as will appear in search results." },
+      }, {
+        type: 'text',
+        priority: 3,
+        label: '',
+        key: 'description',
+        options: { help: "This page's description, as will appear in search results." },
+      }, {
+        type: 'text',
+        priority: 4,
+        label: '',
+        key: 'redirectUrl',
+        options: { help: 'Redirect this page to a new location.' },
+      }, {
+        type: 'date',
+        priority: 5,
+        label: '',
+        key: 'createdAt',
+        options: { type: 'date', help: 'Date created.', time: true },
+      },
+    ];
+  }
+
   isCollection() { return this.type === 'collection'; }
-  hasCollection() { fs.existsSync(path.join(process.env.TEMPLATES_PATH, 'collections', `${this.name}.html`)); }
+  hasCollection() { fs.existsSync(path.join(process.env.TEMPLATES_PATH || process.cwd(), 'collections', `${this.name}.html`)); }
 
   isPage() { return this.type === 'page'; }
-  hasPage() { return fs.existsSync(path.join(process.env.TEMPLATES_PATH, `${this.name}.html`)); }
+  hasPage() { return fs.existsSync(path.join(process.env.TEMPLATES_PATH || process.cwd(), `${this.name}.html`)); }
 
   /**
    * If this template has a backing view to render a dedicated page.
@@ -137,10 +211,10 @@ export class Template implements ITemplate {
    */
   hasView() {
     if (this.type === 'page') {
-      return fs.existsSync(path.join(process.env.TEMPLATES_PATH, `${this.name}.html`));
+      return fs.existsSync(path.join(process.env.TEMPLATES_PATH || process.cwd(), `${this.name}.html`));
     }
     if (this.type === 'collection') {
-      return fs.existsSync(path.join(process.env.TEMPLATES_PATH, 'collections', `${this.name}.html`));
+      return fs.existsSync(path.join(process.env.TEMPLATES_PATH || process.cwd(), 'collections', `${this.name}.html`));
     }
     return false;
   }
@@ -160,6 +234,7 @@ export class Template implements ITemplate {
       tableColumnsHeaders: this.tableColumnsHeaders(),
       hasFields: this.hasFields(),
       sortedFields: this.sortedFields(),
+      metaFields: this.metaFields(),
       isCollection: this.isCollection(),
       hasCollection: this.hasCollection(),
       isPage: this.isPage(),

@@ -48,7 +48,7 @@ export default class LinkDirective extends BaseDirective<ILinkValue | null> {
     }, '');
 
     return `
-      <fieldset class="fieldset" id="${name}">
+      <fieldset class="fieldset" id="${name}" aria-describedby="help-${name}">
         <label for="${name}[name]">Text</label>
         <small class="help">Human readable link text</small>
         <input type="text" id="${name}[name]" name="${name}[name]" value="${value?.name || ''}" placeholder="${namePlaceholder}">
@@ -60,7 +60,7 @@ export default class LinkDirective extends BaseDirective<ILinkValue | null> {
           ${options}
         </select>
         <span>or</span>
-        <input type="url" name="${name}[url]" value="${value?.url}" placeholder="Enter a URL">
+        <input type="url" name="${name}[url]" value="${value?.url || ''}" placeholder="Enter a URL">
       </fieldset>
     `;
   }

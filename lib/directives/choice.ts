@@ -192,7 +192,7 @@ export default class ChoiceDirective extends BaseDirective<string> {
     return `
       <div class="ui ${klass} checkbox ${this.#possibilities.length > 1 ? 'checkbox--multiple' : 'checkbox--single'}">
         <input type="hidden" name="${!checked ? name : ''}" value="false" />
-        <input type="${type}" id="${name}" name="${name}" value="${inputValue}" ${checked} ${this.required}>
+        <input type="${type}" id="${name}" name="${name}" aria-describedby="help-${name}" value="${inputValue}" ${checked} ${this.required}>
         <label>${label}</label>
       </div>`;
   }
@@ -220,7 +220,7 @@ export default class ChoiceDirective extends BaseDirective<string> {
     }, '');
 
     return `
-      <select name="${name}" class="ui fluid search dropdown ${custom}" ${multiple} ${required}>
+      <select name="${name}" aria-describedby="help-${name}" class="ui fluid search dropdown ${custom}" ${multiple} ${required}>
         ${(!required || (required && this.options.default)) ? `<option value="${this.options.default || ''}">${this.options.default || placeholder || '---'}</option>` : ''}
         ${options}
       </select>`;

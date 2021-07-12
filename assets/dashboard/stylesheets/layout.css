@@ -1,0 +1,80 @@
+body.dashboard {
+  display: flex;
+  flex-direction: column;
+  --toggle: -20rem;
+}
+
+body.dashboard > div {
+  display: flex;
+}
+
+body.dashboard .sidebar, body.dashboard main {
+  transition: margin 0.15s ease-out;
+}
+
+body.dashboard .sidebar {
+  margin-left: var(--toggle);
+}
+
+body.dashboard main {
+  margin-right: 0;
+ /* Hack */
+  max-width: 95%;
+}
+
+@media screen and (min-width: 470px) {
+  body.dashboard main {
+    max-width: 100%;
+ }
+}
+
+body.dashboard.sidebar-open .sidebar {
+  margin-left: 0;
+}
+
+body.dashboard.sidebar-open main {
+  margin-right: var(--toggle);
+}
+
+body.dashboard.sidebar-open > div {
+  overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  body.dashboard .sidebar {
+    margin-left: 0 !important;
+ }
+  body.dashboard main {
+    margin-right: 0 !important;
+ }
+}
+
+body.dashboard .rail.left {
+  padding-left: 1rem;
+}
+
+body.dashboard .rail.right {
+  padding-right: 1rem;
+}
+
+@media (min-width: 768px) {
+  body.dashboard .rail.left {
+    width: 21rem;
+ }
+}
+
+@media (min-width: 1280px) {
+  body.dashboard .rail.left {
+    width: 27rem;
+    padding-left: 7rem;
+ }
+  body.dashboard .rail.right {
+    width: 27rem;
+    padding-right: 7rem;
+ }
+}
+
+body.dashboard main {
+  flex: 1;
+  min-height: 85vh;
+}

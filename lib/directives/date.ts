@@ -4,7 +4,7 @@ import { BaseDirective, DirectiveAttrs } from './base';
 
 const DEFAULT_FORMAT = '%B %e, %Y';
 
-export default class DateDirective extends BaseDirective {
+export default class DateDirective extends BaseDirective<string> {
 
   options = {
     default: '#000000',
@@ -29,7 +29,7 @@ export default class DateDirective extends BaseDirective {
    */
   input(name: string, value = '') {
     const type = this.options.time ? 'datetime-local' : 'date';
-    return `${value}<input type="${type}" name="${name}" value="${value}" hmmm="${value}" ${this.htmlAttrs()}>`;
+    return `${value}<input type="${type}" name="${name}" aria-describedby="help-${name}" value="${value}" ${this.htmlAttrs()}>`;
   }
 
   /**
@@ -39,7 +39,7 @@ export default class DateDirective extends BaseDirective {
    * @param {string} value - a string representation of a date
    * @return {string} formatted date
    */
-  render(value: string) {
+  async render(value: string) {
     const strftimeUTC = strftime.timezone('0000');
     const date = new Date(`${value} UTC`);
     const utc = new Date(date.getTime());

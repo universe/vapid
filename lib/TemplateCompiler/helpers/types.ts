@@ -9,8 +9,19 @@ export type BlockNodes =
   | ASTv1.SubExpression;
 
 export interface NeutrinoHelperOptions {
+  fragment?: SimpleDocumentFragment;
   block?: (blockParams?: any[], data?: Record<string, any>) => SimpleDocumentFragment;
   inverse?: (blockParams?: any[], data?: Record<string, any>) => SimpleDocumentFragment;
+}
+
+export function appendFragment(root: SimpleDocumentFragment, fragment: SimpleDocumentFragment | undefined) {
+  if (!fragment) { return; }
+  let head = fragment.firstChild;
+  while (head) {
+    let el = head;
+    head = head.nextSibling;
+    root.appendChild(el);
+  }
 }
 
 export interface NeutrinoHelper {

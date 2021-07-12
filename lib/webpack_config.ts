@@ -1,7 +1,7 @@
 import { GlobSync } from 'glob';
 import { relative, resolve } from 'path';
 import sass from 'sass';
-import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+// import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 
 /**
  * Generates entry object by scanning directories
@@ -71,6 +71,7 @@ export default function config(mode = 'production', assets: string[] = [], modul
   const context = resolve(__dirname, '..', 'node_modules');
   const entry = _entry(assetDirs);
   const output = outputDir ? { filename: '[name].js', path: '.' } : {};
+
   const removeFiles = _removeFiles(entry);
   const resolveModules = [context, ...moduleDirs];
   const devtool = mode === 'development' ? 'source-map' : false;
@@ -87,7 +88,7 @@ export default function config(mode = 'production', assets: string[] = [], modul
         {
           test: /\.s[ac]ss$/,
           use: [
-            { loader: MiniCssExtractPlugin.loader },
+            // { loader: MiniCssExtractPlugin.loader },
             { loader: 'css-loader', options: { url: false, sourceMap: true } },
             { loader: 'sass-loader', options: { implementation: sass, sourceMap: true } },
             { loader: 'resolve-url-loader' },
@@ -97,9 +98,9 @@ export default function config(mode = 'production', assets: string[] = [], modul
     },
 
     plugins: [
-      new MiniCssExtractPlugin({
-        filename: '[name].css',
-      }),
+      // new MiniCssExtractPlugin({
+      //   filename: '[name].css',
+      // }),
       // @ts-ignore
       new RemoveFilesPlugin({
         files: removeFiles,

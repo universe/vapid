@@ -1,7 +1,8 @@
 import livereload from 'livereload';
 import { extname } from 'path';
-import { Logger } from '../../utils';
+import pino from 'pino';
 
+const logger = pino();
 const reSass = /\.s[ac]ss$/;
 
 /**
@@ -44,27 +45,24 @@ export default class Watcher {
     }
 
     this.callback && this.callback();
-    Logger.info(`LiveReload: ${filePath}`);
+    logger.info(`LiveReload: ${filePath}`);
   }
 
   /**
    * Starts the file watcher and WebSocket server
    *
-   * @param {{server: Server, port: number, liveReload: boolean}} config
+   * @param {{server: Server, port: number }} config
    * @param {function} [callback=() => {}] - function to execute when files are changed
    */
-  listen(config: any, callback = () => {}) {
+  listen(callback = () => {}) {
     this.callback = callback;
-    this.server = livereload.createServer(config);
-
-    if (!config.liveReload) return;
-
+    this.server = livereload.createServer();
     this.server.watch(this.paths);
     this.server.on('add', this.handleEvent.bind(this));
     this.server.on('change', this.handleEvent.bind(this));
     this.server.on('unlink', this.handleEvent.bind(this));
 
-    Logger.info(`Watching for changes in ${this.paths}`);
+    logger.info(`Watching for changes in ${this.paths}`);
   }
 
   /**
@@ -83,7 +81,7 @@ export default class Watcher {
     if (!this.server) return;
     const refreshPath = filePath.replace(reSass, '.css');
     this.server.refresh(refreshPath);
-    Logger.info(`LiveReload: ${filePath}`);
+    logger.info(`LiveReload: ${filePath}`);
   }
 
   /**

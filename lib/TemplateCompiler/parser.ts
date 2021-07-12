@@ -1,11 +1,13 @@
-import Boom from '@hapi/boom';
 import merge from 'lodash.merge';
 import { preprocess, ASTv1 } from '@glimmer/syntax';
+import pino from 'pino';
 
-import { Template, ITemplate, PageType, IField } from '../Database/models/Template';
+import { Template, ITemplate, PageType, IField, stampTemplate } from '../Database/models/Template';
 
 import { ParsedExpr, NeutrinoHelper } from './helpers';
-import { ComponentResolver, IParsedTemplate, GlimmerTemplate, HelperMap } from './types';
+import { ComponentResolver, IParsedTemplate, GlimmerTemplate, HelperResolver } from './types';
+
+const logger = pino();
 
 function isComponent(tag: string) {
   return tag[0] === tag[0].toUpperCase() || !!~tag.indexOf('-');
@@ -86,13 +88,13 @@ function ensureBranch(data: Record<string, ITemplate>, node: ASTv1.BlockStatemen
 
   // Record the type of this section appropriately
   const name = expr.context || expr.key;
-  const newBranch: ITemplate = {
+  const newBranch: ITemplate = stampTemplate({
     name,
     type: helper.isBranch || PageType.PAGE,
     options: expr.hash,
     sortable: !!expr.hash.sortable,
     fields: {},
-  };
+  });
   const branch = data[Template.identifier(newBranch)] = data[Template.identifier(newBranch)] || newBranch;
   merge(branch.options, newBranch.options);
   merge(branch.fields, newBranch.fields);
@@ -138,13 +140,7 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
   const type = (aliases[leaf.context] ? aliases[leaf.context].type : PageType.SETTINGS) || PageType.SETTINGS;
 
   // Ensure the model object reference exists.
-  const template: ITemplate = {
-    sortable: false,
-    name,
-    type,
-    options: {},
-    fields: {},
-  };
+  const template: ITemplate = stampTemplate({ name, type });
   const sectionKey = Template.identifier(template);
   data[sectionKey] = data[sectionKey] || template;
 
@@ -152,8 +148,8 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
   const old: IField | null = data[sectionKey].fields[leaf.key] || null;
   data[sectionKey].fields[leaf.key] = {
     key: leaf.key,
-    type: leaf.type || old?.type || 'text',
-    priority: leaf.hash.priority || old?.priority || 0,
+    type: (leaf.hash.type === 'text' ? (old?.type || leaf.hash.type) : (leaf.hash.type || old?.type)) || 'text',
+    priority: Math.max(leaf.hash.priority || 0, old?.priority || 0),
     label: leaf.hash.label || old?.label || '',
     options: {...(old?.options || {}), ...leaf.hash },
   }
@@ -171,7 +167,7 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
  * @return {Object} tree of sections, fields, params, etc.
  */
 /* eslint-disable no-param-reassign */
-function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Record<string, IAlias> = {}, resolveComponent: ComponentResolver, helpers: HelperMap) {
+function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Record<string, IAlias> = {}, resolveComponent: ComponentResolver, helpers: HelperResolver) {
 
   // Create a new copy of local aliases lookup object each time we enter a new block.
   aliases = Object.create(aliases);
@@ -242,17 +238,17 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
 
     case 'BlockStatement': {
       // All Block statements are helpers. Grab the helper we're evaluating.
-      const helper = helpers[(node.path as ASTv1.PathExpression).original];
+      const helper = helpers((node.path as ASTv1.PathExpression).original);
 
       // Crawl all its params as potential data values in scope.
-      if (node.params.length && !helper.isBranch) {
+      if (node.params.length && !helper?.isBranch) {
         for (const param of node.params) {
           walk(data, param, aliases, resolveComponent, helpers);
         }
       }
 
       // If this helper denotes the creation of a field, add it to the current model.
-      if (helper.isField) {
+      if (helper?.isField) {
         const [leaf, path] = parseExpression(node);
         if (leaf && path) {
           leaf.hash.type = helper.getType ? (helper.getType(leaf) || leaf.type) : leaf.type;
@@ -261,7 +257,7 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
       }
 
       // If this helper denotes the creation of a new model type, ensure the model.
-      if (helper.isBranch) {
+      if (helper?.isBranch) {
         ensureBranch(data, node, helper);
       }
 
@@ -271,7 +267,6 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
         const param = node.program.blockParams[idx];
         const path = (node.path as ASTv1.PathExpression);
         if (path.parts[0] === 'collection') {
-          console.log(node);
           const arg = node.params[0];
           let name = '';
           switch (arg.type) {
@@ -285,7 +280,7 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
               name = arg.original; break;
             case 'SubExpression':
             default:
-              console.error(node)
+              logger.error(node)
               throw new Error(`Unexpected value for collection name.`);
           }
 
@@ -325,7 +320,7 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
       break;
 
     default: {
-      console.warn('Unknown Node', node);
+      logger.warn('Unknown Node', node);
       break;
     }
   }
@@ -340,19 +335,19 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
  *
  * @return {Object} - a representation of the content
  */
- export function parse(name: string, type: PageType, html: string, resolveComponent: ComponentResolver, helpers: HelperMap, data: Record<string, ITemplate> = {}, _aliases: Record<string, IAlias> = {}): IParsedTemplate {
+ export function parse(name: string, type: PageType, html: string, resolveComponent: ComponentResolver, helpers: HelperResolver, data: Record<string, ITemplate> = {}, _aliases: Record<string, IAlias> = {}): IParsedTemplate {
   let ast: GlimmerTemplate;
   try { ast = preprocess(html); }
-  catch (err) { throw Boom.boomify(err, { message: 'Bad template syntax' }); }
+  catch (err) { throw new Error('Bad template syntax'); }
 
   if (type !== PageType.COMPONENT) {
-    const template: ITemplate = {
+    const template: ITemplate = stampTemplate({
       name,
       type,
       options: {},
       fields: {},
       sortable: false,
-    };
+    });
     data[Template.identifier(template)] = data[Template.identifier(template)] || template;
   }
 

@@ -1,4 +1,4 @@
-import { NeutrinoHelper, SafeString } from './types';
+import { NeutrinoHelper, SafeString, appendFragment } from './types';
 
 import { toKebabCase } from '@universe/util';
 import { PageType } from '../../Database/models';
@@ -8,8 +8,10 @@ const CollateHelper: NeutrinoHelper = {
   isBranch: PageType.COLLECTION,
   getType() { return 'collate'; },
   run([collection], hash={}, options) {
+    if (!options.fragment) { throw new Error('The {{collate}} helper must be used as a block helper.'); }
+
     const values = new Set();
-    let out = '';
+    let out = options.fragment;
     const prop = hash.key;
 
     if (!prop) {
@@ -29,12 +31,13 @@ const CollateHelper: NeutrinoHelper = {
     }
 
     for (const value of values) {
-      out += options.block?.([{
+      appendFragment(out, options.block?.([{
         value,
         name: value || hash.default,
         slug: value ? toKebabCase(`${value}`) : toKebabCase(hash.default),
-      }]);
+      }]));
     }
+    console.log(out);
     return out;
   }
 };

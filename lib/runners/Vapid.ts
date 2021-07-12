@@ -1,11 +1,12 @@
-import * as path from 'path';
+import { resolve, join } from 'path';
 import * as mkdirp from 'mkdirp';
-
+import { readFileSync } from 'fs';
 import dotenv from 'dotenv';
 
 import Database from '../Database';
-// import Generator from '../generator';
-import { IProvider, MemoryProvider } from '../Database/providers';
+import { MemoryProvider } from '../Database/providers';
+import { TemplateCompiler } from '../TemplateCompiler';
+import { NeutrinoHelper } from '../TemplateCompiler/types';
 
 declare global {
   /* eslint-disable-next-line @typescript-eslint/no-namespace */
@@ -40,18 +41,23 @@ export interface VapidSettings {
   port: number;
 }
 
+export interface VapidPublicSettings {
+  name: string;
+  domain: string;
+}
+
 /**
  * Resolves commonly-used project paths
  */
 export function getProjectPaths(cwd: string, dataPath: string): VapidProjectPaths {
   const paths: VapidProjectPaths = {
-    pjson: path.resolve(cwd, 'package.json'),
-    root: path.resolve(cwd, '.'),
-    data: path.resolve(cwd, dataPath),
-    cache: path.resolve(cwd, path.join(dataPath, 'cache')),
-    uploads: path.resolve(cwd, path.join(dataPath, 'uploads')),
-    www: path.resolve(cwd, './www'),
-    modules: path.resolve(cwd, './node_modules'),
+    pjson: resolve(cwd, 'package.json'),
+    root: resolve(cwd, '.'),
+    data: resolve(cwd, dataPath),
+    cache: resolve(cwd, join(dataPath, 'cache')),
+    uploads: resolve(cwd, join(dataPath, 'uploads')),
+    www: resolve(cwd, './www'),
+    modules: resolve(cwd, './node_modules'),
   };
 
   // Ensure paths exist
@@ -60,6 +66,15 @@ export function getProjectPaths(cwd: string, dataPath: string): VapidProjectPath
 
   return paths;
 };
+
+function componentLookup(tag: string): string | null {
+  try { return readFileSync(join(process.env.TEMPLATES_PATH, 'components', `${tag}.html`), 'utf8'); }
+  catch { return null; }
+}
+
+function helperLookup(_name: string): NeutrinoHelper | null {
+  return null;
+}
 
 /**
  * This is the main class that powers Vapid projects.
@@ -76,8 +91,8 @@ export default class Vapid {
   domain: string;
   prodUrl: string;
   paths: VapidProjectPaths;
-  provider: IProvider;
   database: Database;
+  compiler: TemplateCompiler;
   config: VapidSettings = {
     cache: process.env.NODE_ENV === 'production',
     database: {
@@ -94,26 +109,21 @@ export default class Vapid {
    * This module works in conjunction with a site directory.
    */
   constructor(cwd: string) {
-    // User-defined options
-    /* eslint-disable-next-line import/no-dynamic-require, global-require */
-    const { vapid: options = {}, name, homepage } = require(path.resolve(cwd, 'package.json'));
+    // TODO: Ensure package.json is present.
+    const pjson = JSON.parse(readFileSync(resolve(cwd, 'package.json'), 'utf-8'));
+    const options = pjson.vapid as Partial<VapidPublicSettings>;
+    dotenv.config({ path: resolve(cwd, '.env') });
 
-    dotenv.config({ path: path.resolve(cwd, '.env') });
-
-    this.name = options.name || name;
+    this.config = Object.assign({}, this.config, options);
+    this.name = options.name || pjson.name;
     this.env = process.env.NODE_ENV || 'development';
     this.isDev = (this.env === 'development' || this.env === 'test');
-    this.config = Object.assign({}, this.config, options);
-    this.domain = this.isDev ? `localhost:${this.config.port}` : (options.domain || homepage);
-    this.prodUrl = options.domain || homepage;
+    this.domain = this.isDev ? `localhost:${this.config.port}` : (options.domain || pjson.homepage);
+    this.prodUrl = options.domain || pjson.homepage;
     this.paths = getProjectPaths(cwd, this.config.dataPath);
 
-    // Initialize database.
-    // const dbConfig = this.config.database;
-    // if (dbConfig.dialect === 'sqlite') {
-    //   dbConfig.storage = path.resolve(this.paths.data, 'vapid.sqlite');
-    // }
-    this.provider = new MemoryProvider({});
-    this.database = new Database(this.provider);
+    // TODO: Switch out database provider based on config.
+    this.database = new Database(new MemoryProvider({}));
+    this.compiler = new TemplateCompiler(componentLookup, helperLookup);
   }
 }

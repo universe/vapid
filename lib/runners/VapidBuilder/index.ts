@@ -5,10 +5,12 @@ import webpack from 'webpack';
 import * as mkdirp from 'mkdirp';
 
 import { Template } from '../../Database/models/Template';
-import { renderContent } from '../../Renderer';
-import { Logger, Paths } from '../../utils';
 import makeWebpackConfig from '../../webpack_config';
 import Vapid from '../Vapid';
+import pino from 'pino';
+import { Record } from '../../Database/models';
+
+const logger = pino();
 
 const PRIVATE_FILE_PREFIXES = new Set([ '_', '.' ])
 
@@ -44,7 +46,7 @@ export default class VapidBuilder extends Vapid {
     webpackConfig.output.path = dest;
 
     // Run the webpack build for CSS and JS bundles.
-    Logger.info('Running Webpack Build');
+    logger.info('Running Webpack Build');
     const stats = await new Promise((resolve, reject) => {
       webpack(webpackConfig as webpack.Configuration, (err: Error, dat: any) => {
         if (err) reject(err);
@@ -53,7 +55,7 @@ export default class VapidBuilder extends Vapid {
     });
 
     // Move all uploads to dest directory.
-    Logger.info('Moving Uploads Directory');
+    logger.info('Moving Uploads Directory');
     const uploadsOut = path.join(dest, 'uploads');
     const uploads = new GlobSync(path.join(this.paths.uploads, '**/*'));
     mkdirp.sync(uploadsOut);
@@ -61,7 +63,6 @@ export default class VapidBuilder extends Vapid {
     // Move all assets in /uploads to dest uploads directory
     /* eslint-disable-next-line no-restricted-syntax */
     for (const upload of uploads.found) {
-      if (!Paths.isAssetPath(upload)) { continue; }
       fs.copyFileSync(
         upload,
         path.join(dest, 'uploads', path.relative(this.paths.uploads, upload)),
@@ -69,12 +70,10 @@ export default class VapidBuilder extends Vapid {
     }
 
     // Copy all public static assets to the dest directory.
-    Logger.info('Copying Static Assets');
+    logger.info('Copying Static Assets');
     const assets = new GlobSync(path.join(this.paths.www, '**/*'));
     /* eslint-disable-next-line no-restricted-syntax */
     for (const asset of assets.found) {
-      const isAsset = Paths.isAssetPath(asset);
-      if (isAsset === false || typeof isAsset === 'string') { continue; }
       // Ignore private files.
       if (PRIVATE_FILE_PREFIXES.has(path.basename(asset)[0])) { continue; }
       const out = path.join(dest, path.relative(this.paths.www, asset));
@@ -91,44 +90,46 @@ export default class VapidBuilder extends Vapid {
       return false;
     }
 
-    const faviconPath = findFirst('favicon.ico', [this.paths.www, Paths.getDashboardPaths().assets]);
+    const faviconPath = findFirst('favicon.ico', [ this.paths.www ]);
     if (faviconPath) {
       fs.copyFileSync(faviconPath, path.join(dest, '/favicon.ico'));
     }
 
-    Logger.info('Connecting to Database');
-    await this.provider.start();
+    logger.info('Connecting to Database');
+    await this.database.start();
 
     // Store all sections in a {["type:name"]: Section} map for easy lookup.
-    const templatesArr = await this.provider.getAllTemplates();
+    const templatesArr = await this.database.getAllTemplates();
     const templates = {};
     for (const template of templatesArr) {
       templates[Template.identifier(template)] = template;
     }
 
     // Fetch all potential template files. These are validated below before compilation.
-    Logger.info('Compiling All Templates');
+    logger.info('Compiling All Templates');
     // const htmlFile = await glob(path.join(this.paths.www, '**/*.html'));
 
     // For every record, in every template...
     /* eslint-disable no-await-in-loop */
     for (const template of templatesArr) {
-      if (!template.hasView) { continue; }
-      const records = await this.provider.getRecordsByTemplateId(template.id);
+      const tmpl = new Template(template);
+      if (!tmpl.hasView()) { continue; }
+      const records = await this.database.getRecordsByTemplateId(template.id);
       for (const record of records) {
-        Logger.extra([`Rendering: ${record.permalink()}`]);
-        await this.renderUrl(dest, record.permalink());
-        Logger.extra([`Created: ${record.permalink()}`]);
+        const rec = new Record(record, tmpl);
+        logger.extra([`Rendering: ${rec.permalink()}`]);
+        await this.renderUrl(dest, rec.permalink());
+        logger.extra([`Created: ${rec.permalink()}`]);
       }
     }
 
-    Logger.info('Static Site Created!');
+    logger.info('Static Site Created!');
 
     return stats;
   }
 
   async renderUrl(out: string, url: string) {
-    const body = await renderContent.call(this, url);
+    const body = await this.compiler.renderContent(this, url);
     const selfDir = path.join(out, url);
     mkdirp.sync(path.dirname(selfDir));
 

@@ -3,3 +3,4 @@ node_modules
 package-lock.json
 test.sqlite
 dist
+assets/dashboard/javascripts/dashboard.js

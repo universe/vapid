@@ -1,15 +1,15 @@
 import { Json, toKebabCase, toTitleCase } from "@universe/util";
 import * as pluralize from 'pluralize';
 
-import { Template } from './Template';
+import { PageType, Template } from './Template';
 import { IProvider } from "../providers";
 
 export interface IRecord {
   id: number;
   templateId: number;
   parentId: number | null;
-  content: Json;
   metadata: Json;
+  content: Json;
   position: number;
   slug: string;
   createdAt: number;
@@ -33,11 +33,26 @@ export interface SerializedRecord {
   template: string;
 };
 
+export function stampRecord(record: Partial<IRecord> = {}): IRecord {
+  return {
+    id: NaN,
+    templateId: NaN,
+    parentId: null,
+    position: 0,
+    slug: '',
+    content: {},
+    metadata: {},
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    ...record,
+  }
+}
+
 export class Record implements IRecord {
 
   constructor(data: IRecord, template: Template) {
-    this.template = template;
     this.id = data.id;
+    this.template = template;
     this.templateId = data.templateId;
     this.parentId = data.parentId;
     this.content = data.content;
@@ -66,8 +81,9 @@ export class Record implements IRecord {
 
   defaultName(): string {
     let defaultName = this.template.name === 'index' ? 'Home' : this.template.name;
-    if (this.template.type === 'collection') { defaultName = pluralize.singular(defaultName); }
-    return this.isFirst() ? defaultName : `${defaultName} ${this.id}`;
+    if (this.template.type === PageType.SETTINGS) { return this.template.name; }
+    if (this.template.type === PageType.COLLECTION) { defaultName = pluralize.singular(defaultName); }
+    return this.isFirst() || isNaN(this.id) ? defaultName : `${defaultName} ${this.id}`;
   }
 
   name(): string {
@@ -112,6 +128,16 @@ export class Record implements IRecord {
     return pluralize.singular(this.name());
   }
 
+  static async hydrate(record: IRecord, provider: IProvider): Promise<Record> {
+    const template = await provider.getTemplateById(record.templateId);
+    if (!template) { throw new Error('No template found for record.'); }
+    return new Record(record, new Template(template));
+  }
+
+  static async getMetadata(record: IRecord, currentUrl: string, provider: IProvider) {
+    return (await Record.hydrate(record, provider)).getMetadata(currentUrl, provider);
+  }
+
   async getMetadata(currentUrl: string, provider: IProvider): Promise<SerializedRecord> {
     const permalink = this.permalink();
     const children = await provider.getChildren(this.id) || null;
@@ -124,7 +150,7 @@ export class Record implements IRecord {
       slug: this.template.hasView() ? this.permalink() : null,
       isNavigation: !!this.metadata.isNavigation,
       hasChildren: !!children.length,
-      children: await Promise.all(children.filter(r => r.id !== this.id).map(r => r.getMetadata(currentUrl, provider))),
+      children: await Promise.all(children.filter(r => r.id !== this.id).map(r => Record.getMetadata(r, currentUrl, provider))),
       isActive: permalink === '/' ? (permalink === currentUrl || currentUrl === 'index') : currentUrl === permalink,
       isParentActive: permalink === '/' ? (permalink === currentUrl || currentUrl === 'index') : currentUrl.indexOf(permalink) === 0,
 

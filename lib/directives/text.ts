@@ -30,10 +30,10 @@ export default class TextDirective extends BaseDirective {
     if (value === this.options.default) { value = ''; }
 
     if (this.options.long) {
-      return `<textarea name=${name} ${this.htmlAttrs()} placeholder="${escape(this.options.default)}" resize=false>${value}</textarea>`;
+      return `<textarea name=${name} aria-describedby="help-${name}" ${this.htmlAttrs()} placeholder="${escape(this.options.default)}" resize=false>${value}</textarea>`;
     }
 
-    const type = name.toLowerCase() === 'content[email]' ? 'email' : 'text';
-    return `<input type="${type}" name="${name}" placeholder="${escape(this.options.default)}" value="${escape(value)}" ${this.htmlAttrs()}>`;
+    const type = name?.toLowerCase() === 'content[email]' ? 'email' : 'text';
+    return `<input type="${type}" name="${name}" aria-describedby="help-${name}" placeholder="${escape(this.options.default)}" value="${escape(value)}" ${this.htmlAttrs()}>`;
   }
 }

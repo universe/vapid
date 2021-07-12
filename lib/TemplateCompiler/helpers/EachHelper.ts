@@ -1,4 +1,4 @@
-import { NeutrinoHelper } from './types';
+import { appendFragment, NeutrinoHelper } from './types';
 
 import { DATA_SYMBOL } from '../types';
 
@@ -9,15 +9,17 @@ const EachHelper: NeutrinoHelper = {
   run(data, _hash, options) {
     const items = (Array.isArray(data) ? data : [data]).filter(Boolean);
 
+    if (!options.fragment) { throw new Error('The {{each}} helper must be used as a block helper.'); }
+
     // If collection is empty, and the helper provides an empty state, render the empty state.
     if (items.length === 0) return options.inverse?.() || '';
 
     // Otherwise, render each item!
-    let out = '';
+    let out = options.fragment;
     let index = 0;
 
     for (const item of items) {
-      out += options.block?.([item], {
+      appendFragment(out, options.block?.([item], {
           index,
           length: items.length,
           first: index === 0,
@@ -25,7 +27,7 @@ const EachHelper: NeutrinoHelper = {
           next: items[index + 1],
           prev: items[index - 1],
           record: item[DATA_SYMBOL],
-        });
+        }));
       index += 1;
     }
     return out;

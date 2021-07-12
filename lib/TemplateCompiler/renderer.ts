@@ -5,7 +5,7 @@ import Serializer from '@simple-dom/serializer';
 import { PageType } from '../Database/models/Template';
 
 import { NeutrinoHelperOptions, SafeString } from './helpers/types';
-import { ComponentResolver, HelperMap } from './types';
+import { ComponentResolver, HelperResolver } from './types';
 
 export type GlimmerTemplate = ASTv1.Template;
 
@@ -31,7 +31,8 @@ function missingData(context: ASTv1.BlockStatement | ASTv1.SubExpression | ASTv1
   return hash.default || `{{${context.path.original}}}`;
 }
 
-function appendFragment(root: SimpleParent, fragment: SimpleParent) {
+function appendFragment(root: SimpleParent, fragment: SimpleParent | undefined) {
+  if (!fragment) { return; }
   let head = fragment.firstChild;
   while (head) {
     let el = head;
@@ -44,7 +45,7 @@ function isYield(node: ASTv1.MustacheStatement): boolean {
   return node.path.type === 'PathExpression' && node.path.parts[0] === 'yield' && node.path.data;
 }
 
-function resolveValue(node: ASTv1.MustacheStatement | ASTv1.BlockStatement | ASTv1.Expression, ctx: Record<string, any>, data: Record<string, any>, helpers: HelperMap, options?: NeutrinoHelperOptions): string | SafeString | SimpleDocumentFragment | null {
+function resolveValue(node: ASTv1.MustacheStatement | ASTv1.BlockStatement | ASTv1.Expression, ctx: Record<string, any>, data: Record<string, any>, resolveHelper: HelperResolver, options?: NeutrinoHelperOptions): string | SafeString | SimpleDocumentFragment | null {
   switch(node.type) {
     case 'StringLiteral':
     case 'NumberLiteral':
@@ -64,20 +65,20 @@ function resolveValue(node: ASTv1.MustacheStatement | ASTv1.BlockStatement | AST
   switch(node.path.type) {
     case 'PathExpression':
       // If is helper
-      if (node.path.parts.length === 1 && helpers[node.path.parts[0]]) {
-        const helper = helpers[node.path.parts[0]];
-        const params = node.params.map(param => resolveValue(param, ctx, data, helpers));
+      if (node.path.parts.length === 1 && resolveHelper(node.path.parts[0])) {
+        const helper = resolveHelper(node.path.parts[0]);
+        const params = node.params.map(param => resolveValue(param, ctx, data, resolveHelper));
         const hash = {};
         for (const pair of node.hash.pairs) {
-          hash[pair.key] = resolveValue(pair.value, ctx, data, helpers);
+          hash[pair.key] = resolveValue(pair.value, ctx, data, resolveHelper);
         }
         return (helper && helper.run(params, hash, options || {})) || null;
       }
       else {
-        return resolveValue(node.path, ctx, data, helpers);
+        return resolveValue(node.path, ctx, data, resolveHelper);
       }
     default:
-      return resolveValue(node.path, ctx, data, helpers);
+      return resolveValue(node.path, ctx, data, resolveHelper);
   }
 }
 
@@ -86,8 +87,8 @@ function traverse(
   html: SimpleDocument,
   root: SimpleParent,
   block: ASTv1.Block | ASTv1.Template | ASTv1.Program | ASTv1.Statement[],
-  resolveComponent: (name: string) => string,
-  helpers: HelperMap,
+  resolveComponent: ComponentResolver,
+  resolveHelper: HelperResolver,
   context = {},
   data = {},
   contents: ASTv1.Statement[] = [],
@@ -99,14 +100,15 @@ function traverse(
       case 'ElementNode':
         if (isComponent(node.tag)) {
           const tmpl = resolveComponent(node.tag);
+          if (!tmpl) { throw new Error(`Unknown component <${node.tag} />`); }
           const ast = preprocess(tmpl);
           const fragment = html.createDocumentFragment();
-          traverse(html, fragment, ast, resolveComponent, helpers, context, data, node.children);
+          traverse(html, fragment, ast, resolveComponent, resolveHelper, context, data, node.children);
           appendFragment(root, fragment);
         }
         else {
           let el = html.createElement(node.tag);
-          traverse(html, el, node.children, resolveComponent, helpers, context, data, contents);
+          traverse(html, el, node.children, resolveComponent, resolveHelper, context, data, contents);
           for (const attr of node.attributes) {
             switch(attr.value.type) {
               case 'TextNode':
@@ -117,7 +119,7 @@ function traverse(
                 for (const statement of attr.value.parts) {
                   switch(statement.type) {
                     case 'TextNode': value += statement.chars; break;
-                    case 'MustacheStatement': value += resolveValue(statement, context, data, helpers) || missingData(statement); break;
+                    case 'MustacheStatement': value += resolveValue(statement, context, data, resolveHelper) || missingData(statement); break;
                   }
                 }
                 el.setAttribute(attr.name, value);
@@ -140,11 +142,11 @@ function traverse(
       case 'MustacheStatement': {
         if (isYield(node)) {
           const slot = html.createDocumentFragment();
-          traverse(html, slot, contents, resolveComponent, helpers, context, data, []);
+          traverse(html, slot, contents, resolveComponent, resolveHelper, context, data, []);
           appendFragment(root, slot);
           break;
         }
-        const val = resolveValue(node, context, data, helpers) || missingData(node) || '';
+        const val = resolveValue(node, context, data, resolveHelper) || missingData(node) || '';
         if (val instanceof SafeString) {
           root.appendChild(html.createRawHTMLSection!(val.toString()));
         }
@@ -154,7 +156,8 @@ function traverse(
         break;
       }
       case 'BlockStatement': {
-        const val = resolveValue(node, context, data, helpers, {
+        const val = resolveValue(node, context, data, resolveHelper, {
+          fragment: html.createDocumentFragment(),
           block: (blockParams: any[] = [], dat: Record<string, any> = {}) => {
             const subCtx = { ...context };
             const subData = { ...data, ...dat };
@@ -162,7 +165,7 @@ function traverse(
               subCtx[node.program.blockParams[paramIdx]] = blockParams[paramIdx];
             }
             const fragment = html.createDocumentFragment();
-            traverse(html, fragment, node.program, resolveComponent, helpers, subCtx, subData);
+            traverse(html, fragment, node.program, resolveComponent, resolveHelper, subCtx, subData);
             return fragment;
           },
           inverse: (blockParams: any[] = [], dat: Record<string, any> = {}) => {
@@ -172,20 +175,17 @@ function traverse(
               subCtx[node.program.blockParams[paramIdx]] = blockParams[paramIdx];
             }
             const fragment = html.createDocumentFragment();
-            node.inverse && traverse(html, fragment, node.inverse, resolveComponent, helpers, subCtx, subData);
+            node.inverse && traverse(html, fragment, node.inverse, resolveComponent, resolveHelper, subCtx, subData);
             return fragment;
           },
         });
-        if (!val) {
-          throw new Error(`Unknown helper {{${(node.path as ASTv1.PathExpression).original}}}`)
-        }
 
-        if (val instanceof SafeString) {
-          root.appendChild(html.createRawHTMLSection!(val.toString()));
-        }
-        else {
-          typeof val === 'string' ? root.appendChild(html.createTextNode(val)) : appendFragment(root, val);
-        }
+        // Append our new content.
+        if (val === undefined) { throw new Error(`Unknown helper {{${(node.path as ASTv1.PathExpression).original}}}`) }
+        else if (val instanceof SafeString) { root.appendChild(html.createRawHTMLSection!(val.toString())); }
+        else if (typeof val === 'string' || val === null) { root.appendChild(html.createTextNode(val || '')); }
+        else { appendFragment(root, val); }
+
         break;
       }
       case 'PartialStatement':
@@ -205,10 +205,10 @@ function traverse(
  * @param {Object} content
  * @return {string} - HTML that has tags replaced with content
  */
-export function render(_name: string, _type: PageType, tmpl: GlimmerTemplate | string, resolveComponent: ComponentResolver, helpers: HelperMap, context = {}, data = {}) {
+export function render(_name: string, _type: PageType, tmpl: GlimmerTemplate | string, resolveComponent: ComponentResolver, resolveHelper: HelperResolver, context = {}, data = {}) {
   const ast = typeof tmpl === 'string' ? preprocess(tmpl) : tmpl;
   const document = new Document();
-  traverse(document, document, ast, resolveComponent, helpers, context, data, []);
+  traverse(document, document, ast, resolveComponent, resolveHelper, context, data, []);
   const serializer = new Serializer({});
   return serializer.serialize(document);
 }

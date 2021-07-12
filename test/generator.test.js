@@ -14,7 +14,7 @@ describe('.copyTo', () => {
   });
 
   afterAll(() => {
-    Utils.removeFiles(target);
+    fs.rmdirSync(target, { recursive: true });
   });
 
   test('generates a secret key', () => {
@@ -39,6 +39,6 @@ describe('.copyEnv', () => {
     const env = fs.readFileSync(join(target, '.env'), 'utf-8');
     expect(env).toMatch(/SECRET_KEY=[a-f0-9]{128}/);
 
-    Utils.removeFiles(target);
+    fs.rmdirSync(target, { recursive: true });
   });
 });

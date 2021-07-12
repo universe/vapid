@@ -59,12 +59,12 @@ export default class ColorDirective extends BaseDirective {
             <li><a href="#" class="wysiwyg-blocks__block wysiwyg-blocks__block--img">Image${ICONS.img}</a></li>
             <li><a href="#" class="wysiwyg-blocks__block wysiwyg-blocks__block--video">Video${ICONS.vid}</a></li>
           </ul>
-          <div class="wysiwyg" data-images="${this.options.images}">${value}</div>
-          <input id="${name}" type="hidden" name="${name}" value="${escape(value)}">`;
+          <div class="wysiwyg" data-images="${this.options.images}">${value || ''}</div>
+          <input id="${name}" type="hidden" name="${name}" aria-describedby="help-${name}" value="${escape(value || '')}">`;
       default:
         return `
           <div class="ace_editor"></div>
-          <textarea name="${name}">${value}</textarea>`;
+          <textarea name="${name}" class="ace-editor__textarea" aria-describedby="help-${name}">${value || ''}</textarea>`;
     }
   }
 

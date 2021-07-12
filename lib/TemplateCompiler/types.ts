@@ -4,11 +4,11 @@ import { ITemplate, PageType } from '../Database/models/Template';
 import { NeutrinoHelper } from './helpers/types';
 
 export { NeutrinoHelper };
-export type HelperMap = Record<string, NeutrinoHelper>;
 
 export const DATA_SYMBOL = Symbol('HELPER_DATA');
 
-export type ComponentResolver = (name: string) => string;
+export type HelperResolver = (name: string) => NeutrinoHelper | null;
+export type ComponentResolver = (name: string) => string | null;
 
 export type GlimmerTemplate = ASTv1.Template;
 

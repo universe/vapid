@@ -1,5 +1,5 @@
 import { SafeString } from '../TemplateCompiler/helpers';
-import { Logger } from '../utils';
+import pino from 'pino';
 
 import ChoiceDirective from './choice';
 import ColorDirective from './color';
@@ -10,6 +10,8 @@ import LinkDirective from './link';
 import NumberDirective from './number';
 import TextDirective from './text';
 import UrlDirective from './url';
+
+const logger = pino();
 
 // TODO: Allow custom directives in site folder?
 const DIRECTIVES = {
@@ -39,7 +41,7 @@ export function find(params: { type?: string } = {}, meta = {}): InstanceType<Di
 
   // Only show warning if someone explicity enters a bad name
   if (!name || !DIRECTIVES[name]) {
-    Logger.warn(`Directive type '${name}' does not exist. Falling back to 'text'`);
+    logger.warn(`Directive type '${name}' does not exist. Falling back to 'text'`);
     name = 'text';
   }
 

@@ -18,6 +18,6 @@ export default class ColorDirective extends BaseDirective {
    * Renders either a text or textarea input
    */
   input(name: string, value = '') {
-    return `<input type=color name="${name}" value="${value || this.options.default}" ${this.htmlAttrs()}>`;
+    return `<input type=color name="${name}" aria-describedby="help-${name}" value="${value || this.options.default}" ${this.htmlAttrs()}>`;
   }
 }

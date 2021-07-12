@@ -1,9 +1,10 @@
 const recursive = require('recursive-readdir');
 const { resolve, relative } = require('path');
 const tmp = require('tmp');
+const fs = require('fs');
 
 const VapidBuilder = require('../lib/runners/VapidBuilder');
-const { Utils } = require('../lib/utils');
+const { Utils } = require('../lib/generator');
 
 const templatesDir = resolve(__dirname, 'fixtures', 'site');
 
@@ -32,8 +33,7 @@ describe('VapidBuilder', () => {
       'stylehseets/styles.css.map',
       'uploads/test.txt',
     ]);
-
-    Utils.removeFiles(inputDir);
-    Utils.removeFiles(outputDir);
+    fs.rmdirSync(inputDir, { recursive: true });
+    fs.rmdirSync(outputDir, { recursive: true });
   });
 });
