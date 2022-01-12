@@ -3,13 +3,11 @@
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": "dist",
-    "lib": [ "es7", "es2017", "dom" ],
-
-    "esModuleInterop": true,
+    "lib": [ "es2020", "dom" ],
 
     // JSX Settings for Preact
-    "jsx": "react",
-    "jsxFactory": "h",
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
 
     // Compilation Configuration
     "target": "es2015",
@@ -43,6 +41,6 @@
     "newLine": "LF",
     "traceResolution": false,
     "module": "commonjs",
-
+    "esModuleInterop": true,
   }
 }

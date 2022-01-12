@@ -1,183 +1,112 @@
-import { Json, toKebabCase, toTitleCase } from "@universe/util";
+import { Json, toTitleCase } from "@universe/util";
 import * as pluralize from 'pluralize';
 
-import { PageType, Template } from './Template';
-import { IProvider } from "../providers";
-
-export interface IRecord {
-  id: number;
-  templateId: number;
-  parentId: number | null;
-  metadata: Json;
-  content: Json;
-  position: number;
-  slug: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface SerializedRecord {
-  id: number;
-  name: string;
-  slug: string | null;
-  title: string | null;
-  description: string | null;
-  redirectUrl: string | null;
-  isNavigation: boolean;
-  isActive: boolean;
-  isParentActive: boolean;
-  hasChildren: boolean;
-  children: SerializedRecord[];
-  createdAt: number;
-  updatedAt: number;
-  template: string;
-};
-
-export function stampRecord(record: Partial<IRecord> = {}): IRecord {
-  return {
-    id: NaN,
-    templateId: NaN,
-    parentId: null,
-    position: 0,
-    slug: '',
-    content: {},
-    metadata: {},
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    ...record,
-  }
-}
+import { Template } from './Template';
+import { PageType, IRecord, SerializedRecord } from '../types';
 
 export class Record implements IRecord {
+  id: string;
+  templateId: string;
+  template: Template;
 
-  constructor(data: IRecord, template: Template) {
+  parentId: string | null;
+  parent: Record | null;
+
+  slug: string;
+  #name: string | null;
+  order: number | null;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt: number | null;
+
+  content: Json;
+  metadata: Json;
+
+
+  constructor(data: IRecord, template: Template, parent: Record | null) {
     this.id = data.id;
-    this.template = template;
     this.templateId = data.templateId;
+    this.template = template;
+    this.parent = parent || null;
     this.parentId = data.parentId;
-    this.content = data.content;
-    this.metadata = data.metadata;
-    this.position = data.position;
+
+    this.#name = data.name;
     this.slug = data.slug;
     this.createdAt = data.createdAt || Date.now();
     this.updatedAt = data.updatedAt || Date.now();
+    this.deletedAt = data.deletedAt || null;
+    this.order = data.order;
+
+    this.content = data.content;
+    this.metadata = data.metadata;
   }
 
-  id: number;
-  templateId: number;
-  parentId: number | null;
-  createdAt: number;
-  updatedAt: number;
-  content: Json;
-  metadata: Json;
-  position: number;
-  slug: string;
-
-  template: Template;
-
-  isFirst() {
-    return this.id === 0;
-  }
-
-  defaultName(): string {
+  set name(name: string) { this.#name = name; }
+  get name(): string {
     let defaultName = this.template.name === 'index' ? 'Home' : this.template.name;
+    if (this.template.type === PageType.PAGE) { return this.#name as string || toTitleCase(defaultName); }
     if (this.template.type === PageType.SETTINGS) { return this.template.name; }
     if (this.template.type === PageType.COLLECTION) { defaultName = pluralize.singular(defaultName); }
-    return this.isFirst() || isNaN(this.id) ? defaultName : `${defaultName} ${this.id}`;
+    return this.#name as string || toTitleCase(this.slug || defaultName);
   }
 
-  name(): string {
-    if (this.template.type === 'page') {
-      return toTitleCase(this.metadata.name as string || this.defaultName());
-    }
-    return toTitleCase(this.metadata.name as string || this.slug || this.defaultName());
-  }
+  static isNavigation(record: IRecord) { return record.parentId === 'navigation'; }
+  isNavigation() { Record.isNavigation(this); }
 
-  defaultSlug() {
-    let name = this.content.title as string || this.content.name as string || '';
-    name = name || (this.template.isCollection()) ? pluralize.singular(this.template.name) : this.template.name;
-    name = toKebabCase(name);
-    if (this.isFirst() && this.template.name === 'index') { return ''; }
-    if (this.isFirst() && name) { return name; }
-    return `${name}-${this.id}`;
-  }
-
-  safeSlug() {
-    const customSlug = (this.slug || '').replace(`{${this.template.id}}`, '');
-    if (this.isFirst() && this.template.name === 'index') { return 'index'; }
-    return customSlug || this.defaultSlug();
-  }
 
   /**
-   * URI path to the individual record
+   * URI path to an individual record
    *
    * @return {string}
    */
-  permalink() {
-    const safeSlug = this.safeSlug();
-    let slug = (safeSlug === 'index' || safeSlug === '') ? '' : safeSlug;
-    return this.template.type === 'collection' ? `/${this.template.name}/${slug}` : `/${slug}`;
+  static permalink(record: IRecord, parent: IRecord | null = null) {
+    const slug = record.slug === 'index' ? '' : record.slug;
+    return parent ? `/${parent.slug}/${slug}` : `/${slug}`;
   }
+  permalink(): string { return Record.permalink(this, this.parent); }
 
-  /**
-   * Singularized name
-   *
-   * @return {string}
-   */
-  nameSingular(): string {
-    return pluralize.singular(this.name());
-  }
-
-  static async hydrate(record: IRecord, provider: IProvider): Promise<Record> {
-    const template = await provider.getTemplateById(record.templateId);
-    if (!template) { throw new Error('No template found for record.'); }
-    return new Record(record, new Template(template));
-  }
-
-  static async getMetadata(record: IRecord, currentUrl: string, provider: IProvider) {
-    return (await Record.hydrate(record, provider)).getMetadata(currentUrl, provider);
-  }
-
-  async getMetadata(currentUrl: string, provider: IProvider): Promise<SerializedRecord> {
-    const permalink = this.permalink();
-    const children = await provider.getChildren(this.id) || null;
+  static getMetadata(currentUrl: string, record: IRecord, children: IRecord[] = [], parent: IRecord | null = null): SerializedRecord {
+    const permalink = Record.permalink(record, parent);
+    currentUrl = currentUrl === 'index' ? '/' : currentUrl;
     return {
-      id: this.id,
-      name: this.name(),
-      template: this.template.name,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-      slug: this.template.hasView() ? this.permalink() : null,
-      isNavigation: !!this.metadata.isNavigation,
+      id: record.id,
+      templateId: record.templateId,
+      name: record.name || toTitleCase(record.templateId),
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      slug: record.slug,
+      permalink,
+      isNavigation: Record.isNavigation(record),
+      isActive: currentUrl === permalink,
+      isParentActive: currentUrl === permalink || currentUrl.indexOf((parent ? Record.permalink(parent) : null) || '/') === 0,
       hasChildren: !!children.length,
-      children: await Promise.all(children.filter(r => r.id !== this.id).map(r => Record.getMetadata(r, currentUrl, provider))),
-      isActive: permalink === '/' ? (permalink === currentUrl || currentUrl === 'index') : currentUrl === permalink,
-      isParentActive: permalink === '/' ? (permalink === currentUrl || currentUrl === 'index') : currentUrl.indexOf(permalink) === 0,
+      children: children.filter(r => r.parentId !== record.id).map(r => Record.getMetadata(currentUrl, r, [], record)),
+      parent: parent ? Record.getMetadata(currentUrl, parent) : null,
 
-      title: this.metadata.title as string || null,
-      description: this.metadata.description as string || null,
-      redirectUrl: this.metadata.redirectUrl as string || null,
+      content: JSON.parse(JSON.stringify(record.content)),
+      metadata: JSON.parse(JSON.stringify(record.metadata)),
     };
   }
 
-  toJSON() {
+  async getMetadata(currentUrl: string, children: IRecord[] = [], parent: IRecord | null = null): Promise<SerializedRecord> {
+    return Record.getMetadata(currentUrl, this, children, parent)
+  }
+
+  toJSON(): IRecord {
     return {
       id: this.id,
+      templateId: this.templateId,
+      parentId: this.parentId,
+
+      name: this.#name,
+      slug: this.slug,
+      order: this.order,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
-      template: this.template.toJSON(),
-      templateId: this.templateId,
-      content: this.content || {},
-      metadata: this.metadata || {},
-      position: this.position,
-      slug: this.slug,
-      isFirst: this.isFirst(),
-      defaultName: this.defaultName(),
-      name: this.name(),
-      defaultSlug: this.defaultSlug(),
-      safeSlug: this.safeSlug(),
-      permalink: this.permalink(),
-      nameSingular: this.nameSingular(),
+      deletedAt: this.deletedAt,
+
+      metadata: this.metadata,
+      content: this.content,
     }
   }
 }

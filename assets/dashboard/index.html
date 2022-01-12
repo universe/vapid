@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Vapid Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="https://uicdn.toast.com/tui-image-editor/latest/tui-image-editor.css">
+  <link rel="stylesheet" href="/dashboard/static/stylesheets/dashboard.css">
+  <link rel="stylesheet" href="/dashboard/static/javascripts/dashboard.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body class="dashboard">
+  <data id="site-data" style="display: none;">{{siteData}}</data>
+  <div class="image-editor" id="image-editor">
+    <div id="tui-image-editor"></div>
+    <button class="image-editor__discard" id="image-editor-discard">Discard</button>
+    <button class="image-editor__save" id="image-editor-save">Save</button>
+  </div>
+
+  <main id="main"></main>
+  <section id="modals"></section>
+  <section id="toasts"></section>
+  <section id="menu"></section>
+
+  <article class="vapid-preview" id="preview-container">
+    <div id="preview-device" class="device">
+        <div class="device-frame">
+          <iframe src="about:blank" id="vapid-preview" class="vapid-preview__iframe"></iframe>
+        </div>
+        <div class="device-stripe"></div>
+        <div class="device-header"></div>
+        <div class="device-sensors"></div>
+        <div class="device-btns"></div>
+        <div class="device-power"></div>
+      </div>
+    </div>
+    <iframe src="about:blank" id="vapid-preview-scratch" class="vapid-preview__scratch-iframe"></iframe>
+  </article>
+  <script src="https://kit.fontawesome.com/05b8235ba3.js" crossorigin="anonymous"></script>
+  <script src="/dashboard/static/javascripts/dashboard.js"></script>
+</body>
+</html>

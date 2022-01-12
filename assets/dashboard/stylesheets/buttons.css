@@ -12,15 +12,15 @@
   border-radius: 2px;
   white-space: nowrap;
   cursor: pointer;
-  background-color: var(--purple-light);
-  background-image: linear-gradient(to bottom, transparent, var(--purple));
+  background-color: var(--blue-3);
+  border-radius: 4px;
 
   outline: none;
   transition: background-color .15s, color .15s;
 }
 
 .button:hover {
-  background-color: var(--purple);
+  background-color: var(--blue-2);
   text-decoration: none;
 }
 
@@ -36,14 +36,14 @@
 }
 
 .button.basic {
-  color: var(--purple);
-  border: 1px solid var(--purple);
+  color: var(--blue-3);
+  border: 1px solid var(--blue-3);
   background: white;
 }
 
 .button.basic:hover {
   color: white;
-  background: var(--purple);
+  background: var(--blue-3);
 }
 
 .button.orange {
@@ -58,23 +58,22 @@
 }
 
 .button.red {
-  background-color: var(--red-darker);
-  background-image: linear-gradient(to bottom, var(--red-dark), transparent);
+  background-color: var(--red-3);
 }
 
 .button.red:hover {
-  background-color: var(--red-dark);
+  background-color: var(--red-2);
 }
 
 .button.basic.red {
   color: var(--red);
-  background: white;
-  border-color: var(--red);
+  background: transparent;
+  border-color: var(--red-3);
 }
 
 .button.basic.red:hover {
   color: white;
-  background: red;
+  background: var(--red-2);
 }
 
 .button.block {

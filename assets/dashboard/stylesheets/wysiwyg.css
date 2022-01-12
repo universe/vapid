@@ -1,95 +1,164 @@
 @import "../vendor/quill.bubble";
 .wysiwyg {
-	 cursor: text;
+  cursor: text;
 }
 .field__html {
-	 position: relative;
+  position: relative;
 }
 .wysiwyg-blocks {
-	 display: flex;
-	 opacity: 0;
-	 visibility: hidden;
-	 position: absolute;
-	 left: -4rem;
-	 width: auto;
-	 max-width: 3.2rem;
-	 height: 3.2rem;
-	 border: 1px solid #292d33;
-	 border-radius: 3.2rem;
-	 transform: translateY(2rem);
-	 flex-flow: row;
-	 flex-wrap: nowrap;
-	 list-style: none;
-	 overflow: hidden;
-	 align-items: center;
-	 box-sizing: content-box;
-	 z-index: 999;
-	 background: white;
-	 transition: max-width 0.28s ease-in-out, visibility 0.15s ease-in-out, opacity 0.15s ease-in-out;
+  display: flex;
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+  left: -1.4rem;
+  width: auto;
+  max-width: 2.8rem;
+  height: 2.8rem;
+  border: 1px solid #292d33;
+  border-radius: 2.8rem;
+  transform: translateY(2.1rem);
+  flex-flow: row;
+  flex-wrap: nowrap;
+  list-style: none;
+  overflow: hidden;
+  align-items: center;
+  box-sizing: content-box;
+  z-index: 999;
+  background: white;
+  font-size: 0.01px;
+  transition: max-width 0.28s ease-in-out, visibility 0.15s ease-in-out,
+	opacity 0.15s ease-in-out;
 }
-.wysiwyg-blocks.wysiwyg-blocks__block {
-	 display: flex;
-	 height: 100%;
-	 align-items: center;
-	 margin: 0 0.8rem;
-	 font-size: 0;
-	 color: transparent;
-	 white-space: pre;
+.wysiwyg-blocks .wysiwyg-blocks__block {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  padding: 0 0.4rem;
+  font-size: 0;
+  color: transparent;
+  white-space: pre;
 }
 .wysiwyg-blocks::before {
-	 content: "+";
-	 font-size: 3.2rem;
-	 width: 3.3rem;
-	 height: 3.2rem;
-	 line-height: 2.6rem;
-	 text-align: center;
-	 flex-shrink: 0;
-	 font-weight: 200;
-	 transform: rotate(0deg);
-	 transition: transform 0.28s ease-in-out;
+  content: "+";
+  font-size: 2.8rem;
+  width: 2.8rem;
+  height: 2.8rem;
+  line-height: 2.8rem;
+  text-align: center;
+  flex-shrink: 0;
+  font-weight: 200;
+  transform: rotate(0deg);
+  transform-origin: 50% 50%;
+  transition: transform 0.28s ease-in-out;
+  top: -2px;
+  position: relative;
 }
 .wysiwyg-blocks.visible {
-	 opacity: 1;
-	 visibility: visible;
-	 transition-delay: visibility 0s, top 0s;
+  opacity: 1;
+  visibility: visible;
+  transition-delay: visibility 0s, top 0s;
 }
 .wysiwyg-blocks:hover {
-	 max-width: 50%;
+  max-width: 200px;
 }
 .wysiwyg-blocks:hover::before {
-	 transform: rotate(45deg);
+  transform: rotate(45deg);
 }
-.ql-snow a,.ql-bubble a {
-	 color: #4a0c80;
+.ql-snow a,
+.ql-bubble a {
+  color: #4a0c80;
 }
-.ql-snow.ql-editor,.ql-bubble.ql-editor {
-	 overflow: visible !important;
+.ql-snow.ql-editor,
+.ql-bubble.ql-editor {
+  overflow: visible !important;
 }
-.ql-snow.ql-editor ul,.ql-bubble.ql-editor ul,.ql-snow.ql-editor ol,.ql-bubble.ql-editor ol {
-	 margin-bottom: 0.4rem;
+.ql-snow.ql-editor ul,
+.ql-bubble.ql-editor ul,
+.ql-snow.ql-editor ol,
+.ql-bubble.ql-editor ol {
+  margin-bottom: 0.4rem;
 }
-.ql-snow.ql-editor p,.ql-bubble.ql-editor p,.ql-snow.ql-editor ol,.ql-bubble.ql-editor ol,.ql-snow.ql-editor ul,.ql-bubble.ql-editor ul,.ql-snow.ql-editor blockquote,.ql-bubble.ql-editor blockquote,.ql-snow.ql-editor pre,.ql-bubble.ql-editor pre,.ql-snow.ql-editor h1,.ql-bubble.ql-editor h1,.ql-snow.ql-editor h2,.ql-bubble.ql-editor h2,.ql-snow.ql-editor h3,.ql-bubble.ql-editor h3,.ql-snow.ql-editor h4,.ql-bubble.ql-editor h4,.ql-snow.ql-editor h5,.ql-bubble.ql-editor h5,.ql-snow.ql-editor h6,.ql-bubble.ql-editor h6 {
-	 margin: 0 0 1.2rem;
-	 line-height: 1.2;
+.ql-snow.ql-editor p,
+.ql-bubble.ql-editor p,
+.ql-snow.ql-editor ol,
+.ql-bubble.ql-editor ol,
+.ql-snow.ql-editor ul,
+.ql-bubble.ql-editor ul,
+.ql-snow.ql-editor blockquote,
+.ql-bubble.ql-editor blockquote,
+.ql-snow.ql-editor pre,
+.ql-bubble.ql-editor pre,
+.ql-snow.ql-editor h1,
+.ql-bubble.ql-editor h1,
+.ql-snow.ql-editor h2,
+.ql-bubble.ql-editor h2,
+.ql-snow.ql-editor h3,
+.ql-bubble.ql-editor h3,
+.ql-snow.ql-editor h4,
+.ql-bubble.ql-editor h4,
+.ql-snow.ql-editor h5,
+.ql-bubble.ql-editor h5,
+.ql-snow.ql-editor h6,
+.ql-bubble.ql-editor h6 {
+  margin: 0 0 1.2rem;
+  line-height: 1.2;
 }
-.ql-snow.ql-editor p:first-child,.ql-bubble.ql-editor p:first-child,.ql-snow.ql-editor ol:first-child,.ql-bubble.ql-editor ol:first-child,.ql-snow.ql-editor ul:first-child,.ql-bubble.ql-editor ul:first-child,.ql-snow.ql-editor blockquote:first-child,.ql-bubble.ql-editor blockquote:first-child,.ql-snow.ql-editor pre:first-child,.ql-bubble.ql-editor pre:first-child,.ql-snow.ql-editor h1:first-child,.ql-bubble.ql-editor h1:first-child,.ql-snow.ql-editor h2:first-child,.ql-bubble.ql-editor h2:first-child,.ql-snow.ql-editor h3:first-child,.ql-bubble.ql-editor h3:first-child,.ql-snow.ql-editor h4:first-child,.ql-bubble.ql-editor h4:first-child,.ql-snow.ql-editor h5:first-child,.ql-bubble.ql-editor h5:first-child,.ql-snow.ql-editor h6:first-child,.ql-bubble.ql-editor h6:first-child {
-	 margin-top: 0;
+.ql-snow.ql-editor p:first-child,
+.ql-bubble.ql-editor p:first-child,
+.ql-snow.ql-editor ol:first-child,
+.ql-bubble.ql-editor ol:first-child,
+.ql-snow.ql-editor ul:first-child,
+.ql-bubble.ql-editor ul:first-child,
+.ql-snow.ql-editor blockquote:first-child,
+.ql-bubble.ql-editor blockquote:first-child,
+.ql-snow.ql-editor pre:first-child,
+.ql-bubble.ql-editor pre:first-child,
+.ql-snow.ql-editor h1:first-child,
+.ql-bubble.ql-editor h1:first-child,
+.ql-snow.ql-editor h2:first-child,
+.ql-bubble.ql-editor h2:first-child,
+.ql-snow.ql-editor h3:first-child,
+.ql-bubble.ql-editor h3:first-child,
+.ql-snow.ql-editor h4:first-child,
+.ql-bubble.ql-editor h4:first-child,
+.ql-snow.ql-editor h5:first-child,
+.ql-bubble.ql-editor h5:first-child,
+.ql-snow.ql-editor h6:first-child,
+.ql-bubble.ql-editor h6:first-child {
+  margin-top: 0;
 }
-.ql-snow.ql-toolbar button,.ql-snow.ql-toolbar.ql-picker-item,.ql-snow.ql-toolbar.ql-picker-label {
-	 outline: none;
+.ql-snow.ql-toolbar button,
+.ql-snow.ql-toolbar.ql-picker-item,
+.ql-snow.ql-toolbar.ql-picker-label {
+  outline: none;
 }
-.ql-snow.ql-toolbar button:hover,.ql-snow.ql-toolbar.ql-picker-item:hover,.ql-snow.ql-toolbar.ql-picker-label:hover,.ql-snow.ql-toolbar button.ql-active,.ql-snow.ql-toolbar.ql-picker-item.ql-active,.ql-snow.ql-toolbar.ql-picker-label.ql-active {
-	 color: var(--purple);
+.ql-snow.ql-toolbar button:hover,
+.ql-snow.ql-toolbar.ql-picker-item:hover,
+.ql-snow.ql-toolbar.ql-picker-label:hover,
+.ql-snow.ql-toolbar button.ql-active,
+.ql-snow.ql-toolbar.ql-picker-item.ql-active,
+.ql-snow.ql-toolbar.ql-picker-label.ql-active {
+  color: var(--purple);
 }
-.ql-snow.ql-toolbar button:hover.ql-stroke,.ql-snow.ql-toolbar.ql-picker-item:hover.ql-stroke,.ql-snow.ql-toolbar.ql-picker-label:hover.ql-stroke,.ql-snow.ql-toolbar button.ql-active.ql-stroke,.ql-snow.ql-toolbar.ql-picker-item.ql-active.ql-stroke,.ql-snow.ql-toolbar.ql-picker-label.ql-active.ql-stroke {
-	 stroke: var(--purple);
+.ql-snow.ql-toolbar button:hover.ql-stroke,
+.ql-snow.ql-toolbar.ql-picker-item:hover.ql-stroke,
+.ql-snow.ql-toolbar.ql-picker-label:hover.ql-stroke,
+.ql-snow.ql-toolbar button.ql-active.ql-stroke,
+.ql-snow.ql-toolbar.ql-picker-item.ql-active.ql-stroke,
+.ql-snow.ql-toolbar.ql-picker-label.ql-active.ql-stroke {
+  stroke: var(--purple);
 }
-.ql-snow.ql-toolbar button:hover.ql-fill,.ql-snow.ql-toolbar.ql-picker-item:hover.ql-fill,.ql-snow.ql-toolbar.ql-picker-label:hover.ql-fill,.ql-snow.ql-toolbar button.ql-active.ql-fill,.ql-snow.ql-toolbar.ql-picker-item.ql-active.ql-fill,.ql-snow.ql-toolbar.ql-picker-label.ql-active.ql-fill {
-	 fill: var(--purple);
+.ql-snow.ql-toolbar button:hover.ql-fill,
+.ql-snow.ql-toolbar.ql-picker-item:hover.ql-fill,
+.ql-snow.ql-toolbar.ql-picker-label:hover.ql-fill,
+.ql-snow.ql-toolbar button.ql-active.ql-fill,
+.ql-snow.ql-toolbar.ql-picker-item.ql-active.ql-fill,
+.ql-snow.ql-toolbar.ql-picker-label.ql-active.ql-fill {
+  fill: var(--purple);
 }
 .ql-tooltip {
-	 z-index: 999999 !important;
+  z-index: 999 !important;
 }
 .ql-tooltip select {
-	 display: none;
+  display: none;
 }

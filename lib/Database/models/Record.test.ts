@@ -1,28 +1,32 @@
 import { describe, it } from '@jest/globals';
 
 import { Record } from './Record';
-import { PageType, Template } from './Template';
+import { Template } from './Template';
+import { PageType } from './index';
 
 describe('Record Models', () => {
-  it('Replaces first name tag', () => {
-    const record = new Record({
-      id: 100,
-      templateId: 1,
-      parentId: null,
-      content: {},
-      metadata: {},
-      position: 0,
-      slug: '',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    }, new Template({
-      id: 1,
+  it('Has a default slug', () => {
+    const tmpl = new Template({
       name: 'test',
       sortable: true,
       options: {},
       fields: {},
+      metadata: {},
       type: PageType.PAGE,
-    }));
-    expect(record.permalink()).toBe('/test-100');
+    });
+    const record = new Record({
+      id: '100',
+      templateId: tmpl.id,
+      parentId: null,
+      name: null,
+      slug: 'test--100',
+      order: 0,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      deletedAt: null,
+      content: {},
+      metadata: {},
+    }, tmpl, null);
+    expect(record.permalink()).toBe('/test--100');
   });
 });

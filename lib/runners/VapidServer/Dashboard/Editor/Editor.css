@@ -1,0 +1,15 @@
+.toast--success::before {
+  content: "\f00c";
+  font-family: 'fontawesome';
+  color: white;
+  font-size: 1.4rem;
+  margin-left: 0.6rem;
+}
+
+.toast--error::before {
+  content: "\f00d";
+  font-family: 'fontawesome';
+  color: white;
+  font-size: 1.4rem;
+  margin-left: 0.6rem;
+}

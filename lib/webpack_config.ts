@@ -1,6 +1,5 @@
 import { GlobSync } from 'glob';
 import { relative, resolve } from 'path';
-import sass from 'sass';
 // import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 
 /**
@@ -90,7 +89,6 @@ export default function config(mode = 'production', assets: string[] = [], modul
           use: [
             // { loader: MiniCssExtractPlugin.loader },
             { loader: 'css-loader', options: { url: false, sourceMap: true } },
-            { loader: 'sass-loader', options: { implementation: sass, sourceMap: true } },
             { loader: 'resolve-url-loader' },
           ],
         },

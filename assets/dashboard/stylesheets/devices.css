@@ -1,0 +1,274 @@
+.device {
+  --scale: 1;
+  position: absolute;
+  box-sizing: border-box;
+  display: block;
+  transition: all .28s ease-in-out;
+  z-index: 1;
+  transform: translate3d(0, 0, 0) scale(var(--scale));
+  width: calc(100% * (100 / (var(--scale) * 100)));
+  height: calc(100% * (100 / (var(--scale) * 100)));
+  border: 1px solid rgba(0,0,0,.25);
+  border-radius: 0.8rem;
+  overflow: hidden;
+  box-shadow: var(--elevation-6);
+}
+
+.device::before,
+.device::after,
+.device *,
+.device *::before,
+.device *::after {
+  box-sizing: border-box;
+  display: block;
+  transition: all .28s ease-in-out;
+  width: 100%;
+  height: 100%;
+}
+
+.device-stripe,
+.device-stripe::before,
+.device-stripe::after,
+.device-header,
+.device-header::before,
+.device-header::after,
+.device-sensors,
+.device-sensors::before,
+.device-sensors::after,
+.device-btns,
+.device-btns::before,
+.device-btns::after,
+.device-power,
+.device-btns::before,
+.device-btns::after {
+  width: 0;
+  height: 0;
+}
+
+.device .device-frame {
+  z-index: 1;
+}
+
+.device .device-content {
+  background-color: #fff;
+  background-position: center center;
+  background-size: cover;
+  object-fit: cover;
+  position: relative;
+}
+
+.device.device-iphone-x {
+  height: 868px;
+  width: 428px;
+  border-radius: 68px;
+}
+
+.device .device-frame {
+  background: #222;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0px;
+  width: 100%;
+  width: 100%;
+}
+
+.device-iphone-x .device-frame {
+  border-radius: 68px;
+  box-shadow: inset 0 0 2px 2px #c8cacb, inset 0 0 0 7px #e2e3e4;
+  padding: 28px;
+}
+
+.device .device-content {
+  border-radius: 0;
+}
+
+.device-iphone-x .device-content {
+  border-radius: 40px;
+  height: calc(100% - 56px);
+  width: calc(100% - 53px);
+}
+
+.device .device-stripe::after,
+.device .device-stripe::before {
+  border: solid rgba(51, 51, 51, 0);
+  border-width: 0 0px;
+  content: "";
+  left: 0;
+  position: absolute;
+  z-index: 9;
+}
+
+.device-iphone-x .device-stripe::after,
+.device-iphone-x .device-stripe::before {
+  border: solid rgba(51, 51, 51, .25);
+  border-width: 0 7px;
+  height: 7px;
+  width: 100%;
+}
+
+.device .device-stripe::after {
+  top: 85px;
+}
+
+.device .device-stripe::before {
+  bottom: 85px;
+}
+
+.device .device-header {
+  background: #222;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+  height: 0px;
+  left: 50%;
+  margin-left: -102px;
+  position: absolute;
+  top: 0;
+  width: 204px;
+}
+
+
+.device-iphone-x .device-header {
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  height: 30px;
+  top: 28px;
+  box-shadow: 0px -3px #222;
+}
+
+.device .device-header::after,
+.device .device-header::before {
+  content: "";
+  height: 10px;
+  position: absolute;
+  top: 0;
+  width: 10px;
+  box-shadow: 3px ​-3px  #222;
+}
+
+.device .device-header::after {
+  background: radial-gradient(circle at bottom left, transparent 0, transparent 75%, #222 75%, #222 100%);
+  left: -10px;
+  opacity: 0;
+}
+
+.device .device-header::before {
+  background: radial-gradient(circle at bottom right, transparent 0, transparent 75%, #222 75%, #222 100%);
+  right: -10px;
+  opacity: 0;
+  box-shadow: -3px ​-3px  #222;
+}
+
+.device-iphone-x .device-header::after, .device-iphone-x .device-header::before {
+  opacity: 1;
+}
+
+.device .device-sensors::after,
+.device .device-sensors::before {
+  content: "";
+  position: absolute;
+  transform-origin: 50% 50%;
+}
+
+.device .device-sensors::after {
+  background: #444;
+  border-radius: 3px;
+  height: 6px;
+  left: 50%;
+  margin-left: -25px;
+  top: 0;
+  width: 50px;
+  transform: scale(0);
+}
+
+.device .device-sensors::before {
+  background: #444;
+  border-radius: 50%;
+  height: 14px;
+  left: 50%;
+  margin-left: 40px;
+  top: 0;
+  width: 14px;
+  transform: scale(0);
+}
+.device-iphone-x .device-sensors::after {
+  top: 32px;
+  transform: scale(1);
+}
+
+.device-iphone-x .device-sensors::before {
+  top: 28px;
+  transform: scale(1);
+}
+
+.device .device-btns {
+  background: #c8cacb;
+  height: 32px;
+  left: -3px;
+  position: absolute;
+  top: 115px;
+  width: 0px;
+}
+
+.device-iphone-x .device-btns {
+  width: 3px;
+}
+
+.device .device-btns::after,
+.device .device-btns::before {
+  background: #c8cacb;
+  content: "";
+  height: 62px;
+  left: 0;
+  position: absolute;
+  width: 0px;
+}
+
+.device-iphone-x .device-btns::after,
+.device-iphone-x .device-btns::before {
+  width: 3px;
+}
+
+.device .device-btns::after {
+  top: 60px;
+}
+
+.device .device-btns::before {
+  top: 140px;
+}
+
+.device .device-power {
+  background: #c8cacb;
+  height: 100px;
+  position: absolute;
+  right: -3px;
+  top: 200px;
+  width: 0px;
+}
+
+.device-iphone-x .device-power {
+  width: 3px;
+}
+
+@media (max-height: 940px) {
+  .device {
+    --scale: 0.75;
+  }
+}
+
+@media (max-height: 720px) {
+  .device {
+    --scale: 0.7;
+  }
+}
+
+@media (max-height: 666px) {
+  .device {
+    --scale: 0.66;
+  }
+}
+
+@media (max-height: 640px) {
+  .device {
+    --scale: 0.55;
+  }
+}

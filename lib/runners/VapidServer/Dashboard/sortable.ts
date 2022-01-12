@@ -1,27 +1,29 @@
 import sortable from 'html5sortable';
-import $ from 'jquery';
 
-document.addEventListener("turbolinks:load", () => {
-  const el = document.querySelector('.draggable.table tbody') as HTMLElement;
+export function init() {
+  const tbody = document.querySelector('.sortable.table tbody') as HTMLElement;
 
-  if (el) {
-    sortable(el, { forcePlaceholderSize: true });
+  if (tbody) {
+    sortable(tbody, { forcePlaceholderSize: true });
 
-    el.addEventListener('sortupdate', (e: any) => {
+    tbody.addEventListener('sortupdate', (e: any) => {
       const { item } = e.detail;
       const { index: from } = e.detail.origin;
       const { index: to } = e.detail.destination;
       const id = item.getAttribute('data-id');
-
-      $.post('/dashboard/records/reorder', { id, from, to }).fail((_err) => {
+      const parentId = item.getAttribute('data-parent-id');
+      const csrf = document.getElementById('csrf-token')?.getAttribute('content') || '';
+      window.fetch('/api/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrf },
+        body: JSON.stringify({ id, from, to, parentId }),
+      }).catch((_err) => {
         // TODO: probably need some better client-side error handling here
         alert('Error: could not reorder records');
       });
     });
   }
-});
 
-document.addEventListener("turbolinks:load", () => {
   const el = document.querySelector('.menu.sortable') as HTMLElement;
 
   if (el) {
@@ -36,6 +38,7 @@ document.addEventListener("turbolinks:load", () => {
       const id = item.getAttribute('data-id');
       const { index: from } = e.detail.origin;
       const { index: to } = e.detail.destination;
+      const csrf = document.getElementById('csrf-token')?.getAttribute('content') || '';
 
       // Check if this element is a nav item.
       let nav = false;
@@ -44,10 +47,14 @@ document.addEventListener("turbolinks:load", () => {
         if (el === item) { nav = true; }
       }
 
-      $.post('/dashboard/records/reorder', { id, from, to, nav }).fail((_err) => {
+      window.fetch('/api/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrf },
+        body: JSON.stringify({ id, from, to, parentId: nav ? 'navigation' : null }),
+      }).catch((_err) => {
         // TODO: probably need some better client-side error handling here
         alert('Error: could not reorder records');
       });
     });
   }
-});
+}
