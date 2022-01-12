@@ -1,9 +1,7 @@
 import livereload from 'livereload';
-import { extname } from 'path';
 import pino from 'pino';
 
 const logger = pino();
-const reSass = /\.s[ac]ss$/;
 
 /**
  * Watches filesystem for changes,
@@ -34,15 +32,12 @@ export default class Watcher {
    */
   handleEvent(filePath: string) {
     // Ignore hidden files
+    logger.info(`PANIC ${filePath} ${[...arguments]}`);
     if (/^\..*/.test(filePath)) return;
-
-    if (extname(filePath).match(reSass)) {
-      setTimeout(() => {
-        this.callback && this.callback();
-        this.refresh(filePath);
-      });
-      return;
-    }
+    setTimeout(() => {
+      this.callback && this.callback();
+      this.server?.refresh(filePath);
+    }, 120);
 
     this.callback && this.callback();
     logger.info(`LiveReload: ${filePath}`);
@@ -58,10 +53,9 @@ export default class Watcher {
     this.callback = callback;
     this.server = livereload.createServer();
     this.server.watch(this.paths);
-    this.server.on('add', this.handleEvent.bind(this));
-    this.server.on('change', this.handleEvent.bind(this));
-    this.server.on('unlink', this.handleEvent.bind(this));
-
+    this.server.watcher.on('add', this.handleEvent.bind(this));
+    this.server.watcher.on('change', this.handleEvent.bind(this));
+    this.server.watcher.on('unlink', this.handleEvent.bind(this));
     logger.info(`Watching for changes in ${this.paths}`);
   }
 
@@ -70,18 +64,6 @@ export default class Watcher {
    */
   close() {
     if (this.server) this.server.close();
-  }
-
-  /**
-   * Broadcasts reload-all command to WebSocket clients
-   *
-   * @param {string} [filePath=*] - path to refresh
-   */
-  refresh(filePath = '*') {
-    if (!this.server) return;
-    const refreshPath = filePath.replace(reSass, '.css');
-    this.server.refresh(refreshPath);
-    logger.info(`LiveReload: ${filePath}`);
   }
 
   /**

@@ -3,4 +3,7 @@ node_modules
 package-lock.json
 test.sqlite
 dist
-assets/dashboard/javascripts/dashboard.js
+assets/dashboard/javascripts
+.parcel-cache
+firebase-debug.log
+firestore-debug.log

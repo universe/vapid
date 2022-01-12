@@ -1,83 +1,59 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { basename, dirname, join } from 'path';
+import { Document } from 'simple-dom';
+import Serializer from '@simple-dom/serializer';
+import { preprocess } from '@glimmer/syntax';
+import { Json } from '@universe/util';
+import * as path from 'path';
+import * as glob from 'glob';
 
-import { PageType, IRecord, ITemplate, Record as DBRecord, Template } from '../Database/models';
-import { IProvider } from '../Database/providers';
-import { helper } from '../directives';
+import { PageType, IRecord, Record as DBRecord, Template, sortRecords, ITemplate, mergeField, stampTemplate } from '../Database/models';
 import {
-  NeutrinoHelper,
-  CollectionHelper,
-  IfHelper,
-  UnlessHelper,
-  CollateHelper,
-  EachHelper,
-  EqHelper,
-  MathHelper,
-  LinkHelper,
-  ImageHelper,
-  DateHelper,
-} from './helpers';
-import { ComponentResolver, DATA_SYMBOL, GlimmerTemplate, HelperResolver, IParsedTemplate } from './types';
-import { render } from './renderer';
-import { parse } from './parser';
-import Vapid from '../runners/Vapid';
+  resolveHelper,
+  RECORD_META,
+  GlimmerTemplate,
+  HelperResolver,
+  IParsedTemplate,
+  IPageContext,
+  IRecordData,
+  render,
+} from '../TemplateRuntime';
+import { parse, ComponentResolver } from './parser';
+import { SerializedRecord } from '../Database/types';
 
-async function makeHelpers(data: IRecord, template: ITemplate, pages: Record<string, any>, provider: IProvider) {
-  const { fields } = template;
-  const { content } = data;
-  const out: object = {};
-  const record = new DBRecord(data, new Template(template));
-  for (const key of Object.keys(content)) {
-    out[key] = await helper(content[key], fields[key] as any, pages);
+import type Vapid from '../runners/Vapid'; // Import type important here for build
+import Database from '../Database';
+
+async function makeRecordData(page: IRecord, fieldKey: 'content' | 'metadata', db: Database): Promise<IRecordData> {
+  const children = await db.getChildren(page.id) || null;
+  const parent = page.parentId ? await db.getRecordById(page.parentId) : null;
+  const out: IRecordData = {
+    [RECORD_META]: DBRecord.getMetadata(DBRecord.permalink(page, parent), page, children, parent),
+  } as IRecordData;
+  console.log('RENDER', RECORD_META, JSON.stringify(out, null, 2))
+  for (const key of Object.keys(page[fieldKey])) {
+    out[key] = page[fieldKey][key];
   }
-
-  out[DATA_SYMBOL] = await record.getMetadata('/', provider);
-
   return out;
 }
-
 
 /**
  * TemplateCompiler class
  * Used in conjunction with a modified version of Mustache.js (Goatee)
  */
  export class TemplateCompiler {
-
-  private helpers: Record<string, NeutrinoHelper> = {};
   private resolveHelper: HelperResolver;
   private resolveComponent: ComponentResolver;
-
-  static get DATA_SYMBOL() { return DATA_SYMBOL; }
 
   /**
    * @param {object} partials – The partials to make available in this project.
    * @param {array} helpers - Additional helpers to make available in this project.
    */
-  constructor(resolveComponent: ComponentResolver = () => null, resolveHelper: HelperResolver = () => null) {
-    this.resolveComponent = resolveComponent;
-    this.resolveHelper = (name: string) => {
-      return this.helpers[name] || resolveHelper(name);
-    }
-
-    // Register native helpers
-    this.registerHelper('collection', CollectionHelper);
-    this.registerHelper('if', IfHelper);
-    this.registerHelper('unless', UnlessHelper);
-    this.registerHelper('collate', CollateHelper);
-    this.registerHelper('each', EachHelper);
-    this.registerHelper('eq', EqHelper);
-    this.registerHelper('math', MathHelper);
-    this.registerHelper('link', LinkHelper);
-    this.registerHelper('image', ImageHelper);
-    this.registerHelper('date', DateHelper);
+  constructor(customResolveComponent: ComponentResolver = () => null, customResolveHelper: HelperResolver = () => null) {
+    this.resolveComponent = customResolveComponent;
+    this.resolveHelper = (name: string) => resolveHelper(name) || customResolveHelper(name);
   }
-
-  // Wrap all helpers so we unwrap function values and SafeStrings
-  registerHelper(name: string, helper: NeutrinoHelper) {
-    this.helpers[name] = helper;
-  }
-
 
   /**
    * Applies content to the template
@@ -94,8 +70,47 @@ async function makeHelpers(data: IRecord, template: ITemplate, pages: Record<str
     } else if (dirname(filePath).endsWith('components') || name.startsWith('_')) {
       type = PageType.COMPONENT;
     }
-
     return parse(name, type, html, this.resolveComponent, this.resolveHelper);
+  }
+
+  private resolveComponentAst(name: string): GlimmerTemplate {
+    const path = this.resolveComponent(name);
+    if (!path) { throw new Error(`Unknown component <${name} />`); }
+    return preprocess(path);
+  }
+
+  parse(root: string): Record<string, ITemplate> {
+    const tree: Record<string, ITemplate> = {};
+    const templates = glob.sync(path.resolve(root, '**/*.html'));
+    for (const tpl of templates) {
+      const parsed = this.parseFile(tpl).templates;
+
+      for (const [parsedName, parsedTemplate] of Object.entries(parsed)) {
+        // We merge discovered fields across files, so we gradually collect configurations
+        // for all sections here. Get or create this shared object as needed.
+        const finalTemplate: ITemplate = tree[parsedName] = tree[parsedName] || stampTemplate({ name: parsedTemplate.name, type: parsedTemplate.type });
+
+        // Ensure the section name and type are set.
+        finalTemplate.name = parsedTemplate.name || finalTemplate.name;
+        finalTemplate.type = parsedTemplate.type || finalTemplate.type;
+
+        // Merge section options
+        Object.assign(finalTemplate.options, parsedTemplate.options);
+
+        // For every content field discovered in the content block, track them in the section.
+        for (const field of Object.values(parsedTemplate.fields)) {
+          if (!field) { continue; }
+          finalTemplate.fields[field.key] = mergeField(finalTemplate.fields[field.key] || {}, field);
+        }
+
+        // For every metadata field discovered in the content block, track them in the section.
+        for (const field of Object.values(parsedTemplate.metadata)) {
+          if (!field) { continue; }
+          finalTemplate.metadata[field.key] = mergeField(finalTemplate.metadata[field.key] || {}, field);
+        }
+      }
+    }
+    return tree;
   }
 
 
@@ -105,13 +120,38 @@ async function makeHelpers(data: IRecord, template: ITemplate, pages: Record<str
    * @param {Object} content
    * @return {string} - HTML that has tags replaced with content
    */
-  renderFile(filePath: string, content = {}, data = {}) {
-    const { name, type, ast } = this.parseFile(filePath);
-    return render(name, type, ast, this.resolveComponent, this.resolveHelper, content, data);
+  async render(tmpl: IParsedTemplate, data: IPageContext) {
+    const document = new Document();
+    await render(
+      document,
+      tmpl,
+      data,
+      this.resolveComponentAst.bind(this),
+      this.resolveHelper.bind(this),
+    );
+    const serializer = new Serializer({});
+    return serializer.serialize(document);
   }
 
-  render(name: string, type: PageType, ast: GlimmerTemplate | string, content = {}, data = {}) {
-    return render(name, type, ast, this.resolveComponent, this.resolveHelper, content, data)
+  async parseTemplate(vapid: Vapid, type: PageType, name: string) {
+    let pagePath: string | null = null;
+    if (type === 'page') {
+      const htmlFile = join(vapid.paths.www, `${name}.html`);
+      const dirFile = join(vapid.paths.www, name, 'index.html');
+      pagePath = (existsSync(htmlFile) && htmlFile) || (existsSync(dirFile) && dirFile) || null;
+    }
+    else if (type === 'collection') {
+      const partial = join(vapid.paths.www, `_${name}.html`);
+      const collection = join(vapid.paths.www, `collections/${name}.html`);
+      pagePath = (existsSync(collection) && collection) || (existsSync(partial) && partial) || null;
+    }
+
+    if (!pagePath) {
+      console.error(`Template file "${name}-${type}" not found`);
+      return null;
+    }
+
+    return this.parseFile(pagePath);
   }
 
   /**
@@ -123,76 +163,85 @@ async function makeHelpers(data: IRecord, template: ITemplate, pages: Record<str
    *
    * @todo Use Promise.all when fetching content
    */
-  async renderContent(vapid: Vapid, uriPath: string) {
+   async parsePermalink(vapid: Vapid, uriPath: string): Promise<IParsedTemplate | null> {
     const record = await vapid.database.getRecordFromPath(uriPath.slice(1));
-
-    if (!record) {
-      throw new Error('Record not found');
-    }
-
+    if (!record) { return null; }
     const template = record.template;
-    const templateName = template.name;
-    let pagePath = null;
-    if (template.type === 'page') {
-      const htmlFile = join(vapid.paths.www, `${templateName}.html`);
-      const dirFile = join(vapid.paths.www, templateName, 'index.html');
-      pagePath = (existsSync(htmlFile) && htmlFile) || (existsSync(dirFile) && dirFile) || null;
-    }
-    else if (template.type === 'collection') {
-      const partial = join(vapid.paths.www, `_${templateName}.html`);
-      const collection = join(vapid.paths.www, `collections/${templateName}.html`);
-      pagePath = (existsSync(collection) && collection) || (existsSync(partial) && partial) || null;
-    }
+    return await this.parseTemplate(vapid, template.type, template.name);
+  };
 
-    if (!pagePath) {
-      throw new Error('Template file not found');
-    }
-
-    const { name, type, data, ast } = this.parseFile(pagePath);
-
+  async getPageContext(vapid: Vapid, record: DBRecord, tmpl: IParsedTemplate): Promise<IPageContext> {
     // Fetch all renderable pages.
     const pages = await vapid.database.getRecordsByType(PageType.PAGE);
 
     // Generate our navigation menu.
-    const navigation = [];
-    for (const page of pages) {
-      const meta = await DBRecord.getMetadata(page, uriPath, vapid.database);
-      if (!meta.isNavigation) { continue; }
+    let navigation: SerializedRecord[] = [];
+    const pageMeta: SerializedRecord[] = [];
+    const currentUrl = record.permalink();
+    for (const page of pages.sort(sortRecords)) {
+      const children = await vapid.database.getChildren(page.id) || null;
+      const parent = page.parentId ? await vapid.database.getRecordById(page.parentId) : null;
+      const meta = DBRecord.getMetadata(currentUrl, page, children, parent);
+      pageMeta.push(meta);
+      if (page.parentId !== 'navigation') { continue; }
       navigation.push(meta);
     }
 
     // Create our page context data.
-    const pageMeta = await Promise.all(pages.map(p => DBRecord.getMetadata(p, uriPath, vapid.database)));
-    const pageData = await makeHelpers(record, template, { pages: pageMeta }, vapid.database);
-    const context = { this: {} };
-    for (const key of Object.keys(pageData)) {
-      context.this[key] = pageData[key];
-    }
+    const content = { this: await makeRecordData(record, 'content', vapid.database) };
 
     /* eslint-disable no-await-in-loop */
-    for (const model of Object.values(data)) {
+    for (const model of Object.values(tmpl.templates)) {
       if (model.type === 'page') { continue; }
       // Fetch all templates where the type and model name match.
-      const templates = [await vapid.database.getTemplateByName(model.name, model.type)];
-      const records = ((await Promise.all(templates.map(async (t) => {
-        if (!t) { return; }
-        const records = await vapid.database.getRecordsByTemplateId(t.id);
-        return Promise.all(records.map(r => makeHelpers(r, t, { pages: pageMeta }, vapid.database)));
-      }))).filter(Boolean) as any).flat() as object[];
+      const template = await vapid.database.getTemplateByName(model.name, model.type);
+      const records = template ? await vapid.database.getRecordsByTemplateId(Template.id(template)) : [];
 
-      context[model.name] = (model.type === PageType.COLLECTION) ? records : (records[0] || {});
+      if (model.type === PageType.COLLECTION) {
+        const collection: Json[] = content[model.name] = [];
+        for (const record of records) {
+          collection.push(await makeRecordData(record, 'content', vapid.database))
+        }
+        content[model.name] = collection;
+      }
+      else {
+        // TODO: Create stub record if none exist yet.
+        content[model.name] = records[0] ? await makeRecordData(records[0], 'content', vapid.database) : {};
+      }
     }
 
-    /* eslint-enable no-await-in-loop */
-    return this.render(name, type, ast, context, {
+    return {
+      content,
+      meta: await makeRecordData(record, 'metadata', vapid.database),
+      page: content.this[RECORD_META],
+      pages: pageMeta,
       navigation,
-      page: await record.getMetadata(uriPath, vapid.database),
-      site: {
-        domain: vapid.domain,
-        name: vapid.name,
+      media: {
+        host: await vapid.database.mediaUrl(),
       },
-    });
+      site: {
+        domain: vapid.config.domain,
+        name: vapid.config.name,
+      },
+    }
+  }
+
+  /**
+   *
+   * Renders content into site template
+   *
+   * @param {string} uriPath
+   * @return {string} rendered HTML
+   *
+   * @todo Use Promise.all when fetching content
+   */
+  async renderPermalink(vapid: Vapid, uriPath: string) {
+    const tmpl = await this.parsePermalink(vapid, uriPath);
+    if (!tmpl) { throw new Error('Permalink not found'); }
+    const record = await vapid.database.getRecordFromPath(uriPath.slice(1));
+    const template = record?.template;
+    if (!record || !template) { throw new Error('Record not found'); }
+    const pageData = await this.getPageContext(vapid, record, tmpl);
+    return await this.render(tmpl, pageData);
   };
-
-
 }

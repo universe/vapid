@@ -5,10 +5,16 @@ const logger = require('pino')();
 const program = require('commander');
 const updateNotifier = require('update-notifier');
 
+require('module')._extensions['.css'] = (_module, _filename) => '';
+require('module-alias').addAlias('react', 'preact/compat');
+require('module-alias').addAlias('react-dom', 'preact/compat');
+require('module-alias').addAlias('react-dom/test-utils', 'preact/test-utils');
+require('module-alias').addAlias('react-dom/jsx-runtime', 'preact/jsx-runtime');
+require('module-alias').addAlias('@uiw/react-md-editor', 'preact/compat');
+
 const pkg = require('../package.json');
 // const Generator = require('../dist/generator');
-const { default: VapidServer } = require('../dist/runners/VapidServer');
-const { default: VapidBuilder } = require('../dist/runners/VapidBuilder');
+const { VapidServer, VapidBuilder } = require('../dist/index');
 // const VapidDeployer = require('../dist/runners/VapidDeployer');
 
 function withVapid(command) {
@@ -69,12 +75,12 @@ program
 program
   .command('deploy')
   .description('deploy to Vapid\'s hosting service')
-  .action(async (_target) => {
+  .action(withVapid(async (_target) => {
     // const cwd = typeof target !== 'string' ? process.cwd() : target;
     // const vapid = new VapidDeployer(cwd);
     // await vapid.deploy();
     process.exit(0);
-  });
+  }));
 
 /**
  * version - prints the current Vapid version number
@@ -88,13 +94,13 @@ program
 program
   .command('build')
   .description('generate a static build of the site')
-  .action(async (target, dest) => {
+  .action(withVapid(async (target, dest) => {
     const cwd = typeof target !== 'string' ? process.cwd() : target;
     const destDir = typeof dist !== 'string' ? path.join(process.cwd(), 'dist') : dest;
     const vapid = new VapidBuilder(cwd);
     await vapid.build(destDir);
     process.exit(0);
-  });
+  }));
 
 /**
  * catch all command - shows the help text

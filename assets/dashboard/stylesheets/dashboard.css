@@ -6,27 +6,85 @@
 @import "./buttons.css";
 @import "./sections.css";
 @import "./tables.css";
-@import "./navbar.css";
 @import "./sidebar.css";
 @import "./wysiwyg.css";
 @import "./main.css";
 @import "./pages.css";
 @import "./footer.css";
+@import "./devices.css";
 
 @import "./error.css";
 
 /* Semantic UI (w/ some overrides) */
-@import "./semantic/checkbox.css";
-@import "./semantic/dropdown.css";
-@import "./semantic/icon.css";
 @import "./semantic/label.css";
-@import "./semantic/message.css";
-@import "./semantic/transition.css";
 
-/* @import "~flatpickr/dist/flatpickr.min"; */
 body {
-  --white: #f1f3f8;
-  --black: #2C2C31;
+  --slate-0: #0a0b0c;
+  --slate-1: #3e4449;
+  --slate-2: #74818c;
+  --slate-3: #a6b6c4;
+  --slate-4: #c9d7e3;
+  --slate-5: #e3eaf0;
+  --slate-6: #fbfcfd;
+  --purple-0: #08080d;
+  --purple-1: #23253f;
+  --purple-2: #373a5e;
+  --purple-3: #5f6188;
+  --purple-4: #8a8baf;
+  --purple-5: #bdbdd4;
+  --purple-6: #f7f8fd;
+  --blue-0: #070a10;
+  --blue-1: #142b45;
+  --blue-2: #0f4c7f;
+  --blue-3: #2e71b2;
+  --blue-4: #6e9ad3;
+  --blue-5: #b2c7e8;
+  --blue-6: #f3f6fb;
+  --teal-0: #060c0d;
+  --teal-1: #0b3336;
+  --teal-2: #005c62;
+  --teal-3: #04858d;
+  --teal-4: #5dadb3;
+  --teal-5: #a9d2d5;
+  --teal-6: #f2f8f8;
+  --green-0: #060e08;
+  --green-1: #0b3921;
+  --green-2: #006737;
+  --green-3: #059456;
+  --green-4: #5eba83;
+  --green-5: #aadaba;
+  --green-6: #f2f9f4;
+  --gold-0: #141008;
+  --gold-1: #5d471c;
+  --gold-2: #b0832a;
+  --gold-3: #eeb545;
+  --gold-4: #ffd377;
+  --gold-5: #ffe7b5;
+  --gold-6: #fffbf4;
+  --orange-0: #160c04;
+  --orange-1: #633107;
+  --orange-2: #ba5700;
+  --orange-3: #ff8000;
+  --orange-4: #ffaa51;
+  --orange-5: #ffd1a0;
+  --orange-6: #fff8f1;
+  --red-0: #150707;
+  --red-1: #59131e;
+  --red-2: #a50032;
+  --red-3: #e4264f;
+  --red-4: #ff6e7b;
+  --red-5: #ffb3b5;
+  --red-6: #fff4f3;
+  --pink-0: #15080f;
+  --pink-1: #600e41;
+  --pink-2: #b40077;
+  --pink-3: #f700a8;
+  --pink-4: #ff6bca;
+  --pink-5: #ffb5e3;
+  --pink-6: #fff4fa;
+
+  --white: var(--purple-6);
+  --black: var(--purple-0);
   --light-blue: #a6b6c4;
   --blue: #2E71B2;
   --dark-blue: #132f53;
@@ -76,9 +134,14 @@ body {
   --tiny-mobile-width: 320px;
 }
 
-#edit-image-button {
+#modals {
+  z-index: 9999999;
+  position: relative;
+}
+
+.edit-image-button {
   position: absolute;
-  z-index: 999;
+  z-index: 9;
   color: white;
   background: rgba(0,0,0,.85);
   border-radius: 0.4rem;
@@ -87,6 +150,19 @@ body {
   font-weight: 800;
   bottom: 1.2rem;
   left: 1.2rem;
+}
+
+.remove-image-button {
+  position: absolute;
+  z-index: 9;
+  color: white;
+  background: rgba(0,0,0,.85);
+  border-radius: 0.4rem;
+  padding: 0.8rem 1.2rem;
+  border: 0;
+  font-weight: 800;
+  bottom: 1.2rem;
+  right: 1.2rem;
 }
 
 .tui-image-editor-header {
@@ -113,7 +189,7 @@ body {
   left: 4.2rem;
   border-radius: 1.2rem;
   box-shadow: var(--elevation-12), 0 0 0 8.4rem rgba(0,0,0,.55);
-  z-index: 9999;
+  z-index: 99999;
   visibility: hidden;
   opacity: 0;
   transition: visibility .15s, opacity .15s;

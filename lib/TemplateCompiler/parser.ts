@@ -1,13 +1,14 @@
-import merge from 'lodash.merge';
 import { preprocess, ASTv1 } from '@glimmer/syntax';
 import pino from 'pino';
 
-import { Template, ITemplate, PageType, IField, stampTemplate } from '../Database/models/Template';
+import { Template, ITemplate, PageType, IField, stampTemplate } from '../Database/models';
+import { IParsedTemplate, parsedTemplateToAst, GlimmerTemplate, HelperResolver, NeutrinoHelper, ParsedExpr, ITemplateAst } from '../TemplateRuntime';
 
-import { ParsedExpr, NeutrinoHelper } from './helpers';
-import { ComponentResolver, IParsedTemplate, GlimmerTemplate, HelperResolver } from './types';
+export type ComponentResolver = (name: string) => string | null;
 
 const logger = pino();
+
+const PAGE_META_KEYWORD = 'meta';
 
 function isComponent(tag: string) {
   return tag[0] === tag[0].toUpperCase() || !!~tag.indexOf('-');
@@ -77,7 +78,7 @@ function parseExpression(node:
 }
 
 
-function ensureBranch(data: Record<string, ITemplate>, node: ASTv1.BlockStatement, helper: NeutrinoHelper) {
+function ensureBranch(data: Record<string, ITemplate>, node: ASTv1.BlockStatement, helper: NeutrinoHelper, aliases: Record<string, IAlias>) {
   const [expr] = parseExpression(node);
 
   // If this is not an expression we care about, move on.
@@ -94,10 +95,36 @@ function ensureBranch(data: Record<string, ITemplate>, node: ASTv1.BlockStatemen
     options: expr.hash,
     sortable: !!expr.hash.sortable,
     fields: {},
+    metadata: {},
   });
-  const branch = data[Template.identifier(newBranch)] = data[Template.identifier(newBranch)] || newBranch;
-  merge(branch.options, newBranch.options);
-  merge(branch.fields, newBranch.fields);
+  const branchId = Template.id(newBranch);
+  const branch = data[branchId] = data[branchId] || newBranch;
+  branch.options = { ...branch.options, ...newBranch.options };
+  for (const field of Object.values(newBranch.fields)) {
+    if (!field) { continue; }
+    const prev = branch[field.key];
+    if (field === prev) { continue; }
+
+    branch.fields[field.key] = {
+      key: field.key,
+      type: (prev.type === 'text' ? field.type : (field.type === 'text' ? prev.type : field.type)) || 'text',
+      options: { ...prev.options, ...field.options },
+      priority: Math.min(prev.priority || Infinity, field.priority || Infinity),
+      label: field.label,
+    }
+  }
+
+  if (newBranch.type === PageType.COLLECTION) {
+    const page: ITemplate = stampTemplate({ name, type: PageType.PAGE });
+    data[Template.id(page)] = data[Template.id(page)] || page;
+    data[Template.id(stampTemplate(aliases['this']))]['fields'][branchId] = {
+      key: branchId,
+      type: 'collection',
+      priority: Infinity,
+      label: '',
+      options: {},
+    }
+  }
 }
 
 interface IAlias {
@@ -118,38 +145,48 @@ interface IAlias {
  * @return {Object}
  */
 function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv1.PathExpression | ASTv1.Literal, aliases: Record<string, IAlias>) {
+  if (!leaf) { return data; }
+  const key = leaf.path.split('.').length >= 3 ? leaf.parts[0] : leaf.key;
+  const context = (leaf.context === PAGE_META_KEYWORD && leaf.isPrivate) || leaf.path.startsWith('this.') ? 'this' : leaf.context;
+  const contentLocation = leaf.context === PAGE_META_KEYWORD ? 'metadata' : 'fields';
+
   // If this is a private path, no-op.
-  if (!leaf || leaf.isPrivate) { return data; }
+  if (leaf.context !== PAGE_META_KEYWORD && leaf.isPrivate) { return data; }
 
   // If this is a private section, no-op.
-  const isPrivateSection = aliases[leaf.context] ? aliases[leaf.context].isPrivate : false;
+  const isPrivateSection = aliases[context] ? aliases[context].isPrivate : false;
   if (isPrivateSection) { return data; }
 
   // If this is a private key, no-op.
-  const isPrivateKey = (!leaf.context && aliases[leaf.key]) ? aliases[leaf.key].isPrivate : false;
+  const isPrivateKey = (!context && aliases[key]) ? aliases[key].isPrivate : false;
   if (isPrivateKey) { return data; }
 
   // Log a warning if we're referencing the default general context without an explicit reference.
   // Update the original path node so we can actually render the template.
-  if (!leaf.context && !leaf.isPrivate) {
-    throw new Error(`Values in template must have a context. Instead found: {{${leaf.original}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
+  if (!context && !leaf.isPrivate) {
+    throw new Error(`Values referenced in a template must include a path context. Instead found: {{${leaf.original}}} at ${path.loc.asString()}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
   }
 
   // Get our section reference descriptor.
-  const name = (aliases[leaf.context] ? aliases[leaf.context].name : leaf.context) || 'general';
-  const type = (aliases[leaf.context] ? aliases[leaf.context].type : PageType.SETTINGS) || PageType.SETTINGS;
+  const name = (aliases[context] ? aliases[context].name : context) || 'general';
+  const type = (aliases[context] ? aliases[context].type : PageType.SETTINGS) || PageType.SETTINGS;
 
   // Ensure the model object reference exists.
   const template: ITemplate = stampTemplate({ name, type });
-  const sectionKey = Template.identifier(template);
+  const sectionKey = Template.id(template);
   data[sectionKey] = data[sectionKey] || template;
 
   // Ensure the field descriptor exists. Merge settings if already exists.
-  const old: IField | null = data[sectionKey].fields[leaf.key] || null;
-  data[sectionKey].fields[leaf.key] = {
-    key: leaf.key,
+  const old: IField | null = data[sectionKey][contentLocation][key] || null;
+  const priority = parseInt(leaf.hash.priority) ?? Infinity;
+  if (priority <= 0) {
+    throw new Error(`Priority value must be a positive integer. Instead found: {{${leaf.original}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
+  }
+  leaf.hash.type = leaf.hash.type || 'text'; // Text is the default type.
+  data[sectionKey][contentLocation][key] = {
+    key,
     type: (leaf.hash.type === 'text' ? (old?.type || leaf.hash.type) : (leaf.hash.type || old?.type)) || 'text',
-    priority: Math.max(leaf.hash.priority || 0, old?.priority || 0),
+    priority: Math.min(leaf.hash.priority ?? Infinity, old?.priority ?? Infinity),
     label: leaf.hash.label || old?.label || '',
     options: {...(old?.options || {}), ...leaf.hash },
   }
@@ -167,7 +204,7 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
  * @return {Object} tree of sections, fields, params, etc.
  */
 /* eslint-disable no-param-reassign */
-function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Record<string, IAlias> = {}, resolveComponent: ComponentResolver, helpers: HelperResolver) {
+function walk(template: IParsedTemplate, node: ASTv1.Node , aliases: Record<string, IAlias> = {}, resolveComponent: ComponentResolver, helpers: HelperResolver) {
 
   // Create a new copy of local aliases lookup object each time we enter a new block.
   aliases = Object.create(aliases);
@@ -175,7 +212,7 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
     case 'Template':
     case 'Block':
       node.body.forEach((n) => {
-        walk(data, n, aliases, resolveComponent, helpers);
+        walk(template, n, aliases, resolveComponent, helpers);
       });
       break;
 
@@ -185,27 +222,27 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
         if (!tmpl) {
           throw new Error(`Can not find component <${node.tag} />`);
         }
-        parse(
+        template.components[node.tag] = template.components[node.tag] || parsedTemplateToAst(parse(
           aliases.this.name,
           aliases.this.type,
           tmpl,
           resolveComponent,
           helpers,
-          data,
-          aliases,
-        ).ast;
+          template.templates,
+          template.components,
+        ));
       }
       node.children.forEach((n) => {
-        walk(data, n, aliases, resolveComponent, helpers);
+        walk(template, n, aliases, resolveComponent, helpers);
       });
       node.attributes.forEach((n) => {
-        walk(data, n.value, aliases, resolveComponent, helpers);
+        walk(template, n.value, aliases, resolveComponent, helpers);
       });
       break;
 
     case 'ConcatStatement': {
       node.parts.forEach(n => {
-        walk(data, n, aliases, resolveComponent, helpers);
+        walk(template, n, aliases, resolveComponent, helpers);
       });
       break;
     }
@@ -215,7 +252,7 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
 
     case 'PathExpression': {
       const [leaf, path] = parseExpression(node);
-      leaf && path && addToTree(data, leaf, path, aliases);
+      leaf && path && addToTree(template.templates, leaf, path, aliases);
       break;
     }
 
@@ -225,13 +262,13 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
       // Crawl all its params as potential data values.
       if (node.params && node.params.length) {
         for (const param of node.params) {
-          walk(data, param, aliases, resolveComponent, helpers);
+          walk(template, param, aliases, resolveComponent, helpers);
         }
 
       // Otherwise, this is a plain data value reference. Add it to the current object.
       } else {
         const [leaf, path] = parseExpression(node);
-        leaf && path && addToTree(data, leaf, path, aliases);
+        leaf && path && addToTree(template.templates, leaf, path, aliases);
       }
       break;
     }
@@ -243,7 +280,7 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
       // Crawl all its params as potential data values in scope.
       if (node.params.length && !helper?.isBranch) {
         for (const param of node.params) {
-          walk(data, param, aliases, resolveComponent, helpers);
+          walk(template, param, aliases, resolveComponent, helpers);
         }
       }
 
@@ -252,13 +289,13 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
         const [leaf, path] = parseExpression(node);
         if (leaf && path) {
           leaf.hash.type = helper.getType ? (helper.getType(leaf) || leaf.type) : leaf.type;
-          addToTree(data, leaf, path, aliases);
+          addToTree(template.templates, leaf, path, aliases);
         }
       }
 
       // If this helper denotes the creation of a new model type, ensure the model.
       if (helper?.isBranch) {
-        ensureBranch(data, node, helper);
+        ensureBranch(template.templates, node, helper, aliases);
       }
 
       // Assign any yielded block params to the aliases object.
@@ -294,7 +331,7 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
             isPrivate: !!path.data,
           };
         }
-        else {
+        else if (!param.startsWith('@')) {
           aliases[param] = {
             name: param,
             type: PageType.SETTINGS,
@@ -303,8 +340,8 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
         }
       }
 
-      if (node.program) walk(data, node.program, aliases, resolveComponent, helpers);
-      if (node.inverse) walk(data, node.inverse, aliases, resolveComponent, helpers);
+      if (node.program) walk(template, node.program, aliases, resolveComponent, helpers);
+      if (node.inverse) walk(template, node.inverse, aliases, resolveComponent, helpers);
       break;
     }
 
@@ -325,7 +362,7 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
     }
   }
 
-  return data;
+  return template;
 }
 
 
@@ -335,7 +372,7 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
  *
  * @return {Object} - a representation of the content
  */
- export function parse(name: string, type: PageType, html: string, resolveComponent: ComponentResolver, helpers: HelperResolver, data: Record<string, ITemplate> = {}, _aliases: Record<string, IAlias> = {}): IParsedTemplate {
+ export function parse(name: string, type: PageType, html: string, resolveComponent: ComponentResolver, helpers: HelperResolver, templates: Record<string, ITemplate> = {}, components: Record<string, ITemplateAst> = {}): IParsedTemplate {
   let ast: GlimmerTemplate;
   try { ast = preprocess(html); }
   catch (err) { throw new Error('Bad template syntax'); }
@@ -348,13 +385,36 @@ function walk(data: Record<string, ITemplate>, node: ASTv1.Node , aliases: Recor
       fields: {},
       sortable: false,
     });
-    data[Template.identifier(template)] = data[Template.identifier(template)] || template;
+    templates[Template.id(template)] = templates[Template.id(template)] || template;
   }
 
-  walk(data, ast, {
+  // Ensure all collections have a corresponding page template, even if empty.
+  if (type === PageType.COLLECTION) {
+    const page: ITemplate = stampTemplate({ name, type: PageType.PAGE });
+    templates[Template.id(page)] = templates[Template.id(page)] || page;
+  }
+
+  const parsedTemplate: IParsedTemplate = { name, type, ast, templates, components }
+
+  // Recursively walk our AST.
+  walk(parsedTemplate, ast, {
     '': { name: 'general', type: PageType.SETTINGS, isPrivate: false },
     'this': { name, type, isPrivate: false },
   }, resolveComponent, helpers);
 
-  return { name, type, data, ast };
+  // Normalize field priority orders.
+  for (const template of Object.values(templates)) {
+    let maxPriority = 0;
+    for (const field of Object.values(template.fields)) {
+      if (!field) { continue; }
+      if (field.priority !== Infinity) { maxPriority = Math.max(maxPriority, field.priority); }
+    }
+    maxPriority++;
+    for (const field of Object.values(template.fields)) {
+      if (!field) { continue; }
+      if (field.priority === Infinity) { field.priority = maxPriority++; }
+    }
+  }
+
+  return parsedTemplate;
 }

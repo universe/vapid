@@ -2,13 +2,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { GlobSync } from 'glob';
 import webpack from 'webpack';
-import * as mkdirp from 'mkdirp';
+import * as fs from 'fs';
+import pino from 'pino';
 
 import { Template } from '../../Database/models/Template';
 import makeWebpackConfig from '../../webpack_config';
-import Vapid from '../Vapid';
-import pino from 'pino';
-import { Record } from '../../Database/models';
+import { default as Vapid } from '../Vapid';
 
 const logger = pino();
 
@@ -36,13 +35,13 @@ export default class VapidBuilder extends Vapid {
 
     // Fetch our webpack config.
     const webpackConfig = makeWebpackConfig(
-      this.isDev ? 'development' : 'production',
-      [this.paths.www],
+      this.env,
+      [this.paths.static],
       [this.paths.modules],
     );
 
     // Ensure we have a destination directory and point webpack to it.
-    mkdirp.sync(dest);
+    fs.mkdirpSync(dest, { recursive: true });
     webpackConfig.output.path = dest;
 
     // Run the webpack build for CSS and JS bundles.
@@ -58,7 +57,7 @@ export default class VapidBuilder extends Vapid {
     logger.info('Moving Uploads Directory');
     const uploadsOut = path.join(dest, 'uploads');
     const uploads = new GlobSync(path.join(this.paths.uploads, '**/*'));
-    mkdirp.sync(uploadsOut);
+    fs.mkdirpSync(uploadsOut, { recursive: true });
 
     // Move all assets in /uploads to dest uploads directory
     /* eslint-disable-next-line no-restricted-syntax */
@@ -71,13 +70,15 @@ export default class VapidBuilder extends Vapid {
 
     // Copy all public static assets to the dest directory.
     logger.info('Copying Static Assets');
-    const assets = new GlobSync(path.join(this.paths.www, '**/*'));
+    const assets = new GlobSync(path.join(this.paths.static, '**/*'));
     /* eslint-disable-next-line no-restricted-syntax */
     for (const asset of assets.found) {
       // Ignore private files.
-      if (PRIVATE_FILE_PREFIXES.has(path.basename(asset)[0])) { continue; }
-      const out = path.join(dest, path.relative(this.paths.www, asset));
-      mkdirp.sync(path.dirname(out));
+      logger.info(`${asset} => ${fs.statSync(asset).isDirectory()} || ${PRIVATE_FILE_PREFIXES.has(path.basename(asset)[0])}`);
+      if (fs.statSync(asset).isDirectory() || PRIVATE_FILE_PREFIXES.has(path.basename(asset)[0])) { continue; }
+      const out = path.join(dest, 'static', path.relative(this.paths.static, asset));
+      logger.info(`${asset} => ${out}`);
+      fs.mkdirpSync(path.dirname(out), { recursive: true });
       fs.copyFileSync(asset, out);
     }
 
@@ -90,7 +91,7 @@ export default class VapidBuilder extends Vapid {
       return false;
     }
 
-    const faviconPath = findFirst('favicon.ico', [ this.paths.www ]);
+    const faviconPath = findFirst('favicon.ico', [ this.paths.static, path.join(this.paths.static, 'images') ]);
     if (faviconPath) {
       fs.copyFileSync(faviconPath, path.join(dest, '/favicon.ico'));
     }
@@ -98,11 +99,11 @@ export default class VapidBuilder extends Vapid {
     logger.info('Connecting to Database');
     await this.database.start();
 
-    // Store all sections in a {["type:name"]: Section} map for easy lookup.
+    // Store all sections in a {["name-type"]: Section} map for easy lookup.
     const templatesArr = await this.database.getAllTemplates();
     const templates = {};
     for (const template of templatesArr) {
-      templates[Template.identifier(template)] = template;
+      templates[Template.id(template)] = template;
     }
 
     // Fetch all potential template files. These are validated below before compilation.
@@ -114,12 +115,12 @@ export default class VapidBuilder extends Vapid {
     for (const template of templatesArr) {
       const tmpl = new Template(template);
       if (!tmpl.hasView()) { continue; }
-      const records = await this.database.getRecordsByTemplateId(template.id);
+      const records = await this.database.getRecordsByTemplateId(tmpl.id);
       for (const record of records) {
-        const rec = new Record(record, tmpl);
-        logger.extra([`Rendering: ${rec.permalink()}`]);
+        const rec = await this.database.hydrateRecord(record);
+        logger.info([`Rendering: ${rec.permalink()}`]);
         await this.renderUrl(dest, rec.permalink());
-        logger.extra([`Created: ${rec.permalink()}`]);
+        logger.info([`Created: ${rec.permalink()}`]);
       }
     }
 
@@ -129,9 +130,9 @@ export default class VapidBuilder extends Vapid {
   }
 
   async renderUrl(out: string, url: string) {
-    const body = await this.compiler.renderContent(this, url);
+    const body = await this.compiler.renderPermalink(this, url);
     const selfDir = path.join(out, url);
-    mkdirp.sync(path.dirname(selfDir));
+    fs.mkdirpSync(path.dirname(selfDir), { recursive: true });
 
     // If an HTML file exists with our parent directory's name, move it in this directory as the index file.
     if (fs.existsSync(`${path.dirname(selfDir)}.html`)) {

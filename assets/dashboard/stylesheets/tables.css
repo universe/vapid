@@ -36,7 +36,7 @@
 .table.preview img {
   width: 8.2rem;
   height: 8.2rem;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
 }
 
@@ -67,7 +67,7 @@
 }
 
 .table thead + tbody tr:first-of-type td {
-  padding-top: 2rem;
+  padding-top: 0.8rem;
 }
 
 .table tbody tr:last-of-type td {
@@ -75,7 +75,7 @@
 }
 
 .table td {
-  padding: 2rem 2rem 2rem 0;
+  padding: 0.8rem 0.8rem 0.8rem 0;
   border-bottom: 1px solid var(--grey-light);
 }
 

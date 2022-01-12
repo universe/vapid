@@ -1,12 +1,22 @@
 import { resolve, join } from 'path';
-import * as mkdirp from 'mkdirp';
+import * as fs from 'fs';
 import { readFileSync } from 'fs';
 import dotenv from 'dotenv';
+import * as path from 'path';
 
 import Database from '../Database';
-import { MemoryProvider } from '../Database/providers';
+import { DatabaseConfig, FireBaseProvider, MemoryProvider, FireBaseProviderConfig, MemoryProviderConfig } from '../Database/providers';
 import { TemplateCompiler } from '../TemplateCompiler';
-import { NeutrinoHelper } from '../TemplateCompiler/types';
+import { resolveHelper } from '../TemplateRuntime/helpers';
+
+const DEFAULT_CONFIG = (vapid: Vapid): VapidSettings => {
+  return {
+    name: 'Vapid',
+    port: 3000,
+    domain: '',
+    database: { type: 'memory', path: path.join(vapid.paths.data, 'data.json') },
+  }
+}
 
 declare global {
   /* eslint-disable-next-line @typescript-eslint/no-namespace */
@@ -14,7 +24,9 @@ declare global {
     interface ProcessEnv {
       NODE_ENV: 'development' | 'production' | 'test';
       TEMPLATES_PATH: string;
-      PORT: string;
+      FIRESTORE_EMULATOR_HOST: string;
+      FIREBASE_AUTH_EMULATOR_HOST: string;
+      FIREBASE_HOSTING_EMULATOR: string;
     }
   }
 }
@@ -26,54 +38,15 @@ interface VapidProjectPaths {
   cache: string;
   uploads: string;
   www: string;
+  static: string;
   modules: string;
 }
 
-export interface VapidSettings {
-  cache: boolean;
-  database: {
-    dialect: 'memory' | 'sqlite' | 'firebase';
-    logging: false;
-  };
-  dataPath: string;
-  liveReload: boolean;
-  placeholders: boolean;
-  port: number;
-}
-
-export interface VapidPublicSettings {
+export interface VapidSettings<T extends { type: string } = DatabaseConfig> {
   name: string;
   domain: string;
-}
-
-/**
- * Resolves commonly-used project paths
- */
-export function getProjectPaths(cwd: string, dataPath: string): VapidProjectPaths {
-  const paths: VapidProjectPaths = {
-    pjson: resolve(cwd, 'package.json'),
-    root: resolve(cwd, '.'),
-    data: resolve(cwd, dataPath),
-    cache: resolve(cwd, join(dataPath, 'cache')),
-    uploads: resolve(cwd, join(dataPath, 'uploads')),
-    www: resolve(cwd, './www'),
-    modules: resolve(cwd, './node_modules'),
-  };
-
-  // Ensure paths exist
-  mkdirp.sync(paths.uploads);
-  mkdirp.sync(paths.www);
-
-  return paths;
-};
-
-function componentLookup(tag: string): string | null {
-  try { return readFileSync(join(process.env.TEMPLATES_PATH, 'components', `${tag}.html`), 'utf8'); }
-  catch { return null; }
-}
-
-function helperLookup(_name: string): NeutrinoHelper | null {
-  return null;
+  database: T;
+  port?: number;
 }
 
 /**
@@ -83,47 +56,62 @@ function helperLookup(_name: string): NeutrinoHelper | null {
  * `VapidBuilder` or `VapidServer`, may extend this base class to easily
  * access project configuration and structure data.
  */
-export default class Vapid {
-
-  name: string;
-  env: 'production' | 'development' | 'test';
-  isDev: boolean;
-  domain: string;
-  prodUrl: string;
+class Vapid {
+  env: 'production' | 'development' | 'test' = process.env.NODE_ENV || 'development';
   paths: VapidProjectPaths;
   database: Database;
   compiler: TemplateCompiler;
-  config: VapidSettings = {
-    cache: process.env.NODE_ENV === 'production',
-    database: {
-      dialect: 'sqlite',
-      logging: false,
-    },
-    dataPath: './data',
-    liveReload: process.env.NODE_ENV !== 'production',
-    placeholders: process.env.NODE_ENV !== 'production',
-    port: parseInt(process.env.PORT, 10) || 3000,
-  }
+  config: VapidSettings;
 
   /**
    * This module works in conjunction with a site directory.
    */
-  constructor(cwd: string) {
+  constructor(cwd: string, config: Partial<VapidSettings>) {
+    // Resolves commonly-used project paths
+    this.paths = {
+      pjson: resolve(cwd, 'package.json'),
+      root: resolve(cwd, '.'),
+      data: resolve(cwd, './data'),
+      cache: resolve(cwd, join('./data', 'cache')),
+      uploads: resolve(cwd, join('./data', 'uploads')),
+      www: resolve(cwd, './www'),
+      static: resolve(cwd, './www/static'),
+      modules: resolve(cwd, './node_modules'),
+    };
+
+    // Load project .env file if present.
+    require('dotenv').config({ path: join(this.paths.www, '.env') })
+
+    // Ensure paths exist
+    fs.mkdirSync(this.paths.uploads, { recursive: true });
+    fs.mkdirSync(this.paths.www, { recursive: true });
+    fs.mkdirSync(this.paths.static, { recursive: true });
+
     // TODO: Ensure package.json is present.
-    const pjson = JSON.parse(readFileSync(resolve(cwd, 'package.json'), 'utf-8'));
-    const options = pjson.vapid as Partial<VapidPublicSettings>;
+    const pjson = JSON.parse(readFileSync(this.paths.pjson, 'utf-8'));
+    const pjsonConfig = (pjson.vapid || {}) as Partial<VapidSettings>;
+    (pjsonConfig.domain || pjson.homepage) && (pjsonConfig.domain =  pjsonConfig.domain || pjson.homepage);
     dotenv.config({ path: resolve(cwd, '.env') });
 
-    this.config = Object.assign({}, this.config, options);
-    this.name = options.name || pjson.name;
-    this.env = process.env.NODE_ENV || 'development';
-    this.isDev = (this.env === 'development' || this.env === 'test');
-    this.domain = this.isDev ? `localhost:${this.config.port}` : (options.domain || pjson.homepage);
-    this.prodUrl = options.domain || pjson.homepage;
-    this.paths = getProjectPaths(cwd, this.config.dataPath);
+    // Construct config object.
+    this.config = Object.assign(DEFAULT_CONFIG(this), pjsonConfig, config);
 
-    // TODO: Switch out database provider based on config.
-    this.database = new Database(new MemoryProvider({}));
-    this.compiler = new TemplateCompiler(componentLookup, helperLookup);
+    if (!this.config) { throw new Error(`A valid project domain name must be provided.`); }
+
+    // Create the database based on config.
+    switch(this.config.database.type) {
+      case 'memory': this.database = new Database(new MemoryProvider(this.config as VapidSettings<MemoryProviderConfig>)); break;
+      case 'firebase': this.database = new Database(new FireBaseProvider(this.config as VapidSettings<FireBaseProviderConfig>)); break;
+    }
+
+    const componentLookup = (tag: string): string | null => {
+      try { return readFileSync(join(this.paths.www, 'components', `${tag}.html`), 'utf8'); }
+      catch { return null; }
+    }
+    this.compiler = new TemplateCompiler(componentLookup, resolveHelper);
   }
 }
+
+// Parcel has an MJS default export issue with this file... this is what fixes it ¯\_(ツ)_/¯
+module.exports = Vapid;
+// export default Vapid;
