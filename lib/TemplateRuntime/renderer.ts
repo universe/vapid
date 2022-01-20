@@ -193,9 +193,9 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
         break;
       case 'TextNode':
         if (isScriptNode(root)) {
-          if (!root.firstChild) { root.appendChild(document.createTextNode('')); }
-          const text = root.firstChild as SimpleText;
-          text.nodeValue = text.nodeValue += node.chars;
+          if (!root.firstChild) { root.insertAdjacentHTML('beforeend' as InsertPosition.beforeend, ' '); }
+            const text = root.firstChild as SimpleText;
+            text.nodeValue += node.chars;
         }
         else {
           root.appendChild(document.createTextNode(node.chars));
@@ -226,9 +226,9 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
         }
         else {
           if (isScriptNode(parent)) {
-            if (!parent.firstChild) { parent.appendChild(document.createTextNode('')); }
+            if (!parent.firstChild) { parent.insertAdjacentHTML('beforeend' as InsertPosition.beforeend, ' '); }
             const text = parent.firstChild as SimpleText;
-            text.nodeValue = text.nodeValue += val.toString();
+            text.nodeValue += val.toString();
           }
           else {
             isDocumentFragment(val) ? appendFragment(parent, val) : parent.appendChild(document.createTextNode(String(val ?? '')));
@@ -305,7 +305,7 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
  */
 export function render(document: SimpleDocument, ast: GlimmerTemplate, resolveComponent: RendererComponentResolver, resolveHelper: HelperResolver, context = {}, data = {}) {
   const env: VapidRuntimeEnv = {
-    isDevelopment: true,
+    isDevelopment: false,
     document,
     root: document.createDocumentFragment(),
     program: ast,

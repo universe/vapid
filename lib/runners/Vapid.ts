@@ -113,5 +113,5 @@ class Vapid {
 }
 
 // Parcel has an MJS default export issue with this file... this is what fixes it ¯\_(ツ)_/¯
-module.exports = Vapid;
 // export default Vapid;
+module.exports = Vapid;

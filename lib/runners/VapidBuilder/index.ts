@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { GlobSync } from 'glob';
 import webpack from 'webpack';
-import * as fs from 'fs';
 import pino from 'pino';
 
 import { Template } from '../../Database/models/Template';
@@ -41,7 +40,7 @@ export default class VapidBuilder extends Vapid {
     );
 
     // Ensure we have a destination directory and point webpack to it.
-    fs.mkdirpSync(dest, { recursive: true });
+    fs.mkdirSync(dest, { recursive: true });
     webpackConfig.output.path = dest;
 
     // Run the webpack build for CSS and JS bundles.
@@ -57,7 +56,7 @@ export default class VapidBuilder extends Vapid {
     logger.info('Moving Uploads Directory');
     const uploadsOut = path.join(dest, 'uploads');
     const uploads = new GlobSync(path.join(this.paths.uploads, '**/*'));
-    fs.mkdirpSync(uploadsOut, { recursive: true });
+    fs.mkdirSync(uploadsOut, { recursive: true });
 
     // Move all assets in /uploads to dest uploads directory
     /* eslint-disable-next-line no-restricted-syntax */
@@ -78,7 +77,7 @@ export default class VapidBuilder extends Vapid {
       if (fs.statSync(asset).isDirectory() || PRIVATE_FILE_PREFIXES.has(path.basename(asset)[0])) { continue; }
       const out = path.join(dest, 'static', path.relative(this.paths.static, asset));
       logger.info(`${asset} => ${out}`);
-      fs.mkdirpSync(path.dirname(out), { recursive: true });
+      fs.mkdirSync(path.dirname(out), { recursive: true });
       fs.copyFileSync(asset, out);
     }
 
@@ -132,7 +131,7 @@ export default class VapidBuilder extends Vapid {
   async renderUrl(out: string, url: string) {
     const body = await this.compiler.renderPermalink(this, url);
     const selfDir = path.join(out, url);
-    fs.mkdirpSync(path.dirname(selfDir), { recursive: true });
+    fs.mkdirSync(path.dirname(selfDir), { recursive: true });
 
     // If an HTML file exists with our parent directory's name, move it in this directory as the index file.
     if (fs.existsSync(`${path.dirname(selfDir)}.html`)) {

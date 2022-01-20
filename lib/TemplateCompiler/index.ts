@@ -146,10 +146,7 @@ async function makeRecordData(page: IRecord, fieldKey: 'content' | 'metadata', d
       pagePath = (existsSync(collection) && collection) || (existsSync(partial) && partial) || null;
     }
 
-    if (!pagePath) {
-      console.error(`Template file "${name}-${type}" not found`);
-      return null;
-    }
+    if (!pagePath) { return null; }
 
     return this.parseFile(pagePath);
   }

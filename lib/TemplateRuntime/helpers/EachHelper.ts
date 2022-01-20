@@ -17,7 +17,6 @@ const EachHelper: NeutrinoHelper = {
 
     // Otherwise, render each item!
     let index = 0;
-    console.log('each', items);
     for (const item of items) {
       appendFragment(out, options.block?.([item], {
           index,

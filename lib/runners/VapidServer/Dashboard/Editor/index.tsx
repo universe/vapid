@@ -92,6 +92,7 @@ function renderFields(type: 'page' | 'metadata' | 'content', fields: IField[], r
           {field.options.label || toTitleCase(field.key)}
           {field.options.help && <small id={`help-content[${field.key}]`} class="help">{field.options.help}</small>}
         </label>
+        {/* @ts-ignore */}
         <RenderInput key={`${record.id}-${type}-${field.key}`} name={field.key} value={value ?? directive.default} directive={directive} />
       </div>,
     );

@@ -89,7 +89,7 @@ export default class VapidServer extends Vapid {
     this.watcher = new Watcher(this.paths.www);
     const db = this.database;
 
-    app.setErrorHandler(function (error, _request, _reply) {
+    app.setErrorHandler(async (error, _request, _reply) => {
       return { status: error.code || 500, title: error.message, message: error.message, stack: error.stack };
     });
 

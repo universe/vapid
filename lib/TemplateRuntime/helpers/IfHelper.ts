@@ -6,7 +6,6 @@ const IfHelper: NeutrinoHelper = {
   isBranch: false,
   getType() { return 'if'; },
   run(params, _hash, options) {
-    console.log(options, params);
     let [condition, ifValue, elseValue] = params;
     if (`${condition}`.startsWith('data:')) { condition = false; }
     if (condition instanceof SafeString) { condition = condition.toString(); }
