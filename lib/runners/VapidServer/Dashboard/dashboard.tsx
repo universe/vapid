@@ -4,13 +4,13 @@ import { toTitleCase } from '@universe/util';
 import { render as renderPreact, Fragment } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { createPortal } from 'preact/compat';
-import Router from 'preact-router';
+import Router, { route } from 'preact-router';
 import { unescape } from 'html-escaper';
 import { Toaster } from 'react-hot-toast';
 
 import * as sortable from './sortable';
 import type { ISiteData } from '../index';
-import { Template, ITemplate, IRecord, PageType, sortRecords, sortTemplates, stampRecord } from '../../../Database/models/index';
+import { Template, ITemplate, IRecord, PageType, sortRecords, sortTemplates, stampRecord, Record as DBRecord } from '../../../Database/models/index';
 
 import RocketButton from './RocketButton';
 import Editor from './Editor';
@@ -127,6 +127,10 @@ function App(params: RouteParts) {
   const [ localRecord, setLocalRecord ] = useState<IRecord | null>(null);
   const [ siteData, setSiteData ] = useState<ISiteData>(JSON.parse(unescape(document.getElementById('site-data')?.innerHTML as string)) as ISiteData)
   const records = Object.values(siteData.records).sort(sortRecords);
+  const permalinks: Record<string, string> = {};
+  for (const record of records) {
+    permalinks[DBRecord.permalink(record)] = record.id;
+  }
 
   const isNewRecord = pageId === 'new' || collectionId === 'new';
   const templates = Object.values(siteData.hbs.templates);
@@ -214,9 +218,14 @@ function App(params: RouteParts) {
 
     <section class="vapid-editor sidebar vapid-nav" id="vapid-editor">
       <Editor isNewRecord={isNewRecord} template={template} record={localRecord} parent={parent} siteData={siteData} onChange={record => {
+        const slugId = permalinks[DBRecord.permalink(record)];
+        if ((slugId && slugId !== record.id) || record.slug === 'new') { record.slug = `__error__/${record.slug}`; }
         setLocalRecord(JSON.parse(JSON.stringify(record)));
+      }} onSave={record => {
         siteData.records[record.id] = record;
         setSiteData({ ...siteData });
+        setLocalRecord(JSON.parse(JSON.stringify(record)));
+        route(`/${template.type}/${template.name}${DBRecord.permalink(record)}`);
       }} />
     </section>
 

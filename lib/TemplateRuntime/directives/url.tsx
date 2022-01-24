@@ -15,6 +15,9 @@ export default class UrlDirective extends BaseDirective<string, UrlDirectiveOpti
 
   input({ name, value, directive }: DirectiveProps<string, this>) {
     if (value === directive.default) { value = ''; }
+    const isError = value.startsWith('__error__/');
+    value = value.replace('__error__/', '');
+
     let parent: SerializedRecord | null = null;
     for (const record of directive.meta.records) {
       if (record.id === directive.meta.record?.parent?.id) {
@@ -30,7 +33,7 @@ export default class UrlDirective extends BaseDirective<string, UrlDirectiveOpti
     const attrs = { ...directive.options };
     attrs.placeholder = directive.options.placeholder || directive.default;
 
-    return <div class="input__url">
+    return <div class={`input__url input__url--${isError ? 'error' : 'valid'}`}>
       <span>{parentPrefix || LINK_ICON}</span>
       <input
         {...attrs}

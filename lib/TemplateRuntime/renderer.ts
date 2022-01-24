@@ -185,7 +185,8 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
                 el.setAttribute(attr.name, value);
                 break;
               case 'MustacheStatement':
-                el.setAttribute(attr.name, `{{expr}}`);
+                el.setAttribute(attr.name, `${resolveValue(attr.value, context, data, resolveHelper) ?? missingData(attr.value)}`);
+                break;
             }
           }
           root.appendChild(el);
@@ -305,7 +306,7 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
  */
 export function render(document: SimpleDocument, ast: GlimmerTemplate, resolveComponent: RendererComponentResolver, resolveHelper: HelperResolver, context = {}, data = {}) {
   const env: VapidRuntimeEnv = {
-    isDevelopment: false,
+    isDevelopment: typeof window !== 'undefined',
     document,
     root: document.createDocumentFragment(),
     program: ast,

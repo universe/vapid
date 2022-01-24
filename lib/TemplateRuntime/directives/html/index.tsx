@@ -84,7 +84,7 @@ export default class HTMLDirective extends BaseDirective<string, HTMLDirectiveOp
           });
           return true;
         });
-        newQuill.pasteHTML(value);
+        newQuill.root.innerHTML = value;
         setQuill(newQuill);
       })();
     }, [editor.current]);

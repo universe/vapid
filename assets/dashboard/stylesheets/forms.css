@@ -386,6 +386,7 @@
   border-radius: 0.4rem;
   overflow: hidden;
   border: 1px solid var(--slate-3);
+  transition: border-color .18s ease-in-out;
 }
 .form .input__url span {
   display: inline-block;
@@ -409,6 +410,7 @@
   font-weight: bold;
   font-size: 1.4rem;
   line-height: 1.3;
+  transition: border-color .18s ease-in-out, background-color .18s ease-in-out, color .18s ease-in-out;
 }
 
 .form .input__url input {
@@ -416,4 +418,21 @@
   border-left: transparent;
   border-radius: 0 2px 2px 0;
   border: none;
+  transition: color .18s ease-in-out;
+}
+
+.form .input__url--error {
+  border-color: var(--red-2);
+}
+
+.form .input__url--error span {
+  border-color: var(--red-2);
+  color: var(--red-2);
+  background: var(--red-6);
+  font-weight: bold;
+}
+
+.form .input__url--error input {
+  color: var(--red );
+  font-weight: bold;
 }

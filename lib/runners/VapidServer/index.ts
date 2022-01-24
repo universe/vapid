@@ -8,7 +8,7 @@ import { unfurl } from 'unfurl.js';
 import normalizeUrl from 'normalize-url';
 import fetch from 'node-fetch';
 
-import { Json, toTitleCase, uuid } from '@universe/util';
+import { Json, uuid } from '@universe/util';
 import { deploy, Logger, makePublic } from '@cannery/hoist';
 import pino from 'pino';
 import fastify, { FastifyReply, FastifyRequest } from 'fastify';
@@ -25,32 +25,17 @@ import serveStatic from 'fastify-static';
 import multipart from 'fastify-multipart';
 import favicon from 'fastify-favicon';
 
-import { Record, stampRecord, isPageType, PageType, Template, IRecord, ITemplate, sortRecords } from '../../Database/models';
+import { Record, stampRecord, PageType, Template, IRecord, ITemplate, sortRecords } from '../../Database/models';
 import VapidBuilder from '../VapidBuilder';
 import Vapid, { VapidSettings } from '../Vapid';
 import Watcher from './watcher';
 import { IMedia, IParsedTemplates, ISite } from '../../TemplateRuntime';
-import { TemplateCompiler } from '../../TemplateCompiler';
-
-/**
- * Crawls templates, and creates object representing the data model
- *
- * @param {array} templates - array of file paths
- * @return {Object} template tree
- */
-function parse(root: string): { [templateId: string]: ITemplate } {
-  function componentLookup(tag: string): string {
-    return fs.readFileSync(path.join(root, 'components', `${tag}.html`), 'utf8');
-  }
-  return new TemplateCompiler(componentLookup).parse(root);
-}
-
 
 const DASHBOARD_ASSETS = path.join(findUp.sync('assets', { type: 'directory', cwd: __dirname })!, 'dashboard');
 if (!DASHBOARD_ASSETS) { throw new Error('Unable to find dashboard assets directory.') };
 
 const logger = pino();
-const app = fastify({ logger: true });
+const app = fastify({ logger: false });
 
 function streamToString(stream: any): Promise<string> {
   const chunks: Buffer[] = [];
@@ -140,67 +125,49 @@ export default class VapidServer extends Vapid {
     });
 
     const saveRecord = async (req: FastifyRequest, res: FastifyReply) => {
-      let { type, templateName, pageSlug, collectionSlug } = req.params as { type: PageType; templateName?: string, pageSlug?: string; collectionSlug?: string; }
+      const body: Json = req.body as Json;
+      const id = (typeof body.id === 'string' ? body.id : null);
+      const parentId = (typeof body.parentId === 'string' ? body.parentId : null);
+      if (!id) { throw new Error('Record ID is required.'); }
 
-      const isNewRecord = pageSlug === 'new' || collectionSlug === 'new';
+      let isDelete = req.method === 'DELETE';
+      let record = await db.getRecordById(id);
+      let template = record?.templateId ? await db.getTemplateById(record?.templateId) : null;
 
       try {
-        if (!isPageType(type)) { throw new Error('Invalid page type.'); }
-        if (!templateName) { throw new Error(`${toTitleCase(type)} template name is required.`); }
-        if (!pageSlug) { throw new Error(`Page slug is required.`); }
-        if (type === PageType.PAGE && collectionSlug) { throw new Error('Invalid page update URL.'); }
-
-        logger.info(`Saving ${type}:${templateName} /${[pageSlug, collectionSlug].filter(Boolean).join('/')}`);
-        let pageTemplate: Template | null = null;
-        let collectionTemplate: Template | null = null;
-        let page: Record | null = null;
-        let record: Record | null = null;
-
-        if (type === PageType.SETTINGS) {
-          const tmpl = await db.getTemplateByName(templateName, type);
-          if (!tmpl) { throw new Error('Invalid template name.'); }
-          // Settings documents are singletons. Ensure it exists.
-          const tmp = (await db.getRecordsByTemplateId(Template.id(tmpl)))[0] || await db.updateRecord(stampRecord(tmpl));
-          record = await db.hydrateRecord(tmp);
-          pageTemplate = new Template(tmpl);
+        if (!record) {
+          const templateId = (typeof body.templateId === 'string' ? body.templateId : null);
+          if (!templateId) { throw new Error('Template ID is required for new records.'); }
+          template = await db.getTemplateById(templateId);
+          if (!template) { throw new Error(`Could not find template "${templateId}".`); }
+          if (template.type === PageType.COLLECTION && !parentId) { throw new Error(`Parent record ID is required.`); }
+          const parent = parentId ? await db.getRecordById(parentId) : null;
+          if (parentId && !parent) { throw new Error(`Could not find parent record "${parentId}".`); }
+          record = stampRecord(template, { parentId });
         }
         else {
-          const pageTmpl = await db.getTemplateByName(templateName, PageType.PAGE);
-          pageTemplate = pageTmpl ? new Template(pageTmpl) : null;
-          if (!pageTemplate) { throw new Error(`Can not find page template "${templateName}".`)}
-          let tmp = (type === PageType.PAGE && isNewRecord) ? stampRecord(pageTemplate) : await db.getRecordBySlug(pageSlug);
-          record = page = tmp ? await db.hydrateRecord(tmp) : null;
-          logger.info(`Found ${type}:${templateName} /${[pageSlug, collectionSlug].filter(Boolean).join('/')}`);
-
-          if (type === PageType.COLLECTION) {
-            const collectionTmpl = await db.getTemplateByName(templateName, PageType.COLLECTION);
-            collectionTemplate = collectionTmpl ? new Template(collectionTmpl) : null;
-            if (!collectionTemplate) { throw new Error(`Can not find collection template "${templateName}".`)}
-            if (!collectionSlug) { throw new Error(`Collection slug is required.`); }
-            const tmp = isNewRecord ? stampRecord(collectionTemplate, { parentId: page?.id }) : await db.getRecordBySlug(collectionSlug, page?.id || null);
-            record = tmp ? await db.hydrateRecord(tmp) : null;
-          }
+          if (!template) { throw new Error(`Could not find template "${record?.templateId}".`); }
+          if (template.type === PageType.COLLECTION && !parentId) { throw new Error(`Parent record ID is required.`); }
+          const parent = parentId ? await db.getRecordById(parentId) : null;
+          if (parentId && !parent) { throw new Error(`Could not find parent record "${parentId}".`); }
         }
-        if (!record) { throw new Error(type === PageType.PAGE ? `Page "${pageSlug}" Not Found` : `Collection Item "${collectionSlug}" Not Found`); }
-
-        const template = type !== PageType.COLLECTION ? pageTemplate : collectionTemplate;
-        if (!template) { throw new Error(`Template ${type} not found`); }
 
         const metadataFields = new Set(Object.keys(template.metadata));
         const contentFields = new Set(Object.keys(template.fields));
 
         // Save data
-        const content = Object.assign({}, record?.content || {});
-        const metadata = Object.assign({}, record?.metadata || {});
-        const body: Json = req.body as Json;
+        record.content = Object.assign({}, record.content || {});
+        record.metadata = Object.assign({}, record.metadata || {});
 
         // Only explicitly allowed fields are editable.
-        for (const field of contentFields) { content[field] = body.content?.[field] || ''; }
-        for (const field of metadataFields) { metadata[field] = body.metadata?.[field] || ''; }
+        body.content = body.content || {};
+        body.metadata = body.metadata || {};
+        for (const field of contentFields) { record.content[field] = Object.hasOwnProperty.call(body.content, field) ? body.content?.[field] : record.content[field]; }
+        for (const field of metadataFields) { record.metadata[field] = Object.hasOwnProperty.call(body.metadata, field) ? body.metadata?.[field] : record.metadata[field]; }
 
-        // Save all well names page data values.
+        // Save all well known page data values.
         record.id = (typeof body.id === 'string' ? body.id : null)  || record.id;
-        // record.parentId = (typeof body.parentId === 'string' ? body.parentId : null)  || record.parentId;
+        record.parentId = (typeof body.parentId === 'string' ? body.parentId : null)  || record.parentId;
         record.name = (typeof body.name === 'string' ? body.name : null)  || record.name;
         record.slug = (typeof body.slug === 'string' ? body.slug : null) || record.slug;
         record.createdAt = (typeof body.createdAt === 'number' ? body.createdAt : null) || record.createdAt;
@@ -208,26 +175,9 @@ export default class VapidServer extends Vapid {
 
         // Ensure our slug doesn't contain additional slashes.
         if (record.slug) { record.slug = `${record.slug || ''}`.replace(/^\/+/, ''); }
-
-        // Process destroys
-        for (const fieldName of Object.keys(body._destroy || {})) {
-          delete content[fieldName];
-        }
-        const isDelete = body._delete === 'true';
-
-        if (record && isDelete) {
-          await db.deleteRecord(record.id);
-          // ctx.flash('success', `Deleted ${record.nameSingular}`);
-          (template.type === 'page') ? res.redirect('/') : res.redirect(`/${template.type}${template.name}`);
-          return res.redirect('/');
-        }
-
-        logger.info(`Saving ${record.id}: /${template.type}/${template.name}${record?.permalink()}`);
-        record = new Record(await db.updateRecord({
-          ...record.toJSON(),
-          content,
-          metadata,
-        }), template, page);
+        logger.info(JSON.stringify(record, null, 2))
+        logger.info(`${isDelete ? 'Deleting' : 'Saving'} ${record.id}: ${Record.permalink(record)}`);
+        await isDelete ? db.deleteRecord(record.id) : db.updateRecord(record);
         return res.code(200).send({ status: 'success' });
       }
       catch (err) {
@@ -235,21 +185,20 @@ export default class VapidServer extends Vapid {
       }
     }
 
-    const getRecord = async (_req: FastifyRequest, res: FastifyReply) => {
+    const getBasePage = async (_req: FastifyRequest, res: FastifyReply) => {
       const siteData = await this.getSiteData();
       res.code(200)
       res.type('text/html')
-      return fs.createReadStream(path.join(DASHBOARD_ASSETS, 'index.html'))
-        .pipe(replaceStream('{{siteData}}', escape(JSON.stringify(siteData))));
+      return fs.createReadStream(path.join(DASHBOARD_ASSETS, 'index.html')).pipe(replaceStream('{{siteData}}', escape(JSON.stringify(siteData))));
     }
 
-    app.get('/:type', getRecord);
-    app.get('/:type/:templateName', getRecord);
-    app.get('/:type/:templateName/:pageSlug', getRecord);
-    app.get('/:type/:templateName/:pageSlug/:collectionSlug', getRecord);
+    app.get('/:type', getBasePage);
+    app.get('/:type/:templateName', getBasePage);
+    app.get('/:type/:templateName/:pageSlug', getBasePage);
+    app.get('/:type/:templateName/:pageSlug/:collectionSlug', getBasePage);
 
-    app.post('/api/:type/:templateName/:pageSlug', saveRecord);
-    app.post('/api/:type/:templateName/:pageSlug/:collectionSlug', saveRecord);
+    app.post('/api/record', saveRecord);
+    app.delete('/api/record', saveRecord);
 
     app.post('/api/reorder', async function reorderRecord(req: FastifyRequest, res: FastifyReply) {
       const { id, to, parentId } = req.body as { id: string; from: number; to: number; parentId: string; };
@@ -377,12 +326,11 @@ export default class VapidServer extends Vapid {
       siteData.records[record.id] = record;
     }
 
-    debugger;
-
+    const tree = await this.compiler.parse(this.paths.www);
     for (const template of templates) {
       const id = Template.id(template);
       siteData.hbs.templates[Template.id(template)] = template;
-      const parsed = await this.compiler.parseTemplate(this, template.type, template.name);
+      const parsed = tree[id];
       if (!parsed) { continue; }
       siteData.hbs.pages[id] = { name: parsed.name, type: parsed.type, ast: parsed.ast };
       siteData.hbs.components = { ...siteData.hbs.components, ...parsed.components };
@@ -394,12 +342,18 @@ export default class VapidServer extends Vapid {
    * Parses templates and updates the database
    */
    private async rebuild() {
-    const tree = parse(this.paths.www);
-
-    // For every template file, update our database.
-    let existing: Promise<ITemplate>[] = [];
-    for (let template of Object.values(tree)) {
-      existing.push(this.database.updateTemplate(template));
+    const tree = this.compiler.parse(this.paths.www);
+    const templates: { [templateId: string]: ITemplate } = {};
+    const existing: Promise<ITemplate>[] = [];
+    debugger;
+    // For every unique template file, update our database.
+    for (let ctx of Object.values(tree)) {
+      for (let template of Object.values(ctx.templates)) {
+        const id = Template.id(template);
+        if (templates[id]) { continue; }
+        templates[id] = template;
+        existing.push(this.database.updateTemplate(template));
+      }
     }
 
     await Promise.all(existing);

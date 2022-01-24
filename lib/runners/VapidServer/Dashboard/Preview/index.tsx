@@ -41,7 +41,9 @@ export default function Preview({ siteData, record }: PreviewProps) {
   // If first render and we haven't found an AST match (e.g. loading a settings page), render the home page instead.
   useEffect(() => {
     if (!renderedRecord || !renderedAst) { return; }
-    const records = Object.values(siteData.records);
+    const localRecords = { ...siteData.records };
+    if (record?.id) { localRecords[record.id] = record; }
+    const records = Object.values(localRecords);
 
     // Get our rendered page's AST.
     const renderTemplate: IParsedTemplate | null = {
@@ -71,7 +73,7 @@ export default function Preview({ siteData, record }: PreviewProps) {
       doc.head.appendChild(script);
       isFirstRender = false;
     });
-  }, [ renderedRecord, renderedAst, siteData ]);
+  }, [ renderedRecord, renderedAst, siteData, record ]);
 
   return <Fragment />;
 }

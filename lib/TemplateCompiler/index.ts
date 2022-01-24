@@ -1,6 +1,6 @@
 
-import { readFileSync, existsSync } from 'fs';
-import { basename, dirname, join } from 'path';
+import { readFileSync } from 'fs';
+import { basename, dirname } from 'path';
 import { Document } from 'simple-dom';
 import Serializer from '@simple-dom/serializer';
 import { preprocess } from '@glimmer/syntax';
@@ -31,10 +31,11 @@ async function makeRecordData(page: IRecord, fieldKey: 'content' | 'metadata', d
   const out: IRecordData = {
     [RECORD_META]: DBRecord.getMetadata(DBRecord.permalink(page, parent), page, children, parent),
   } as IRecordData;
-  console.log('RENDER', RECORD_META, JSON.stringify(out, null, 2))
+
   for (const key of Object.keys(page[fieldKey])) {
     out[key] = page[fieldKey][key];
   }
+
   return out;
 }
 
@@ -55,13 +56,19 @@ async function makeRecordData(page: IRecord, fieldKey: 'content' | 'metadata', d
     this.resolveHelper = (name: string) => resolveHelper(name) || customResolveHelper(name);
   }
 
+  private resolveComponentAst(name: string): GlimmerTemplate {
+    const path = this.resolveComponent(name);
+    if (!path) { throw new Error(`Unknown component <${name} />`); }
+    return preprocess(path);
+  }
+
   /**
    * Applies content to the template
    *
    * @param {Object} content
    * @return {string} - HTML that has tags replaced with content
    */
-  parseFile(filePath: string): IParsedTemplate {
+  private parseFile(filePath: string): IParsedTemplate {
     const html = readFileSync(filePath, 'utf8');
     const name = basename(filePath, '.html');
     let type: PageType = PageType.PAGE;
@@ -73,101 +80,7 @@ async function makeRecordData(page: IRecord, fieldKey: 'content' | 'metadata', d
     return parse(name, type, html, this.resolveComponent, this.resolveHelper);
   }
 
-  private resolveComponentAst(name: string): GlimmerTemplate {
-    const path = this.resolveComponent(name);
-    if (!path) { throw new Error(`Unknown component <${name} />`); }
-    return preprocess(path);
-  }
-
-  parse(root: string): Record<string, ITemplate> {
-    const tree: Record<string, ITemplate> = {};
-    const templates = glob.sync(path.resolve(root, '**/*.html'));
-    for (const tpl of templates) {
-      const parsed = this.parseFile(tpl).templates;
-
-      for (const [parsedName, parsedTemplate] of Object.entries(parsed)) {
-        // We merge discovered fields across files, so we gradually collect configurations
-        // for all sections here. Get or create this shared object as needed.
-        const finalTemplate: ITemplate = tree[parsedName] = tree[parsedName] || stampTemplate({ name: parsedTemplate.name, type: parsedTemplate.type });
-
-        // Ensure the section name and type are set.
-        finalTemplate.name = parsedTemplate.name || finalTemplate.name;
-        finalTemplate.type = parsedTemplate.type || finalTemplate.type;
-
-        // Merge section options
-        Object.assign(finalTemplate.options, parsedTemplate.options);
-
-        // For every content field discovered in the content block, track them in the section.
-        for (const field of Object.values(parsedTemplate.fields)) {
-          if (!field) { continue; }
-          finalTemplate.fields[field.key] = mergeField(finalTemplate.fields[field.key] || {}, field);
-        }
-
-        // For every metadata field discovered in the content block, track them in the section.
-        for (const field of Object.values(parsedTemplate.metadata)) {
-          if (!field) { continue; }
-          finalTemplate.metadata[field.key] = mergeField(finalTemplate.metadata[field.key] || {}, field);
-        }
-      }
-    }
-    return tree;
-  }
-
-
-  /**
-   * Applies content to the template
-   *
-   * @param {Object} content
-   * @return {string} - HTML that has tags replaced with content
-   */
-  async render(tmpl: IParsedTemplate, data: IPageContext) {
-    const document = new Document();
-    await render(
-      document,
-      tmpl,
-      data,
-      this.resolveComponentAst.bind(this),
-      this.resolveHelper.bind(this),
-    );
-    const serializer = new Serializer({});
-    return serializer.serialize(document);
-  }
-
-  async parseTemplate(vapid: Vapid, type: PageType, name: string) {
-    let pagePath: string | null = null;
-    if (type === 'page') {
-      const htmlFile = join(vapid.paths.www, `${name}.html`);
-      const dirFile = join(vapid.paths.www, name, 'index.html');
-      pagePath = (existsSync(htmlFile) && htmlFile) || (existsSync(dirFile) && dirFile) || null;
-    }
-    else if (type === 'collection') {
-      const partial = join(vapid.paths.www, `_${name}.html`);
-      const collection = join(vapid.paths.www, `collections/${name}.html`);
-      pagePath = (existsSync(collection) && collection) || (existsSync(partial) && partial) || null;
-    }
-
-    if (!pagePath) { return null; }
-
-    return this.parseFile(pagePath);
-  }
-
-  /**
-   *
-   * Renders content into site template
-   *
-   * @param {string} uriPath
-   * @return {string} rendered HTML
-   *
-   * @todo Use Promise.all when fetching content
-   */
-   async parsePermalink(vapid: Vapid, uriPath: string): Promise<IParsedTemplate | null> {
-    const record = await vapid.database.getRecordFromPath(uriPath.slice(1));
-    if (!record) { return null; }
-    const template = record.template;
-    return await this.parseTemplate(vapid, template.type, template.name);
-  };
-
-  async getPageContext(vapid: Vapid, record: DBRecord, tmpl: IParsedTemplate): Promise<IPageContext> {
+  private async getPageContext(vapid: Vapid, record: DBRecord, tmpl: IParsedTemplate): Promise<IPageContext> {
     // Fetch all renderable pages.
     const pages = await vapid.database.getRecordsByType(PageType.PAGE);
 
@@ -223,6 +136,62 @@ async function makeRecordData(page: IRecord, fieldKey: 'content' | 'metadata', d
     }
   }
 
+  parse(root: string): Record<string, IParsedTemplate> {
+    const tree: Record<string, IParsedTemplate> = {};
+    const templates: Record<string, ITemplate> = {};
+
+    for (const tpl of glob.sync(path.resolve(root, '**/*.html'))) {
+      const parsed = this.parseFile(tpl);
+      tree[Template.id(parsed as unknown as ITemplate)] = parsed;
+
+      for (const [parsedName, parsedTemplate] of Object.entries(parsed.templates)) {
+        // We merge discovered fields across files, so we gradually collect configurations
+        // for all sections here. Get or create this shared object as needed.
+        const finalTemplate: ITemplate = templates[parsedName] = templates[parsedName] || stampTemplate({ name: parsedTemplate.name, type: parsedTemplate.type });
+        parsed.templates[parsedName] = finalTemplate;
+
+        // Ensure the section name and type are set.
+        finalTemplate.name = parsedTemplate.name || finalTemplate.name;
+        finalTemplate.type = parsedTemplate.type || finalTemplate.type;
+
+        // Merge section options
+        Object.assign(finalTemplate.options, parsedTemplate.options);
+
+        // For every content field discovered in the content block, track them in the section.
+        for (const field of Object.values(parsedTemplate.fields)) {
+          if (!field) { continue; }
+          finalTemplate.fields[field.key] = mergeField(finalTemplate.fields[field.key] || {}, field);
+        }
+
+        // For every metadata field discovered in the content block, track them in the section.
+        for (const field of Object.values(parsedTemplate.metadata)) {
+          if (!field) { continue; }
+          finalTemplate.metadata[field.key] = mergeField(finalTemplate.metadata[field.key] || {}, field);
+        }
+      }
+    }
+    return tree;
+  }
+
+  /**
+   * Applies content to the template
+   *
+   * @param {Object} content
+   * @return {string} - HTML that has tags replaced with content
+   */
+  async render(tmpl: IParsedTemplate, data: IPageContext) {
+    const document = new Document();
+    await render(
+      document,
+      tmpl,
+      data,
+      this.resolveComponentAst.bind(this),
+      this.resolveHelper.bind(this),
+    );
+    const serializer = new Serializer({});
+    return serializer.serialize(document);
+  }
+
   /**
    *
    * Renders content into site template
@@ -233,11 +202,12 @@ async function makeRecordData(page: IRecord, fieldKey: 'content' | 'metadata', d
    * @todo Use Promise.all when fetching content
    */
   async renderPermalink(vapid: Vapid, uriPath: string) {
-    const tmpl = await this.parsePermalink(vapid, uriPath);
-    if (!tmpl) { throw new Error('Permalink not found'); }
     const record = await vapid.database.getRecordFromPath(uriPath.slice(1));
     const template = record?.template;
     if (!record || !template) { throw new Error('Record not found'); }
+    const tree = this.parse(vapid.paths.www);
+    const tmpl = tree[template.id] || null;
+    if (!tmpl) { throw new Error('Permalink not found'); }
     const pageData = await this.getPageContext(vapid, record, tmpl);
     return await this.render(tmpl, pageData);
   };

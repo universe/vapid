@@ -73,6 +73,7 @@
   cursor: pointer;
   color: var(--slate-3);
   transition: color .18s ease-in-out;
+  background: transparent;
 }
 
 .preview-controls__button:hover, .preview-controls__button--active {

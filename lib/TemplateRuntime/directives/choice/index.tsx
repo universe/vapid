@@ -50,7 +50,7 @@ export default class ChoiceDirective extends BaseDirective<string[], ChoiceOptio
   }
 
   async render(value: string[]) {
-    const out = Array.from(value);
+    const out = Array.from(value).filter(Boolean);
     out.toString = () => Array.isArray(value) ? value.join(',') : '';
     return out;
   }

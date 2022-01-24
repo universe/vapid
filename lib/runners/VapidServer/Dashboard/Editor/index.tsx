@@ -25,6 +25,7 @@ interface EditorProps {
   record: IRecord | null;
   parent: IRecord | null;
   onChange: (record: IRecord) => void | Promise<void>;
+  onSave: (record: IRecord) => void | Promise<void>;
 }
 
 interface CollectionListProps {
@@ -100,7 +101,7 @@ function renderFields(type: 'page' | 'metadata' | 'content', fields: IField[], r
   return out
 }
 
-export default function Editor({ isNewRecord, template, record, parent, siteData, onChange }: EditorProps) {
+export default function Editor({ isNewRecord, template, record, parent, siteData, onChange, onSave }: EditorProps) {
   const [ metaOpen, setMetaOpen ] = useState(0);
   const templates = Object.values(siteData.hbs.templates);
   const records = Object.values(siteData.records);
@@ -147,7 +148,7 @@ export default function Editor({ isNewRecord, template, record, parent, siteData
 
     <form
       class="form"
-      action={`/api/${template?.type}/${template?.name}/${[ parent?.slug , isNewRecord ? 'new' : record?.slug ].filter(Boolean).join('/')}`}
+      action="/api/record"
       id="edit-form"
       method="post"
       encType="multipart/form-data"
@@ -156,7 +157,8 @@ export default function Editor({ isNewRecord, template, record, parent, siteData
         evt.preventDefault();
         console.log(record);
         const url = document.getElementById('edit-form')?.getAttribute('action');
-        if (!url) { return; }
+        const method = document.getElementById('edit-form')?.getAttribute('method')?.toLowerCase();
+        if (!url || (method !== 'post' && method !== 'delete')) { return; }
         const toastId = toast.loading('Saving Page...', {
           position: 'bottom-center',
           style: {
@@ -167,7 +169,7 @@ export default function Editor({ isNewRecord, template, record, parent, siteData
           }
         });
         const res = await window.fetch(url, {
-          method: 'POST',
+          method,
           headers: {
             'x-csrf-token': siteData.csrf,
             'Content-Type': 'application/json',
@@ -188,8 +190,9 @@ export default function Editor({ isNewRecord, template, record, parent, siteData
               icon: <div class="toast--success" />,
               duration: 3000,
             });
+            record && onSave(record);
           } else {
-            toast.success('Saved Successfully', {
+            toast.success('Error Saving', {
               id: toastId,
               style: {
                 fontFamily: 'fontawesome, var(--sans-stack)',
@@ -211,7 +214,7 @@ export default function Editor({ isNewRecord, template, record, parent, siteData
           {!isNewRecord && template.type !== PageType.SETTINGS ? <input
             type="submit"
             class="floated left basic red button"
-            onClick={() => (document.getElementById('delete-record') as HTMLInputElement).value = 'true'}
+            onClick={() => document.getElementById('edit-form')?.setAttribute('method', 'delete')}
             value="Delete"
           /> : null}
         </div>
