@@ -1,6 +1,6 @@
 {
   "name": "@universe/vapid",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "license": "MIT",
   "description": "A template-driven content management system",
   "repository": "universe/vapid",
@@ -79,7 +79,7 @@
     "dist"
   ],
   "dependencies": {
-    "@cannery/hoist": "^0.7.1",
+    "@cannery/hoist": "^0.8.0",
     "@glimmer/syntax": "0.83.1",
     "@simple-dom/serializer": "^1.4.0",
     "@swc/helpers": "^0.3.2",

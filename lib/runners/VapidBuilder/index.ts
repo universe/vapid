@@ -117,9 +117,14 @@ export default class VapidBuilder extends Vapid {
       const records = await this.database.getRecordsByTemplateId(tmpl.id);
       for (const record of records) {
         const rec = await this.database.hydrateRecord(record);
-        logger.info([`Rendering: ${rec.permalink()}`]);
-        await this.renderUrl(dest, rec.permalink());
-        logger.info([`Created: ${rec.permalink()}`]);
+        const permalink = rec.permalink();
+        logger.info([`Rendering: "${permalink}"`]);
+        try {
+          await this.renderUrl(dest, permalink);
+          logger.info([`Rendered: "${permalink}"`]);
+        } catch (err) {
+          logger.error([`Error Rendering: "${permalink}"`]);
+        }
       }
     }
 

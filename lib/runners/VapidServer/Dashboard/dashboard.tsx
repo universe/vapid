@@ -211,8 +211,9 @@ function App(params: RouteParts) {
       </nav>
 
       <section class="vapid-nav__controls">
-        {/* <a href="/dashboard/deploy">Real Deploy Button</a> */}
-        <RocketButton />
+        <RocketButton onClick={() => {
+          setTimeout(() => window.open('/dashboard/deploy'), 3200);
+        }} />
       </section>
     </section>
 

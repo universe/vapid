@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Vapid Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <style>
+    body {
+      color: #0a0b0c;
+      background: #f3f6fb;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue",sans-serif;
+    }
+    #progress {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      margin: 0;
+    }
+    #description {
+      position: fixed;
+      bottom: 1.8rem;
+      font-size: 1.2rem;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      margin: 0;
+    }
+    .loader {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate3d(-50%, -50%, 0);
+      width: 20rem;
+      height: 20rem;
+    }
+
+    .loader__main, .loader__shadow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .loader__filter { width: 0; }
+    .loader__main { filter: url(#loader-filter); }
+    .loader__stop1 { stop-color: currentColor; }
+    .loader__stop2 { stop-color: currentColor; }
+    .loader__circle {
+      animation: LoaderAnimation 10s infinite linear;
+      stroke-dasharray: 180 800;
+      fill: none;
+      stroke: url(#loader-gradient);
+      stroke-width: 23;
+      stroke-linecap: round;
+    }
+    .loader__stroke {
+      animation: LoaderAnimation 3s infinite linear;
+      stroke-dasharray: 26 54;
+      fill: none;
+      stroke: url(#loader-gradient);
+      stroke-width: 23;
+      stroke-linecap: round;
+    }
+    .loader__shadow {
+      filter: blur(5px);
+      opacity: 0.3;
+      position: absolute;
+      transform: translate(3px, 3px);
+    }
+    @keyframes LoaderAnimation {
+      0% {
+        stroke-dashoffset: 0;
+      }
+      100% {
+        stroke-dashoffset: -403px;
+      }
+    }
+  </style>
+</head>
+<body class="dashboard">
+  <main id="main">
+    <div class="loader">
+      <svg class="loader__filter">
+        <defs>
+          <filter id="loader-filter">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 20 -10"
+              result="inreGegga"
+            />
+            <feComposite in="SourceGraphic" in2="inreGegga" operator="atop" />
+          </filter>
+        </defs>
+      </svg>
+      <svg class="loader__main" viewBox="0 0 200 200">
+        <defs>
+          <linearGradient id="loader-linear-gradient">
+            <stop class="loader__stop1" offset="0" />
+            <stop class="loader__stop2" offset="1" />
+          </linearGradient>
+          <linearGradient
+            y2="160"
+            x2="160"
+            y1="40"
+            x1="40"
+            gradientUnits="userSpaceOnUse"
+            id="loader-gradient"
+            xlink:href="#loader-linear-gradient"
+          />
+        </defs>
+        <path class="loader__circle"
+          d="m 164,100 c 0,-35.346224 -28.65378,-64 -64,-64 -35.346224,0 -64,28.653776 -64,64 0,35.34622 28.653776,64 64,64 35.34622,0 64,-26.21502 64,-64 0,-37.784981 -26.92058,-64 -64,-64 -37.079421,0 -65.267479,26.922736 -64,64 1.267479,37.07726 26.703171,65.05317 64,64 37.29683,-1.05317 64,-64 64,-64"
+        />
+        <circle class="loader__stroke" cx="100" cy="100" r="64" />
+      </svg>
+    </div>
+    <h1 id="progress">0%</h1>
+    <h2 id="description">Deploying Website</h2>
+  </main>
+  <script src="https://kit.fontawesome.com/05b8235ba3.js" crossorigin="anonymous"></script>
+  <script>
+    if ('WebSocket' in window) {
+      const ws = new WebSocket(`ws${location.protocol === 'https:' ? 's' : ''}://${(location.host || 'localhost').split(':')[0]}:35729/livereload`);
+      ws.onmessage = (evt) => {
+        const { command, data } = JSON.parse(evt.data);
+        switch(command) {
+          case 'redirect': window.location = data + '?q=' + Math.ceil(Math.random() + 10000); return;
+          case 'upload': document.getElementById('progress').innerText = `${Math.ceil((data.value / data.total) * 100)}%`; return;
+        }
+      };
+    }
+  </script>
+</body>
+</html>

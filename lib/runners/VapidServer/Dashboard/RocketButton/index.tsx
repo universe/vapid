@@ -14,18 +14,19 @@ function splitText(text: string) {
   return spans;
 }
 
-export default function RocketButton() {
+export default function RocketButton({ onClick }: { onClick: () => any}) {
   const [ phase, setPhase ] = useState<'default' | 'animated' | 'live'>('default');
 
   return <button class={`rocket-button rocket-button--${phase}`} onClick={(evt) => {
     evt.preventDefault();
     setPhase(phase === 'live' ? 'default' : 'live');
+    onClick();
   }}>
     <div class="default">{splitText('Deploy Site')}</div>
 
     <div class="success">
       <svg><use xlinkHref="#check" /></svg>
-      <div>{splitText('Site is Live')}</div>
+      <div>{splitText('Site is Deployed')}</div>
     </div>
 
     <div class="animation">

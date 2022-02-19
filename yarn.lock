@@ -318,10 +318,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@cannery/hoist@^0.7.1":
-  version "0.7.1"
-  resolved "https://registry.yarnpkg.com/@cannery/hoist/-/hoist-0.7.1.tgz#b7db35b1d34f9c454996bd6c372b6d09fddc2919"
-  integrity sha512-4RrK1pO4XkK0UAyezq+moQE3QcOx+dS+OhE/AfRJs4/ZRy3Pf7XHAC9duOsJymXv4rUwUu5hjKID7MQdJW1M9Q==
+"@cannery/hoist@^0.8.0":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@cannery/hoist/-/hoist-0.8.0.tgz#78eaab165cf6c28581b1592969f6ea4f114d8516"
+  integrity sha512-cla4BCFnCkKDe1SQ1rAp6yrhqdHQ6iy6vaOa9jvn18s7X88pg/S1E8L8UJzWl//J7gMisAeCFPqP+HvBI3PtMA==
   dependencies:
     autoprefixer "^10.1.0"
     buffer-replace "^1.0.0"

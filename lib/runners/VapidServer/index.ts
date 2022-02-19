@@ -9,7 +9,7 @@ import normalizeUrl from 'normalize-url';
 import fetch from 'node-fetch';
 
 import { Json, uuid } from '@universe/util';
-import { deploy, Logger, makePublic } from '@cannery/hoist';
+import { deploy, makePublic } from '@cannery/hoist';
 import pino from 'pino';
 import fastify, { FastifyReply, FastifyRequest } from 'fastify';
 import findUp from 'find-up';
@@ -114,14 +114,24 @@ export default class VapidServer extends Vapid {
       return;
     });
 
-    app.get('/dashboard/deploy', async (_req, res) => {
+    app.get('/dashboard/deploy', (_req, res) => {
       const staticBuildPath = path.join(this.paths.root, 'dist');
       const builder = new VapidBuilder(this.paths.root, this.config);
-      try { await builder.build(staticBuildPath); }
-      catch (err) { logger.error(err); throw err; }
-      const siteUrl = await deploy(staticBuildPath, undefined, undefined, logger as unknown as Logger, false);
-      await makePublic(staticBuildPath);
-      res.redirect(siteUrl);
+      (async() => {
+        try { await builder.build(staticBuildPath); }
+        catch (err) { logger.error(err); throw err; }
+        const siteUrl = await deploy(staticBuildPath, '', this.config.domain, {
+          info: logger.info.bind(logger),
+          error: logger.error.bind(logger),
+          warn: logger.warn.bind(logger),
+          progress: (progress) => {
+            this.watcher?.broadcast({ command: 'upload', data: progress });
+          },
+        });
+        await makePublic(staticBuildPath, this.config.domain);
+        this.watcher?.broadcast({ command: 'redirect', data: siteUrl });
+      })();
+      return res.code(200).type('text/html').sendFile('upload.html', DASHBOARD_ASSETS);
     });
 
     const saveRecord = async (req: FastifyRequest, res: FastifyReply) => {
