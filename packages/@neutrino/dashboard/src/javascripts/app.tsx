@@ -13,25 +13,27 @@ import { Dashboard } from './dashboard.js';
 const PROJECT_ID = 'the-universe-app';
 
 function App() {
-  const [ app, setApp ] = useState<FirebaseApp | null>(null);
+  const [ _, setApp ] = useState<FirebaseApp | null>(null);
   const [ user, setUser ] = useState<User | null>(null);
   const [ adapter, setAdapter ] = useState<Adapter | null>(null);
   const [ loginOpen, setLoginOpen ] = useState(true);
   const [ creds, setCreds ] = useState<{ realm: string, config: FirebaseOptions, token: string; projectId: string; } | null>(null);
   const [ claims, setClaims ] = useState<Record<string, Record<string, 1 | 0>>>({});
   console.log(claims);
-  useEffect(async() => {
-    if (!user) { return; }
-    console.log('WOO', (await user?.getIdTokenResult()).claims);
-    setClaims((await user?.getIdTokenResult()).claims.realms as Record<string, Record<string, 1 | 0>>);
-    const token = await user?.getIdToken();
-    if (!token) { return; }
-    const res = await fetch('http://localhost:1337/v1/auth/demo.universe.app', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    setCreds((await res.json()).data);
+  useEffect(() => {
+    (async() => {
+      if (!user) { return; }
+      console.log('WOO', (await user?.getIdTokenResult()).claims);
+      setClaims((await user?.getIdTokenResult()).claims.realms as Record<string, Record<string, 1 | 0>>);
+      const token = await user?.getIdToken();
+      if (!token) { return; }
+      const res = await fetch('http://localhost:1337/v1/auth/demo.universe.app', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setCreds((await res.json()).data);
+    })();
   }, [user]);
 
   useEffect(() => {
@@ -55,17 +57,27 @@ function App() {
           <h1 class="universe__title">{creds?.realm}</h1>
         </figure>
 
-        <ul class="universe__account-picker" onBlur={evt => setTimeout(() => (evt.target as HTMLElement).scrollTop = 0, 200)} onMouseLeave={evt => setTimeout(() => (evt.target as HTMLElement).scrollTop = 0, 200)}>
-          {Object.keys(claims).filter(r => r === creds?.realm).map(realm => <li class="universe__account-picker-row">
+        <ul 
+          class="universe__account-picker" 
+          onBlur={evt => setTimeout(() => (evt.target as HTMLElement).scrollTop = 0, 200)} 
+          onMouseLeave={evt => setTimeout(() => (evt.target as HTMLElement).scrollTop = 0, 200)}
+        >
+          {Object.keys(claims).filter(r => r === creds?.realm).map(realm => <li key={realm} class="universe__account-picker-row">
             <img class="universe__account-picker-photo" src={`https://${realm}/app/photo`} />
             <h2 class="universe__account-picker-name">{realm}</h2>
           </li>)}
-          {Object.keys(claims).sort().filter(r => r !== creds?.realm).map(realm => <li class="universe__account-picker-row">
+          {Object.keys(claims).sort().filter(r => r !== creds?.realm).map(realm => <li key={realm} class="universe__account-picker-row">
             <img class="universe__account-picker-photo" src={`https://${realm}/app/photo`} />
             <h2 class="universe__account-picker-name">{realm}</h2>
           </li>)}
         </ul>
-        <button class="universe__profile-image" style={`--user-image: url(${user.photoURL || ''})`} onClick={_ => setLoginOpen(true)}>{userInitials(user.displayName || '')}</button>
+        <button 
+          class="universe__profile-image" 
+          style={`--user-image: url(${user.photoURL || ''})`} 
+          onClick={_ => setLoginOpen(true)}
+        >
+          {userInitials(user.displayName || '')}
+        </button>
       </section>
     </Dashboard> : null}
   </>;

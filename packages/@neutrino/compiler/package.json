@@ -38,6 +38,7 @@
     "@cannery/hoist": "^0.8.0",
     "@glimmer/syntax": "0.83.1",
     "@neutrino/core": "1.0.0-beta.0",
+    "@neutrino/runtime": "1.0.0-beta.0",
     "@neutrino/stdlib": "1.0.0-beta.0",
     "@simple-dom/serializer": "^1.4.0",
     "@universe/util": "^1.1.2",

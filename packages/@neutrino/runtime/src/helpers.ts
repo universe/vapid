@@ -6,7 +6,7 @@ type HelperNames = keyof typeof stdlib;
 const HELPERS: Record<string, typeof stdlib[HelperNames]> = {};
 
 for (const [ name, helper ] of Object.entries(stdlib)) {
-  if (!Object.prototype.isPrototypeOf(BaseHelper.prototype, helper?.prototype)) { continue; }
+  if (!Object.prototype.isPrototypeOf.call(BaseHelper.prototype, helper?.prototype)) { continue; }
   // TODO: Find a way to not require an instance to be made to get the helper name.
   HELPERS[name] = helper;
 }

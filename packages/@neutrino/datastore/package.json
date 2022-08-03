@@ -35,7 +35,6 @@
   },
   "devDependencies": {
     "@jest/globals": "^28.1.1",
-    "@neutrino/runner": "1.0.0-beta.0",
     "@types/update-notifier": "^5.1.0",
     "nock": "^13.2.7"
   }

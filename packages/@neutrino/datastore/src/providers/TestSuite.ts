@@ -4,6 +4,8 @@ import { IProvider, IRecord,ITemplate, PageType, stampField, stampRecord, stampT
 const tmplSort = (a: ITemplate, b: ITemplate) => Template.id(a) > Template.id(b) ? 1 : -1;
 const recordSort = (a: IRecord, b: IRecord) => a.id > b.id ? 1 : -1;
 
+/* eslint-disable jest/no-export */
+/* eslint-disable  jest/valid-title */
 export default function test(name: string, provider: IProvider, purge: () => Promise<void>) {
   describe(name, () => {
     beforeEach(async() => {
@@ -20,7 +22,7 @@ export default function test(name: string, provider: IProvider, purge: () => Pro
       it('Starts and Stops', async() => {
         await provider.start();
         await provider.stop();
-        expect(1);
+        expect(1).toEqual(1);
       });
   
       it('Purge Function Works', async() => {

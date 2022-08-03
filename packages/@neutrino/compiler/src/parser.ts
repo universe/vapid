@@ -62,7 +62,9 @@ function parseExpression(node:
   }
 
   const context = (path as ASTv1.PathExpression)?.original.indexOf('this') === 0 ? 'this' : '';
-  const key = (path as ASTv1.PathExpression).parts?.length === 1 ? (path as ASTv1.PathExpression).parts[0] : (path as ASTv1.PathExpression).parts.slice(1).join('.');
+  const key = (path as ASTv1.PathExpression).parts?.length === 1 
+    ? (path as ASTv1.PathExpression).parts[0] 
+    : (path as ASTv1.PathExpression).parts.slice(1).join('.');
 
   // TODO: Handle literal values
   return [{
@@ -82,6 +84,7 @@ function ensureBranch(data: Record<string, ITemplate>, node: ASTv1.BlockStatemen
   const [localExpr] = parseExpression(node.params[1]);
 
   if (localExpr && localExpr?.context !== 'this') {
+    /* eslint-disable-next-line max-len */
     throw new Error(`Collection settings must be set on the page's "this" context. Instead found: {{${localExpr.original}}} at ${node.loc.asString()}:${node.loc.startPosition.line}:${node.loc.startPosition.column}`);
   }
 
@@ -169,6 +172,7 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
   // Log a warning if we're referencing the default general context without an explicit reference.
   // Update the original path node so we can actually render the template.
   if (!context && !leaf.isPrivate && !aliases[key]) {
+    /* eslint-disable-next-line max-len */
     throw new Error(`Values referenced in a template must include a path context. Instead found: {{${leaf.original}}} at ${path.loc.asString()}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
   }
 
@@ -183,8 +187,9 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
 
   // Ensure the field descriptor exists. Merge settings if already exists.
   const old: IField | null = data[sectionKey][contentLocation][key] || null;
-  const priority = parseInt(leaf.hash.priority) ?? Infinity;
+  const priority = parseInt(leaf.hash.priority, 10) ?? Infinity;
   if (priority <= 0) {
+    /* eslint-disable-next-line max-len */
     throw new Error(`Priority value must be a positive integer. Instead found: {{${leaf.original}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
   }
   leaf.hash.type = leaf.hash.type || 'text'; // Text is the default type.
@@ -210,7 +215,13 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
  * @return {Object} tree of sections, fields, params, etc.
  */
 /* eslint-disable no-param-reassign */
-function walk(template: IParsedTemplate, node: ASTv1.Node , aliases: Record<string, IAlias> = {}, resolveComponent: ComponentResolver, helpers: HelperResolver) {
+function walk(
+  template: IParsedTemplate,
+  node: ASTv1.Node , 
+  aliases: Record<string, IAlias> = {}, 
+  resolveComponent: ComponentResolver, 
+  helpers: HelperResolver,
+) {
 
   // Create a new copy of local aliases lookup object each time we enter a new block.
   aliases = Object.create(aliases);
@@ -389,7 +400,15 @@ function walk(template: IParsedTemplate, node: ASTv1.Node , aliases: Record<stri
  *
  * @return {Object} - a representation of the content
  */
- export function parse(name: string, type: PageType, html: string, resolveComponent: ComponentResolver, helpers: HelperResolver, templates: Record<string, ITemplate> = {}, components: Record<string, ITemplateAst> = {}): IParsedTemplate {
+ export function parse(
+  name: string, 
+  type: PageType, 
+  html: string, 
+  resolveComponent: ComponentResolver, 
+  helpers: HelperResolver, 
+  templates: Record<string, ITemplate> = {}, 
+  components: Record<string, ITemplateAst> = {},
+): IParsedTemplate {
   let ast: GlimmerTemplate;
   try { ast = preprocess(html); }
   catch (err) { throw new Error('Bad template syntax'); }

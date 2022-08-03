@@ -17,6 +17,7 @@ function splitText(text: string) {
 export default function RocketButton({ onClick }: { onClick: () => any}) {
   const [ phase, setPhase ] = useState<'default' | 'animated' | 'live'>('default');
 
+  /* eslint-disable max-len */
   return <button class={`rocket-button rocket-button--${phase}`} onClick={(evt) => {
     evt.preventDefault();
     setPhase(phase === 'live' ? 'default' : 'live');

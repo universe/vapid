@@ -24,7 +24,6 @@
     "dist"
   ],
   "dependencies": {
-    "@neutrino/core": "1.0.0-beta.0",
     "@universe/util": "^1.1.2",
     "nanoid": "^3.1.30",
     "pluralize": "^8.0.0",

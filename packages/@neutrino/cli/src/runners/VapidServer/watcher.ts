@@ -32,7 +32,6 @@ export default class Watcher {
    */
   handleEvent(filePath: string) {
     // Ignore hidden files
-    logger.info(`PANIC ${filePath} ${[...arguments]}`);
     if (/^\..*/.test(filePath)) return;
     setTimeout(() => {
       this.callback && this.callback();
@@ -49,7 +48,7 @@ export default class Watcher {
    * @param {{server: Server, port: number }} config
    * @param {function} [callback=() => {}] - function to execute when files are changed
    */
-  listen(callback = () => {}) {
+  listen(callback = () => {1;}) {
     this.callback = callback;
     this.server = livereload.createServer();
     this.server.watch(this.paths);

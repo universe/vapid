@@ -113,6 +113,7 @@
     "react-hooks/exhaustive-deps": "warn",
     "react/no-deprecated": "warn",
     "jest/no-deprecated-functions": "off",
-    "react/no-did-mount-set-state": "warn"
+    "react/no-did-mount-set-state": "warn",
+    "no-cond-assign": "off"
   }
 }

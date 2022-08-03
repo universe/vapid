@@ -6,14 +6,12 @@ import { BaseHelper, DirectiveField, DirectiveMeta,IField, IRecord, ITemplate, N
 import { IPageContext, IWebsite, makePageContext, resolveHelper,Template } from '@neutrino/runtime';
 import { toTitleCase } from '@universe/util';
 import FontPicker from 'font-picker-react';
-import { Component,ComponentChildren, Fragment } from 'preact';
+import { ComponentChildren, Fragment } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { Router } from 'preact-router';
 import toast from 'react-hot-toast';
 
 import { DataAdapter } from '../adapters/types.js';
-
-// const DIRECTIVE_CACHE: Record<string, any> = {};
 
 function findDirective(key: string, field: DirectiveField, meta: DirectiveMeta) {
   let helper = resolveHelper(field.type);
@@ -24,7 +22,7 @@ function findDirective(key: string, field: DirectiveField, meta: DirectiveMeta) 
   return helper ? new helper(key, field, meta) : null;
 }
 
-type DirectiveChangeCallback = Parameters<BaseHelper<string, {}>['onChange']>[0]
+type DirectiveChangeCallback = Parameters<BaseHelper<string, unknown>['onChange']>[0]
 
 function templateFor(record: IRecord | null, templates: ITemplate[]): ITemplate | null {
   if (!record) { return null; }
@@ -65,7 +63,7 @@ function CollectionList({ template, page, collection, site }: CollectionListProp
     <ol class={`collection__preview ${template.sortable ? 'draggable' : 'sortable'}`}>
       {collection.map((record) => {
         if (record.deletedAt) { return null; }
-        return <li data-id={record.id} data-parent-id={page.id} class="collection__preview-row">
+        return <li key={record.id} data-id={record.id} data-parent-id={page.id} class="collection__preview-row">
           <a href={`/${template.type}/${template.name}/${page.slug}/${record.slug}`} class="collection__row-select">
             <div class="collection__preview-value collection__preview-value--image">
               {Template.tableColumns(template).map(column => {
@@ -80,7 +78,7 @@ function CollectionList({ template, page, collection, site }: CollectionListProp
               if (!field || field.type === 'image') { return null; }
               const directive = findDirective(column, field, { templateId: record.templateId, record: null, records: [], media: site.meta.media });
               const rendered = directive?.preview(record?.content?.[column] as unknown as any) || null;
-              return <div class={`collection__preview-value collection__preview-value--${field.type}`}>{rendered}</div>;
+              return <div key={`${field.templateId}-${field.key}`} class={`collection__preview-value collection__preview-value--${field.type}`}>{rendered}</div>;
             })}
           </a>
         </li>;
@@ -104,7 +102,11 @@ function renderFields(type: 'page' | 'metadata' | 'content', fields: IField[], r
     }
     const Input = (directive?.input.bind(directive)) as (props: any) => JSX.Element;
     out.push(
-      <div key={`${record.id}-${type}-${field.key}`} data-field={`this-${field.key}`} class={`${(field.options.required && !field.options.default) ? 'required' : ''} field field__${field.type || 'text'}`}>
+      <div 
+        key={`${record.id}-${type}-${field.key}`} 
+        data-field={`this-${field.key}`} 
+        class={`${(field.options.required && !field.options.default) ? 'required' : ''} field field__${field.type || 'text'}`}
+      >
         <label for={`content[${field.key}]`}>
           {field.options.label || toTitleCase(field.key)}
           {field.options.help && <small id={`help-content[${field.key}]`} class="help">{field.options.help}</small>}
@@ -159,9 +161,11 @@ export default function Editor({ adapter, isNewRecord, template, record, parent,
   if (!template) { return <div>404</div>; }
 
   const context = record ? makePageContext(record, records, templates, siteData) : null;
+  /* eslint-disable max-len */
   const pageFields =  template && record && context ? renderFields('page', Template.pageFields(template), record || parent, context, onUpdate.bind(window, 'page')) : null;
   const metaFields =  template && record && context ? renderFields('metadata', Template.metaFields(template), record || parent, context, onUpdate.bind(window, 'metadata')) : null;
   const contentFields =  template && record && context ? renderFields('content', Template.sortedFields(template), record, context, onUpdate.bind(window, 'content')) : null;
+  /* eslint-enable max-len */
   return <Fragment>
     <Router onChange={() => setMetaOpen(0)} />
     <nav class={`vapid-nav__heading vapid-nav--${isNewRecord ? 'new' : record?.id}`}>
@@ -176,14 +180,23 @@ export default function Editor({ adapter, isNewRecord, template, record, parent,
       }}>Cancel</button>
       <h1 class="heading">{isNewRecord ? 'New' : ''} {toTitleCase(template.name || '')} {childrenTemplate ? '' : toTitleCase(template.type || '')}</h1>
       {(template?.type !== PageType.SETTINGS) ? <ul class="basic fixed menu">
-        <li><button class={`small button vapid-nav__settings ${metaOpen ? 'vapid-nav__settings--active' : ''}`} onClick={() => setMetaOpen(metaOpen ? 0 : document.getElementById('meta-container')?.scrollHeight || 0)}>Settings</button></li>
+        <li>
+          <button 
+            class={`small button vapid-nav__settings ${metaOpen ? 'vapid-nav__settings--active' : ''}`} 
+            onClick={() => setMetaOpen(metaOpen ? 0 : document.getElementById('meta-container')?.scrollHeight || 0)}
+          >
+            Settings
+          </button>
+        </li>
       </ul> : null}
     </nav>
 
+    {/* eslint-disable max-len */}
     {!isNewRecord && childrenTemplate && parentTemplate && Object.values(parentTemplate?.fields || {}).length && Object.values(childrenTemplate?.fields || {}).length ? <ul class="sub-menu">
       <li><a href={`/page/${parentTemplate.name}/${(parent || record)?.slug || ''}`} class={`${template.type === PageType.PAGE ? 'active' : ''}`}>Page</a></li>
       <li><a href={`/collection/${childrenTemplate.name}/${(parent || record)?.slug || ''}`} class={`${template.type === PageType.COLLECTION ? 'active' : ''}`}>Records</a></li>
     </ul> : null}
+    {/* eslint-enable max-len */}
 
     <form
       class="form"
@@ -220,7 +233,7 @@ export default function Editor({ adapter, isNewRecord, template, record, parent,
             record && onSave(record);
           }, 1000);
         }
- catch (err) {
+        catch (err) {
           console.error(err);
           setTimeout(() => {
             toast.success('Error Saving', {
@@ -275,7 +288,7 @@ export default function Editor({ adapter, isNewRecord, template, record, parent,
                 record && (record.deletedAt = Date.now());
                 record && onSave(record);
               }
- catch (err) {
+              catch (err) {
                 toast.success('Error Deleting', {
                   id: toastId,
                   style: {
@@ -293,10 +306,12 @@ export default function Editor({ adapter, isNewRecord, template, record, parent,
         </div>
       </section>
       <section class="content">
+        {/* eslint-disable max-len */}
         {((parent && !record && template.type === PageType.COLLECTION) || (template.type === PageType.PAGE && !Object.values(parentTemplate?.fields || {}).length) && collectionList) ?
           <CollectionList page={parent || record} template={childrenTemplate} collection={collectionList} site={siteData} /> :
           contentFields
         }
+        {/* eslint-enable max-len */}
       </section>
       <FontPicker apiKey="AIzaSyC-t_Olbb1fWpCVhYPwr_DfxMu3_sWmc_c" onChange={console.log} categories={["handwriting"]} />
       <nav class="submit field" style="overflow: hidden;">

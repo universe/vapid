@@ -2,7 +2,22 @@ import { IProvider, IRecord, ITemplate, PageType, Template } from '@neutrino/cor
 import { md5 } from '@universe/util';
 import { deleteApp, FirebaseApp, FirebaseOptions,initializeApp } from 'firebase/app';
 import { Auth, connectAuthEmulator, getAuth, signInWithCustomToken, signInWithEmailAndPassword, User } from 'firebase/auth';
-import { collection, connectFirestoreEmulator, deleteDoc, doc, DocumentData, DocumentSnapshot, Firestore, getDoc, getDocs, initializeFirestore, query, QueryConstraint,setDoc, where } from 'firebase/firestore';
+import { 
+  collection, 
+  connectFirestoreEmulator, 
+  deleteDoc, 
+  doc, 
+  DocumentData, 
+  DocumentSnapshot, 
+  Firestore, 
+  getDoc, 
+  getDocs, 
+  initializeFirestore, 
+  query, 
+  QueryConstraint,
+  setDoc, 
+  where,
+} from 'firebase/firestore';
 import { connectStorageEmulator,FirebaseStorage, getStorage, ref, uploadBytesResumable } from "firebase/storage";
 import mime from 'mime';
 import pino from 'pino';
@@ -51,7 +66,7 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     if (ENV.FIREBASE_STORAGE_EMULATOR_HOST) {
       logger.info(`Connecting Firebase Storage Emulator`);
       const [ domain, port ] = ENV.FIRESTORE_EMULATOR_HOST?.split(':') || [ 'localhost', '8081' ];
-      connectStorageEmulator(this.#storage, domain, parseInt(port));
+      connectStorageEmulator(this.#storage, domain, parseInt(port, 10));
     }
     return this.#storage;
   }
@@ -63,7 +78,7 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     if (ENV.FIRESTORE_EMULATOR_HOST) {
       logger.info(`Connecting Firebase Emulator`);
       const [ domain, port ] = ENV.FIRESTORE_EMULATOR_HOST.split(':');
-      connectFirestoreEmulator(this.#db, domain, parseInt(port));
+      connectFirestoreEmulator(this.#db, domain, parseInt(port, 10));
     }
 
     return this.#db;
@@ -236,7 +251,7 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
       }
     }
 
-    await setDoc(doc(db, `${this.getRecordsPath()}/${update.id}`), { ...update, _type: template.type });
+    await setDoc(doc(db, `${this.getRecordsPath()}/${update.id}`), { ...update, _type: template.type });
     return update;
   }
 

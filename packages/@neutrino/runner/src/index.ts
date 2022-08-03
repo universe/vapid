@@ -112,17 +112,16 @@ export class Vapid {
   }
 
   private async getPageContext(record: DBRecord, tmpl: IParsedTemplate): Promise<IPageContext> {
-    const vapid = this;
     // Fetch all renderable pages.
-    const pages = await vapid.database.getRecordsByType(PageType.PAGE);
+    const pages = await this.database.getRecordsByType(PageType.PAGE);
 
     // Generate our navigation menu.
     const navigation: SerializedRecord[] = [];
     const pageMeta: SerializedRecord[] = [];
     const currentUrl = record.permalink();
     for (const page of pages.sort(sortRecords)) {
-      const children = await vapid.database.getChildren(page.id) || null;
-      const parent = page.parentId ? await vapid.database.getRecordById(page.parentId) : null;
+      const children = await this.database.getChildren(page.id) || null;
+      const parent = page.parentId ? await this.database.getRecordById(page.parentId) : null;
       const meta = DBRecord.getMetadata(currentUrl, page, children, parent);
       pageMeta.push(meta);
       if (page.parentId !== NAVIGATION_GROUP_ID) { continue; }
@@ -130,38 +129,38 @@ export class Vapid {
     }
 
     // Create our page context data.
-    const content = { this: await makeRecordData(record, 'content', vapid.database) };
+    const content = { this: await makeRecordData(record, 'content', this.database) };
 
     /* eslint-disable no-await-in-loop */
     for (const model of Object.values(tmpl.templates)) {
       if (model.type === 'page') { continue; }
       // Fetch all templates where the type and model name match.
-      const template = await vapid.database.getTemplateByName(model.name, model.type);
-      const records = template ? await vapid.database.getRecordsByTemplateId(Template.id(template)) : [];
+      const template = await this.database.getTemplateByName(model.name, model.type);
+      const records = template ? await this.database.getRecordsByTemplateId(Template.id(template)) : [];
 
       if (model.type === PageType.COLLECTION) {
         const collection: Json[] = content[model.name] = [];
         for (const record of records) {
-          collection.push(await makeRecordData(record, 'content', vapid.database));
+          collection.push(await makeRecordData(record, 'content', this.database));
         }
         content[model.name] = collection;
       }
       else {
         // TODO: Create stub record if none exist yet.
-        content[model.name] = records[0] ? await makeRecordData(records[0], 'content', vapid.database) : {};
+        content[model.name] = records[0] ? await makeRecordData(records[0], 'content', this.database) : {};
       }
     }
 
     return {
       content,
-      meta: await makeRecordData(record, 'metadata', vapid.database),
+      meta: await makeRecordData(record, 'metadata', this.database),
       page: content.this[RECORD_META],
       pages: pageMeta,
       navigation,
       site: {
-        name: vapid.config.name,
-        domain: vapid.config.domain,
-        media: await vapid.database.mediaUrl(),
+        name: this.config.name,
+        domain: this.config.domain,
+        media: await this.database.mediaUrl(),
       },
     };
   }

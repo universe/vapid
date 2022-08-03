@@ -20,9 +20,12 @@
       "packages/@neutrino/*"
     ]
   },
+  "resolutions": {
+    "canvas": "https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.0.2.tgz"
+  },
   "devDependencies": {
     "@commitlint/cli": "^8.2.0",
-    "@commitlint/config-conventional": "^8.2.0",
+    "@commitlint/config-conventional": "^17.0.3",
     "@types/dotenv": "^6.1.1",
     "@types/firebase-tools": "link:types-local/firebase-tools",
     "@types/graphql": "^14.0.7",

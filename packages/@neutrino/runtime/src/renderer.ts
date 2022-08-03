@@ -65,7 +65,13 @@ function isDocumentFragment(node: NeutrinoValue): node is SimpleDocumentFragment
   return !!node && typeof (node as SimpleDocumentFragment)?.appendChild === 'function';
 }
 
-function resolveValue(node: ASTv1.MustacheStatement | ASTv1.BlockStatement | ASTv1.Expression, ctx: Record<string, any>, data: Record<string, any>, resolveHelper: HelperResolver, options?: NeutrinoHelperOptions): NeutrinoValue {
+function resolveValue(
+  node: ASTv1.MustacheStatement | ASTv1.BlockStatement | ASTv1.Expression, 
+  ctx: Record<string, any>, 
+  data: Record<string, any>, 
+  resolveHelper: HelperResolver, 
+  options?: NeutrinoHelperOptions,
+): NeutrinoValue {
   switch(node.type) {
     case 'StringLiteral':
     case 'NumberLiteral':
@@ -73,7 +79,7 @@ function resolveValue(node: ASTv1.MustacheStatement | ASTv1.BlockStatement | AST
     case 'UndefinedLiteral':
     case 'NullLiteral':
       return `${node.value}`;
-    case 'PathExpression':
+    case 'PathExpression': {
       let obj = node.this ? ctx['this'] : (node.data ? data : ctx);
       for (const part of node.parts) {
         obj = obj?.[part] ?? null;
@@ -81,6 +87,7 @@ function resolveValue(node: ASTv1.MustacheStatement | ASTv1.BlockStatement | AST
       if (typeof obj === 'function') { obj = obj(); }
       if (obj instanceof SafeString) { return obj; }
       return obj;
+    }
   }
   switch(node.path.type) {
     case 'PathExpression':
@@ -199,7 +206,7 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
                 case 'TextNode':
                   el.setAttribute(attr.name, attr.value.chars);
                   break;
-                case 'ConcatStatement':
+                case 'ConcatStatement': {
                   let value = '';
                   for (const statement of attr.value.parts) {
                     switch(statement.type) {
@@ -214,6 +221,7 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
                   }
                   el.setAttribute(attr.name, value);
                   break;
+                }
                 case 'MustacheStatement':
                   el.setAttribute(attr.name, `${resolveValue(attr.value, context, data, resolveHelper) ?? missingData(attr.value)}`);
                   break;

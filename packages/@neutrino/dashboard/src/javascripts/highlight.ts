@@ -66,7 +66,19 @@ function start() {
   let scrolledElement: HTMLElement | null = null;
   function elementArr(container: HTMLElement): HTMLElement[] {
     const type = container.getAttribute(`data-neutrino`);
-    return (type === 'attribute' ? [container] : Array.from(container.childElementCount ? container.children : (container.hasChildNodes() ? [container.parentElement] : [container]))) as HTMLElement[];
+    return (
+      type === 'attribute' 
+      ? [container] 
+      : Array.from(
+        container.childElementCount 
+        ? container.children 
+        : (
+          container.hasChildNodes() 
+          ? [container.parentElement] 
+          : [container]
+        ),
+      )
+    ) as HTMLElement[];
   }
   
   const PAD = 6;

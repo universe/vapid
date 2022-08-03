@@ -1,11 +1,12 @@
 import './dashboard.css';
 
-import { BaseHelper,IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, Record as DBRecord, sortRecords, sortTemplatesAlphabetical, stampRecord, Template } from '@neutrino/core';
+import { BaseHelper, IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, Record as DBRecord, sortRecords, sortTemplatesAlphabetical, stampRecord, Template } from '@neutrino/core';
 import type { IWebsite } from '@neutrino/runtime';
 import { toTitleCase } from '@universe/util';
+import jsonStringify from 'fast-json-stable-stringify';
 import { ComponentChildren,Fragment } from 'preact';
 import { createPortal } from 'preact/compat';
-import { useEffect,useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import Router, { route } from 'preact-router';
 import { Toaster } from 'react-hot-toast';
 
@@ -132,49 +133,10 @@ function Content(params: RouteParts) {
   const [ localRecord, setLocalRecord ] = useState<IRecord | null>(null);
   const [ siteData, setSiteData ] = useState<IWebsite | null>(null);
 
-  useEffect(() => {
-    (async() => {
-      if (!adapter) { return; }
-      BaseHelper.registerFileHandler(adapter.saveFile.bind(adapter));
-      setSiteData(await adapter.getSiteData());
-    })();
-  }, [adapter]);
+  // If loading at root, route to the index page.
+  useEffect(() => { window.location.pathname === '/' && route(`/page/index/index`); }, [window.location.pathname]);
 
-  if (!siteData) return <div>Loading</div>;
-
-  const records = Object.values(siteData.records).sort(sortRecords);
-  const permalinks: Record<string, string> = {};
-  for (const record of records) { permalinks[DBRecord.permalink(record)] = record.id; }
-
-  const isNewRecord = pageId === 'new' || collectionId === 'new';
-  const templates = Object.values(siteData.hbs.templates);
-
-  const template = (!templateType && !templateName) ? getTemplate(PageType.PAGE, 'index', templates) : getTemplate(templateType, templateName, templates);
-
-  if (!template) return <div>404</div>;
-
-  let record: IRecord | null = null;
-  let parent: IRecord | null = null;
-
-  if (templateType === PageType.SETTINGS) {
-    record = settingFor(template, records) || (drafts[Template.id(template)] = drafts[Template.id(template)] || stampRecord(template));
-  }
-  else if (templateType === PageType.PAGE) { record = getRecord(records, Template.id(template), pageId); }
-  else if (templateType === PageType.COLLECTION) {
-    record = getRecord(records, Template.id(template), collectionId, pageId);
-    parent = getRecord(records, `${template.name}-${PageType.PAGE}`, pageId);
-  }
-
-  const draftKey = Template.id(template) + (parent?.id || '');
-  if (isNewRecord) {
-    record = drafts[draftKey] = drafts[draftKey] || stampRecord(template, { parentId: parent?.id });
-  }
-
-  console.log('APP RENDER', params, siteData, template, record, parent);
-
-  document.getElementById('preview-device')?.classList.toggle('device-iphone-x', previewLayout === 'mobile');
-  document.getElementById('preview-container')?.classList.toggle('preview-container--full-screen', previewLayout === 'full');
-
+  // Start watching our web socket in dev mode.
   useEffect(() => {
     if ('WebSocket' in window) {
       const ws = new WebSocket(`ws${location.protocol === 'https:' ? 's' : ''}://${(location.host || 'localhost').split(':')[0]}:35729/livereload`);
@@ -188,22 +150,65 @@ function Content(params: RouteParts) {
     }
   }, []);
 
+  // Make sure our sortables are sortable.
   useEffect(() => {
-    if (!adapter) return;
+    if (!adapter || !siteData) return;
     return sortable.init(adapter, ({ id, to, parentId }) => {
       const record = siteData.records[id];
       record.parentId = parentId;
       record.order = to;
       setSiteData({ ...siteData });
     });
-  }, [ templateName, templateType, pageId, collectionId ]);
-  useEffect(() => setLocalRecord(JSON.parse(JSON.stringify(record))), [record]);
+  }, [ templateName, templateType, pageId, collectionId, jsonStringify(siteData) ]);
+
+  // Once we have an adapter initialized, fetch our site data.
   useEffect(() => {
-    if (window.location.pathname === '/') {
-      route(`/page/index/index`);
+    (async() => {
+      if (!adapter) { return; }
+      BaseHelper.registerFileHandler(adapter.saveFile.bind(adapter));
+      setSiteData(await adapter.getSiteData());
+    })();
+  }, [adapter]);
+
+  const records = Object.values(siteData?.records || {}).sort(sortRecords);
+  const permalinks: Record<string, string> = {};
+  for (const record of records) { permalinks[DBRecord.permalink(record)] = record.id; }
+
+  const isNewRecord = pageId === 'new' || collectionId === 'new';
+  const templates = Object.values(siteData?.hbs?.templates || {});
+
+  const template = (!templateType && !templateName) ? getTemplate(PageType.PAGE, 'index', templates) : getTemplate(templateType, templateName, templates);
+
+  let record: IRecord | null = null;
+  let parent: IRecord | null = null;
+  let draftKey = '';
+
+  if (template) {
+    if (templateType === PageType.SETTINGS) {
+      record = settingFor(template, records) || (drafts[Template.id(template)] = drafts[Template.id(template)] || stampRecord(template));
     }
-   }, [window.location.pathname]);
-   console.log(siteData);
+    else if (templateType === PageType.PAGE) { record = getRecord(records, Template.id(template), pageId); }
+    else if (templateType === PageType.COLLECTION) {
+      record = getRecord(records, Template.id(template), collectionId, pageId);
+      parent = getRecord(records, `${template.name}-${PageType.PAGE}`, pageId);
+    }
+  
+    draftKey = Template.id(template) + (parent?.id || '');
+    if (isNewRecord) {
+      record = drafts[draftKey] = drafts[draftKey] || stampRecord(template, { parentId: parent?.id });
+    }
+  }
+
+  useEffect(() => setLocalRecord(JSON.parse(JSON.stringify(record))), [record]);
+
+  if (!siteData) return <div>Loading</div>;
+  if (!template) return <div>404</div>;
+
+  console.log('APP RENDER', params, siteData, template, record, parent);
+
+  document.getElementById('preview-device')?.classList.toggle('device-iphone-x', previewLayout === 'mobile');
+  document.getElementById('preview-container')?.classList.toggle('preview-container--full-screen', previewLayout === 'full');
+
   return <Fragment>
     <menu class="vapid-menu" id="vapid-menu">
       <section class="sidebar vapid-nav">
@@ -213,9 +218,19 @@ function Content(params: RouteParts) {
 
         <nav class="vapid-nav">
           <div class="item">
-            <button id="add-page" class="sidebar__add-page" onClick={() => { setPageTemplatesOpen(true); }}>Add a Page</button>
+            <button id="add-page" class="sidebar__add-page" onClick={() => { setPageTemplatesOpen(true); }}>
+              Add a Page
+            </button>
             <div class="menu sortable">
-              {records.map((page) => page.parentId === NAVIGATION_GROUP_ID ? navLink(page, templateFor(page, templates), collectionFor(templateFor(page, templates), templates), params.pageId) : null)}
+              {records.map((page) => page.parentId === NAVIGATION_GROUP_ID 
+                ? navLink(
+                    page, 
+                    templateFor(page, templates), 
+                    collectionFor(templateFor(page, templates), templates), 
+                    params.pageId,
+                  ) 
+                : null,
+              )}
               <hr class="sidebar__divider" />
               {records.map((page) => {
                 if (page.parentId) { return null; }
@@ -290,7 +305,7 @@ function Content(params: RouteParts) {
         <ul class="page-templates__list">
           {templates.map((template) => {
             if (template.type !== PageType.PAGE) { return null; }
-            return <li class="page-templates__template">
+            return <li key={template.name} class="page-templates__template">
               <a href={`/page/${template.name}/new`} onClick={() => { setPageTemplatesOpen(false); scrollToEdit(); }}>{toTitleCase(template.name)}</a>
             </li>;
           })}
@@ -301,6 +316,7 @@ function Content(params: RouteParts) {
 
     {createPortal(<Toaster />, document.getElementById('toasts') as HTMLElement)}
 
+    {/* eslint-disable max-len */}
     {createPortal(
       <nav class={`preview-controls preview-controls--${previewLayout}`}>
         <ul class="preview-controls__list">
@@ -311,6 +327,7 @@ function Content(params: RouteParts) {
         </ul>
         <button class="preview-controls__exit preview-controls__button" onClick={() => setPreviewLayout('desktop')}>Exit</button>
       </nav>,
+      /* eslint-enable max-len */
       document.getElementById('menu') as HTMLElement,
     )}
   </Fragment>;

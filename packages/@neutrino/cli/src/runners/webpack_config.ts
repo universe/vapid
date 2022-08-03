@@ -101,6 +101,7 @@ export default function config(mode = 'production', assets: string[] = [], modul
       // new MiniCssExtractPlugin({
       //   filename: '[name].css',
       // }),
+      /* eslint-disable-next-line */
       // @ts-ignore
       new RemoveFilesPlugin({
         files: removeFiles,

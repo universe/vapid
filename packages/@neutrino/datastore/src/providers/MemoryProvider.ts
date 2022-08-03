@@ -41,11 +41,11 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
         }
         for (const record of data.records) {
           const template = await this.getTemplateById(record.templateId);
-          MAX_ID = Math.max(parseInt(record.id), MAX_ID);
+          MAX_ID = Math.max(parseInt(record.id, 10), MAX_ID);
           template && this.records.set(record.id, record);
         }
       }
- catch { }
+      catch { 1; }
     }
 
     const server = this.staticServer || http.createServer((request, response) => serve(request, response, {

@@ -4,7 +4,7 @@ import type { IWebsite } from '@neutrino/runtime';
 import type { FirebaseApp } from 'firebase/app';
 import { User } from 'firebase/auth';
 
-import { DataAdapter, SortableUpdate } from "./types";
+import { DataAdapter, SortableUpdate } from "./types";
 
 function sortRecords(a: IRecord, b: IRecord) {
   const ap = a.order ?? Infinity;
