@@ -81,7 +81,8 @@ export type FileHandler = (id: string, b64Image: string | Blob, type: string) =>
  * The base class that all directives inherit from.
  * These are the crux of Vapid, allowing templates to specify input attributes and render content.
  */
-export abstract class BaseHelper<DirectiveType, Options = unknown> {
+/* eslint-disable @typescript-eslint/ban-types */
+export abstract class BaseHelper<DirectiveType, Options = object> {
 
   abstract default: DirectiveType;
   #onChange: DirectiveCallback<DirectiveType>;
@@ -136,16 +137,19 @@ export abstract class BaseHelper<DirectiveType, Options = unknown> {
   public inject(): BlockRenderer { return ''; }
 }
 
-export abstract class Helper<Options = unknown> extends BaseHelper<null, Options> {
+/* eslint-disable @typescript-eslint/ban-types */
+export abstract class Helper<Options = object> extends BaseHelper<null, Options> {
   readonly type = HelperType.HELPER;
   default = null;
 }
 
-export abstract class ValueHelper<DirectiveType, Options = unknown> extends BaseHelper<DirectiveType, Options> {
+/* eslint-disable @typescript-eslint/ban-types */
+export abstract class ValueHelper<DirectiveType, Options = object> extends BaseHelper<DirectiveType, Options> {
   readonly type = HelperType.VALUE;
 }
 
-export abstract class CollectionHelper<DirectiveType, Options = unknown> extends BaseHelper<DirectiveType, Options> {
+/* eslint-disable @typescript-eslint/ban-types */
+export abstract class CollectionHelper<DirectiveType, Options = object> extends BaseHelper<DirectiveType, Options> {
   readonly type = HelperType.COLLECTION;
 }
 

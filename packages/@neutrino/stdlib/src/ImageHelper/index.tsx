@@ -108,7 +108,7 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
     return <img src={src || TRANSPARENT_PIXEL} data-focus-x={value?.focus?.x || 0} data-focus-y={value?.focus?.y || 0} />;
   }
 
-  render([image]: any[], _hash = {}, options: NeutrinoHelperOptions) {
+  render([image]: [string], _hash = {}, options: NeutrinoHelperOptions) {
     if (!image) { return options.inverse ? options.inverse() : ''; }
     return image ? (options.block?.([image]) || '') : '';
   }
