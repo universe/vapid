@@ -1,0 +1,7 @@
+{
+  "dependencies": {},
+  "description": "TypeScript definitions for quill-hr",
+  "name": "@types/quill-hr",
+  "typings": "index.d.ts",
+  "version": "0.0.0"
+}

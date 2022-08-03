@@ -27,7 +27,7 @@ const config: Config.InitialOptions = {
     '/fixtures/',
     '/cjs/',
     '/esm/',
-    '/test/'
+    '/test/',
   ],
 };
 

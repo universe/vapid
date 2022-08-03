@@ -1,10 +1,10 @@
-const BaseDirective = require('../../lib/directives/base');
+const BaseHelper = require('../../lib/directives/base');
 
-const vanilla = new BaseDirective();
+const vanilla = new BaseHelper();
 
 describe('.constructor', () => {
   test('ignores non-allowed params', () => {
-    const directive = new BaseDirective({ junk: true });
+    const directive = new BaseHelper({ junk: true });
     expect(directive.attrs).not.toHaveProperty('junk');
     expect(directive.options).not.toHaveProperty('junk');
   });
@@ -14,20 +14,20 @@ describe('.constructor', () => {
   });
 
   test('allows defaults to be overridden', () => {
-    const directive = new BaseDirective({ required: false });
+    const directive = new BaseHelper({ required: false });
     expect(directive.attrs.required).toBeFalsy();
   });
 
   test('accepts a default value', () => {
-    const directive = new BaseDirective({ default: 'testing' });
-    expect(directive.render()).toEqual('testing');
+    const directive = new BaseHelper({ default: 'testing' });
+    expect(directive.data()).toEqual('testing');
     expect(directive.input()).toMatch(/value="testing"/);
   });
 });
 
 describe('#htmlAttributes', () => {
   test('turns attrs object into HTML-style attributes', () => {
-    const directive = new BaseDirective({ placeholder: 'test' });
+    const directive = new BaseHelper({ placeholder: 'test' });
     expect(directive.htmlAttrs).toMatch(/placeholder="test"/);
   });
 });
@@ -40,7 +40,7 @@ describe('#input', () => {
 
 describe('#render', () => {
   test('converts "&", "<", ">", \'"\', and "\'" to HTML entities', () => {
-    expect(vanilla.render('&<>"\'')).toEqual('&amp;&lt;&gt;&quot;&#39;');
+    expect(vanilla.data('&<>"\'')).toEqual('&amp;&lt;&gt;&quot;&#39;');
   });
 });
 

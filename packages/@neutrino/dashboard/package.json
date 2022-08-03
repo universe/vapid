@@ -1,0 +1,60 @@
+{
+  "name": "@neutrino/dashboard",
+  "version": "1.0.0-beta.0",
+  "license": "MIT",
+  "description": "A template-driven content management system",
+  "repository": "universe/vapid",
+  "author": "Adam Miller <adam@universe.app>",
+  "source": "src/index.html",
+  "homepage": "https://neutrino.dev",
+  "bin": {
+    "vapid": "./dist/lib/cli.js"
+  },
+  "scripts": {
+    "typecheck": "tsc --emitDeclarationOnly",
+    "clean": "rm -rf dist",
+    "lint": "eslint bin lib test",
+    "test": "jest | pino-pretty",
+    "emulate": "firebase emulators:start",
+    "start": "yarn clean && vite --force",
+    "build": "yarn clean && vite build && tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "keywords": [
+    "app",
+    "cms",
+    "framework",
+    "web"
+  ],
+  "nodemonConfig": {
+    "ignore": [
+      "assets/*"
+    ]
+  },
+  "files": [
+    "assets",
+    "bin",
+    "dist"
+  ],
+  "dependencies": {
+    "@neutrino/core": "1.0.0-beta.0",
+    "@neutrino/runtime": "1.0.0-beta.0",
+    "@universe/aether": "^0.1.3",
+    "@universe/util": "^1.1.2",
+    "font-picker-react": "^3.5.2",
+    "html5sortable": "^0.13.2",
+    "preact": "^10.8.1",
+    "preact-router": "^4.0.1",
+    "react-hot-toast": "^2.2.0"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^7.18.2",
+    "@preact/preset-vite": "^2.2.0",
+    "@types/html-escaper": "^3.0.0",
+    "@types/html5sortable": "link:../../../types-local/html5sortable",
+    "simple-dom": "^1.4.0",
+    "vite": "2.9.12"
+  }
+}

@@ -1,5 +1,5 @@
-const BaseDirective = require('../../lib/directives/base');
-const ChoiceDirective = require('../../lib/directives/choice')(BaseDirective);
+const BaseHelper = require('../../lib/directives/base');
+const ChoiceDirective = require('../../lib/directives/choice')(BaseHelper);
 
 const vanilla = new ChoiceDirective();
 
@@ -62,6 +62,6 @@ describe('#input', () => {
 
 describe('#render', () => {
   test('joins array with spaced commas', () => {
-    expect(vanilla.render(['a', 'b', 'c'])).toEqual('a, b, c');
+    expect(vanilla.data(['a', 'b', 'c'])).toEqual('a, b, c');
   });
 });

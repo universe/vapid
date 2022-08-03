@@ -1,5 +1,5 @@
-const BaseDirective = require('../../lib/directives/base');
-const HTMLDirective = require('../../lib/directives/html')(BaseDirective);
+const BaseHelper = require('../../lib/directives/base');
+const HTMLDirective = require('../../lib/directives/html')(BaseHelper);
 
 const vanilla = new HTMLDirective();
 
@@ -34,22 +34,22 @@ describe('#input', () => {
   });
 });
 
-describe('#render', () => {
+describe('#data', () => {
   test('renders Markdown when editor=markdown option is set', () => {
     const directive = new HTMLDirective({ editor: 'markdown' });
-    expect(directive.render('# Test')).toMatch(/<h1>Test<\/h1>/);
+    expect(directive.data('# Test')).toMatch(/<h1>Test<\/h1>/);
   });
 
   test('allows HTML in Markdown', () => {
     const directive = new HTMLDirective({ editor: 'markdown' });
     const html = '# Test <em>HTML</em>';
-    expect(directive.render(html)).toMatch(/<h1>Test <em>HTML<\/em><\/h1>/);
+    expect(directive.data(html)).toMatch(/<h1>Test <em>HTML<\/em><\/h1>/);
   });
 
   test('removes Quill\'s extra paragraphs', () => {
     const directive = new HTMLDirective();
     const html = '<h2>Testing</h2><p><br></p><p>123</p>';
     const cleaned = html.replace('<p><br></p>', '');
-    expect(directive.render(html)).toEqual(cleaned);
+    expect(directive.data(html)).toEqual(cleaned);
   });
 });

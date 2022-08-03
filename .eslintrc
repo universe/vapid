@@ -1,16 +1,118 @@
 {
-  "extends": "airbnb-base",
-  "plugins": ["jest"],
-  "rules": {
-    "no-underscore-dangle": "off",
-    "no-use-before-define": "off",
-    "no-continue": "off",
-    "no-restricted-syntax": ["off", "ForOfLoop"],
-    "no-restricted-globals": ["off", "isNaN"],
-    "class-methods-use-this": "off",
-    "no-param-reassign": "off"
+  "parser": "@typescript-eslint/parser",
+  "ignorePatterns": [
+    "node_modules/**",
+    "/node_modules/",
+    "node_modules",
+    "**/node_modules/**",
+    "node_modules/microevent.ts/**",
+    "dist",
+    "types-local",
+    "graphql.ts",
+    "packages/**/*.d.ts"
+  ],
+  "extends": [
+    "preact",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2018,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
   },
-  "env": {
-    "jest/globals": true
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "plugins": [
+    "simple-import-sort"
+  ],
+  "rules": {
+    "simple-import-sort/imports": "error",
+    "simple-import-sort/exports": "error",
+    "sort-imports": "off",
+    "import/order": "off",
+    "import/no-named-default": "off",
+    "semi": [
+      "error",
+      "always"
+    ],
+    "jsx-quotes": [
+      "error",
+      "prefer-double"
+    ],
+    "react/jsx-curly-brace-presence": [
+      "error",
+      {
+        "props": "never",
+        "children": "never"
+      }
+    ],
+    "max-len": [
+      "error",
+      {
+        "code": 180,
+        "tabWidth": 2
+      }
+    ],
+    "no-multiple-empty-lines": [
+      "error",
+      {
+        "max": 1
+      }
+    ],
+    "no-var": [
+      "error"
+    ],
+    "space-before-function-paren": [
+      "error",
+      "never"
+    ],
+    "no-return-assign": "off",
+    "no-unused-expressions": "off",
+    "brace-style": [
+      "error",
+      "stroustrup",
+      {
+        "allowSingleLine": true
+      }
+    ],
+    "comma-dangle": [
+      "error",
+      "always-multiline"
+    ],
+    "array-bracket-spacing": [
+      "error",
+      "always",
+      {
+        "singleValue": false,
+        "objectsInArrays": false,
+        "arraysInArrays": false
+      }
+    ],
+    "object-curly-spacing": [
+      "error",
+      "always"
+    ],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "varsIgnorePattern": "^_",
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    "@typescript-eslint/interface-name-prefix": "off",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "react-hooks/rules-of-hooks": "warn",
+    "react-hooks/exhaustive-deps": "warn",
+    "react/no-deprecated": "warn",
+    "jest/no-deprecated-functions": "off",
+    "react/no-did-mount-set-state": "warn"
   }
 }

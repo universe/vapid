@@ -1,5 +1,5 @@
 {
-  "include": [ "lib/**/*" ],
+  "include": [ "src/**/*" ],
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": "dist",
@@ -10,7 +10,7 @@
     "jsxImportSource": "preact",
 
     // Compilation Configuration
-    "target": "es2015",
+    "target": "esnext",
     "inlineSources": true,
     "sourceMap": true,
     "declaration": true,
@@ -37,10 +37,10 @@
     "strictPropertyInitialization": true,
 
     // output options
-    "preserveConstEnums": false,
     "newLine": "LF",
     "traceResolution": false,
-    "module": "commonjs",
+    "module": "esnext",
     "esModuleInterop": true,
+    "isolatedModules": true
   }
 }

@@ -1,0 +1,38 @@
+{
+  "name": "@neutrino/core",
+  "version": "1.0.0-beta.0",
+  "license": "MIT",
+  "description": "A template-driven content management system",
+  "repository": "universe/vapid",
+  "author": "Adam Miller <adam@universe.app>",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint bin lib test",
+    "test": "jest | pino-pretty",
+    "emulate": "firebase emulators:start",
+    "build": "rm -rf dist && tsc",
+    "watch": "watch 'npm run build' './lib' --wait=1"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "files": [
+    "assets",
+    "bin",
+    "dist"
+  ],
+  "dependencies": {
+    "@neutrino/core": "1.0.0-beta.0",
+    "@universe/util": "^1.1.2",
+    "nanoid": "^3.1.30",
+    "pluralize": "^8.0.0",
+    "preact": "^10.8.1"
+  },
+  "devDependencies": {
+    "@jest/globals": "^28.1.1",
+    "@simple-dom/interface": "^1.4.0",
+    "@types/pluralize": "^0.0.29"
+  }
+}

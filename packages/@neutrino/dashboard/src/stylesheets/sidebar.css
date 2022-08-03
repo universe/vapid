@@ -1,0 +1,220 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  flex: auto 0 0;
+  background-clip: padding-box;
+}
+
+.sidebar > div:first-child {
+  flex: auto;
+}
+
+.sidebar .header {
+  padding: 2rem 1.2rem 0rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--black);
+}
+
+.sidebar .item:first-of-type .header {
+  padding-bottom: 1.4rem;
+  font-size: 1.4rem;
+  text-transform: none;
+}
+
+.sidebar .menu .item {
+  position: relative;
+  display: block;
+  padding: 1rem 4.3rem 1rem 2.8rem;
+  text-decoration: none;
+  color: var(--black);
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  -webkit-app-region: no-drag;
+  transition: color .18s, background-color .18s;
+  margin: 0.4rem;
+  border-radius: 0.8rem;
+  cursor: pointer;
+  font-size: 1.4rem;
+}
+
+.sidebar .menu .item img {
+  position: absolute;
+  top: 50%;
+  left: 0.8rem;
+  transform: translateY(-50%);
+  transition: filter .18s;
+}
+
+.sidebar .menu .item:hover {
+  background-color: var(--slate-5);
+}
+
+.sidebar .menu.sortable .item:hover {
+  background-color: var(--slate-4);
+}
+
+.sidebar .menu.sortable hr ~ .item:hover {
+  background-color: var(--slate-5);
+}
+
+.sidebar .menu .item.active img {
+  filter: invert(1);
+}
+
+.sidebar .menu .item.active {
+  color: white;
+  background-color: var(--black) !important;
+}
+
+.sidebar .menu.sortable a:not(:empty)::after {
+  content: ".. .. ..";
+  width: 10px;
+  height: 20px;
+  display: inline-block;
+  overflow: hidden;
+  line-height: 5px;
+  padding: 3px 4px;
+  cursor: move;
+  vertical-align: middle;
+  margin-top: -0.7em;
+  margin-right: 0.3em;
+  font-size: 12px;
+  font-family: sans-serif;
+  letter-spacing: 2px;
+  color: currentColor;
+  font-weight: bold;
+  position: absolute;
+  right: 6px;
+  top: 17px;
+  width: 11px;
+  height: 18px;
+  line-height: 4px;
+  padding: 0;
+}
+
+.sidebar__add-page {
+  font-weight: 600;
+  border: none;
+  border-radius: 0;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: color 0.28s;
+  outline: none;
+  display: block;
+  text-align: center;
+  background: var(--blue-3);
+  color: white;
+  padding: 0 1.8rem;
+  top: 0;
+  right: 0;
+  margin: 0;
+  margin-top: 0.8rem;
+  margin: 0.8rem;
+  cursor: pointer;
+  height: 3.2rem;
+  width: calc(100% - 1.6rem);
+  white-space: pre;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 0.4rem;
+}
+
+.sidebar__add-page:hover, .sidebar__add-page:focus {
+  text-decoration: none;
+}
+
+.sidebar__divider {
+  margin: 0.8rem 0 0 0;
+  overflow: visible;
+  border-width: 1px 0;
+  border-color: transparent;
+  text-align: left;
+}
+
+.menu.sortable {
+  position: relative;
+  margin-top: 3.2rem;
+}
+
+.menu.sortable a:not(.sortable-dragging)::before {
+  content: "";
+  background: var(--grey-lighter);
+  position: absolute;
+  left: -0.4rem;
+  right: -0.4rem;
+  z-index: -1;
+  bottom: -0.4rem;
+  top: 0;
+}
+
+.menu.sortable hr ~ a::before {
+  background: transparent !important;
+}
+
+.menu.sortable hr:first-child {
+  margin-top: 5.4rem;
+}
+
+.menu.sortable hr:first-child::before {
+  content: 'No Site Navigation';
+  line-height: 5.4rem;
+  text-align: center;
+  height: 5.4rem;
+  top: -5.5rem;
+  color: var(--slate-2);
+  font-weight: 600;
+  font-size: 1.2rem;
+  border-radius: 4px 0 0 4px;
+  padding: 0;
+}
+
+.menu.sortable hr:last-child::after {
+  content: 'No Other Pages';
+  line-height: 3.6rem;
+  text-align: center;
+  height: 3.6rem;
+  color: var(--grey);
+  font-weight: 600;
+  font-size: 1.2rem;
+  padding: 0;
+  width: 100%;
+}
+
+hr.sidebar__divider::before {
+  content: "Site Navigation";
+  position: absolute;
+  top: -3.2rem;
+  left: 0;
+  padding-left: 1.2rem;
+  width: 100%;
+  padding-right: 0.4rem;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  color: var(--black);
+  background: var(--slate-5);
+  height: 3.2rem;
+  line-height: 4.2rem;
+  font-weight: 600;
+  border-radius: 4px 0 0 0;
+}
+
+hr.sidebar__divider::after {
+  content: 'Other Pages';
+  left: -2rem;
+  padding-left: 1.2rem;
+  margin-top: 0.8rem;
+  width: 100%;
+  padding-right: 0.4rem;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  color: var(--black);
+  line-height: 2.8rem;
+  height: 2rem;
+  font-weight: 600;
+  display: block;
+}

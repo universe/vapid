@@ -1,0 +1,234 @@
+body.dashboard {
+  display: flex;
+  flex-direction: column;
+  --toggle: -20rem;
+  --sidebar-width: 38rem;
+}
+
+body.dashboard > div {
+  display: flex;
+}
+
+.vapid-nav {
+  width: 20rem;
+  width: var(--sidebar-width);
+  height: 100%;
+  overflow: auto;
+  -webkit-scroll-snap-align: center;
+  -ms-scroll-snap-align: center;
+  scroll-snap-align: center;
+  padding-bottom: 5.8rem;
+}
+
+.vapid-nav--new .vapid-nav__back {
+  color: var(--red-4);
+  background-color: transparent;
+  transition: color .18s ease-in-out;
+}
+
+.vapid-nav--new .vapid-nav__back::before {
+  content: "\f00d"
+}
+
+.vapid-nav--new .vapid-nav__back:hover {
+  background: transparent;
+  color: var(--red-3);
+}
+
+.vapid-nav .button.vapid-nav__settings {
+  color: transparent;
+  background: transparent;
+  width: 4.8rem;
+  height: 4.8rem;
+  font-size: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  max-width: 4.8rem;
+  min-width: unset;
+  border-radius: 0.8rem;
+  transition: background-color .18s ease-in-out, color .18s ease-in-out;
+}
+
+
+.vapid-nav .vapid-nav__settings:hover {
+  background-color: var(--slate-4);
+}
+
+.vapid-nav__settings::before {
+  content: "\f013";
+  font-family: 'fontawesome';
+  color: var(--blue);
+  font-size: 1.8rem;
+  top: 1px;
+  position: relative;
+}
+
+.vapid-nav .button.vapid-nav__settings--active {
+  background-color: var(--blue);
+}
+
+.vapid-nav .button.vapid-nav__settings--active::before {
+  color: white;
+}
+
+.vapid-nav__outlet {
+  height: 6.8rem;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  background: var(--blue-6);
+  display: flex;
+  border-bottom: 1px solid var(--slate-4);
+}
+
+.vapid-nav__heading {
+  height: 6.8rem;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  background: var(--blue-6);
+  border-bottom: 1px solid var(--slate-4);
+  display: flex;
+  padding: 0.8rem 0.8rem 0.8rem 0.8rem;
+  justify-content: flex-start;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.8rem;
+}
+
+.vapid-nav__back {
+  color: var(--blue );
+  border: none;
+  font-size: 0;
+  padding: 0;
+  height: 100%;
+  width: 4.8rem;
+  height: 4.8rem;
+  border-radius: 0.8rem;
+  flex: 0 0 auto;
+  flex-shrink: 1;
+  min-width: 4.8rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 0.8rem;
+  cursor: pointer;
+  background-color: transparent;
+  transition: background-color .18s ease-in-out;
+}
+
+.vapid-nav__back:hover, .vapid-nav__back:active {
+  background-color: var(--slate-4);
+}
+
+.vapid-nav__back::before {
+  content: "\f060";
+  font-size: 1.8rem;
+  font-family: "fontawesome";
+}
+
+.vapid-nav__controls {
+  padding: 0 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  position: absolute;
+  bottom: 0;
+  min-height: 5.8rem;
+  align-items: center;
+  bottom: 0px;
+  background: transparent;
+  border: none;
+  width: 100%;
+}
+
+.vapid-editor {
+  width: var(--sidebar-width);
+  height: 100%;
+  overflow: auto;
+  transition: transform ease-in-out .28s;
+  flex: auto 0 0;
+  display: flex;
+  flex-flow: column;
+  -webkit-scroll-snap-align: center;
+  -ms-scroll-snap-align: center;
+  scroll-snap-align: center;
+}
+
+.vapid-editor--open {
+  transform: translateX(0%);
+}
+
+.vapid-preview {
+  width: calc(100vw - var(--sidebar-width) - 1.2rem);
+  height: calc(100vh - 1.2rem - 5.8rem);
+  position: fixed;
+  top: 1.2rem;
+  right: 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  transition: all .28s ease-in-out;
+}
+
+.vapid-preview .vapid-preview__iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.vapid-preview .vapid-preview__scratch-iframe {
+  width: 0px;
+  height: 0px;
+  border: 0;
+  position: fixed;
+  top: -1px;
+  left: -1px;
+}
+
+.vapid-preview .device-iphone-x .vapid-preview__iframe {
+  border-radius: 40px;
+}
+
+.vapid-preview .device-macbook .vapid-preview__iframe {
+  border-radius: 2px;
+}
+
+body.dashboard.sidebar-open .sidebar {
+  margin-left: 0;
+}
+
+body.dashboard.sidebar-open main {
+  margin-right: var(--toggle);
+}
+
+body.dashboard.sidebar-open > div {
+  overflow-x: hidden;
+}
+
+body.dashboard .rail.left {
+  padding-left: 1rem;
+}
+
+body.dashboard .rail.right {
+  padding-right: 1rem;
+}
+
+@media (min-width: 768px) {
+  body.dashboard .rail.left {
+    width: 21rem;
+ }
+}
+
+@media (min-width: 1280px) {
+  body.dashboard .rail.left {
+    width: 27rem;
+    padding-left: 7rem;
+ }
+  body.dashboard .rail.right {
+    width: 27rem;
+    padding-right: 7rem;
+ }
+}

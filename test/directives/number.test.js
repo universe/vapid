@@ -1,5 +1,5 @@
-const BaseDirective = require('../../lib/directives/base');
-const NumberDirective = require('../../lib/directives/number')(BaseDirective);
+const BaseHelper = require('../../lib/directives/base');
+const NumberDirective = require('../../lib/directives/number')(BaseHelper);
 
 const vanilla = new NumberDirective();
 

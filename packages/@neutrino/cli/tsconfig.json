@@ -1,0 +1,11 @@
+{
+  "extends": "../../../tsconfig",
+  "include": [ "./src", "./package.json" ],
+  "compilerOptions": {
+    "outDir": "dist",
+    "composite": true,
+  },
+  "references": [
+    { "path": "../runtime" }
+  ]
+}

@@ -1,0 +1,57 @@
+import { NAVIGATION_GROUP_ID } from '@neutrino/core';
+import sortable from 'html5sortable';
+
+import { DataAdapter } from './adapters/types';
+
+interface SortableUpdate {
+  id: string;
+  from: number;
+  to: number;
+  parentId: string | null;
+}
+
+export function init(adapter: DataAdapter, onSort?: (update: SortableUpdate) => void) {
+  const tbody = document.querySelector('.sortable.table tbody') as HTMLElement;
+
+  if (tbody) {
+    sortable(tbody, { forcePlaceholderSize: true });
+
+    tbody.addEventListener('sortupdate', (e: any) => {
+      const { item } = e.detail;
+      const { index: from } = e.detail.origin;
+      const { index: to } = e.detail.destination;
+      const id = item.getAttribute('data-id');
+      const parentId = item.getAttribute('data-parent-id');
+      adapter.updateOrder({ id, from, to, parentId });
+    });
+  }
+
+  const el = document.querySelector('.menu.sortable') as HTMLElement;
+
+  if (el) {
+    sortable(el, {
+      forcePlaceholderSize: false,
+      items: 'a',
+      placeholder: '<a class="item" style="height: 37px"></a>',
+    });
+
+    el.addEventListener('sortupdate', (e: any) => {
+      const { item } = e.detail;
+      const id = item.getAttribute('data-id');
+      const { index: from } = e.detail.origin;
+      const { index: to } = e.detail.destination;
+
+      // Check if this element is a nav item.
+      let nav = false;
+      for (const el of item.parentElement.children) {
+        if (el.tagName.toLowerCase() === 'hr') { break; }
+        if (el === item) { nav = true; }
+      }
+
+      const update: SortableUpdate = { id, from, to, parentId: nav ? NAVIGATION_GROUP_ID : null };
+
+      onSort?.(update);
+      adapter.updateOrder(update);
+    });
+  }
+}

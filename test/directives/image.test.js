@@ -1,5 +1,5 @@
-const BaseDirective = require('../../lib/directives/base');
-const ImageDirective = require('../../lib/directives/image')(BaseDirective);
+const BaseHelper = require('../../lib/directives/base');
+const ImageDirective = require('../../lib/directives/image')(BaseHelper);
 
 const vanilla = new ImageDirective();
 
@@ -27,39 +27,39 @@ describe('#input', () => {
   });
 });
 
-describe('#render', () => {
+describe('#data', () => {
   test('returns null if no fileName is present', () => {
-    expect(vanilla.render()).toBeNull();
+    expect(vanilla.data()).toBeNull();
   });
 
   test('renders an <img> tag by default', () => {
-    expect(vanilla.render('test.jpg')).toMatch(/<img src=/);
+    expect(vanilla.data('test.jpg')).toMatch(/<img src=/);
   });
 
   test('returns the image src if tag=false', () => {
     const directive = new ImageDirective({ tag: false });
-    expect(directive.render('test.jpg')).toEqual('/uploads/test.jpg');
+    expect(directive.data('test.jpg')).toEqual('/uploads/test.jpg');
   });
 
   test('accepts a width option', () => {
     const directive = new ImageDirective({ width: 100 });
-    expect(directive.render('test.jpg')).toMatch(/width="100"/);
-    expect(directive.render('test.jpg')).toMatch(/test\.jpg\?w=100/);
+    expect(directive.data('test.jpg')).toMatch(/width="100"/);
+    expect(directive.data('test.jpg')).toMatch(/test\.jpg\?w=100/);
   });
 
   test('accepts a height option', () => {
     const directive = new ImageDirective({ height: 100 });
-    expect(directive.render('test.jpg')).toMatch(/height="100"/);
-    expect(directive.render('test.jpg')).toMatch(/test\.jpg\?h=100/);
+    expect(directive.data('test.jpg')).toMatch(/height="100"/);
+    expect(directive.data('test.jpg')).toMatch(/test\.jpg\?h=100/);
   });
 
   test('accepts a class option', () => {
     const directive = new ImageDirective({ class: 'test' });
-    expect(directive.render('test.jpg')).toMatch(/class="test"/);
+    expect(directive.data('test.jpg')).toMatch(/class="test"/);
   });
 
   test('accepts an alt option', () => {
     const directive = new ImageDirective({ alt: 'Testing' });
-    expect(directive.render('test.jpg')).toMatch(/alt="Testing"/);
+    expect(directive.data('test.jpg')).toMatch(/alt="Testing"/);
   });
 });

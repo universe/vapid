@@ -1,5 +1,5 @@
-const BaseDirective = require('../../lib/directives/base');
-const DateDirective = require('../../lib/directives/date')(BaseDirective);
+const BaseHelper = require('../../lib/directives/base');
+const DateDirective = require('../../lib/directives/date')(BaseHelper);
 
 const vanilla = new DateDirective();
 const date = '2015-10-21';
@@ -22,11 +22,11 @@ describe('#input', () => {
 
 describe('#render', () => {
   test('default date format', () => {
-    expect(vanilla.render(date)).toEqual('October 21, 2015');
+    expect(vanilla.data(date)).toEqual('October 21, 2015');
   });
 
   test('override date format', () => {
     const directive = new DateDirective({ format: '%D' });
-    expect(directive.render(date)).toEqual('10/21/15');
+    expect(directive.data(date)).toEqual('10/21/15');
   });
 });

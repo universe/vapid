@@ -1,5 +1,5 @@
-const BaseDirective = require('../../lib/directives/base');
-const TextDirective = require('../../lib/directives/text')(BaseDirective);
+const BaseHelper = require('../../lib/directives/base');
+const TextDirective = require('../../lib/directives/text')(BaseHelper);
 
 describe('#input', () => {
   test('renders long=true as a textarea', () => {
