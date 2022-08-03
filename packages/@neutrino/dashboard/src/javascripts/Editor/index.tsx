@@ -156,7 +156,7 @@ export default function Editor({ adapter, isNewRecord, template, record, parent,
     window.requestAnimationFrame(() => {
       (isNewRecord && !record?.parentId || record?.parentId === NAVIGATION_GROUP_ID) && scrollToEdit();
     });
-  }, [isNewRecord]);
+  }, [isNewRecord, record?.parentId]);
 
   if (!template) { return <div>404</div>; }
 

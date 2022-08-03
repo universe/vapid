@@ -1,4 +1,4 @@
-import { Helper, NeutrinoValue, NeutrinoHelperOptions, SafeString } from '@neutrino/core';
+import { Helper, NeutrinoHelperOptions, NeutrinoValue, SafeString } from '@neutrino/core';
 
 export default class IfHelper extends Helper {
   render([ condition, ifValue, elseValue ]: [unknown, NeutrinoValue, NeutrinoValue], _hash={}, options: NeutrinoHelperOptions) {

@@ -90,4 +90,4 @@ function userInitials(name: string) {
   return `${firstName[0] || '?'}${lastName[0] || '?'}`;
 }
 
-render(<App />, document.getElementById('main')!);
+render(<App />, document.getElementById('main') as HTMLElement);

@@ -14,7 +14,7 @@ function splitText(text: string) {
   return spans;
 }
 
-export default function RocketButton({ onClick }: { onClick: () => any}) {
+export default function RocketButton({ onClick }: { onClick: () => void | Promise<void>}) {
   const [ phase, setPhase ] = useState<'default' | 'animated' | 'live'>('default');
 
   /* eslint-disable max-len */
