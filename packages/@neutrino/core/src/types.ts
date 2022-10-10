@@ -1,8 +1,15 @@
 import { Json, toKebabCase } from '@universe/util';
+import { compileExpression as compileExpressionOrig, useDotAccessOperatorAndOptionalChaining } from 'filtrex';
 import { customAlphabet } from 'nanoid';
 import pluralize from 'pluralize';
 
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 10);
+
+export interface IWebsiteMeta {
+  name: string;
+  domain: string;
+  media: string;
+}
 
 export enum PageType {
   SETTINGS = 'settings',
@@ -95,7 +102,6 @@ export function templateId(template: ITemplate) {
 export function stampRecord(template: ITemplate, record: Partial<IRecord> = {}): IRecord {
   const name = toKebabCase(template.type === PageType.COLLECTION ? pluralize.singular(template.name) : template.name);
   const id = nanoid();
-
   return {
     id,
     templateId: templateId(template),
@@ -119,7 +125,7 @@ export function mergeField(field1: Partial<IField>, field2: IField): IField {
   const out = {
     // Default to `type: text` if not specified.
     type: (field2.type === 'text' ? field1.type : (field2.type || 'text')) || 'text',
-    priority: Math.min(field1.priority || Infinity, field2.priority || Infinity),
+    priority: Math.min(field1.priority ?? Infinity, field2.priority ?? Infinity),
     label: field2.label || field1.label || '',
     key: field2.key || field1.key || '',
     templateId: field2.templateId || field1.templateId || null,
@@ -155,4 +161,13 @@ export function sortTemplates(a: ITemplate, b: ITemplate) {
 
 export function sortTemplatesAlphabetical(a: ITemplate, b: ITemplate) {
   return a.name > b.name ? 1 : -1;
+}
+
+export function compileExpression(expr: string) {
+  return compileExpressionOrig(expr, {
+    customProp(name: string, get: (name: string) => any, object: any, type: 'unescaped' | 'single-quoted') {
+      const value = useDotAccessOperatorAndOptionalChaining(name, get, object, type);
+      return value?.src?.startsWith('data:') ? undefined : value;
+    },
+  });
 }

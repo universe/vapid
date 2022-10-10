@@ -13,7 +13,7 @@
     "test": "jest | pino-pretty",
     "emulate": "firebase emulators:start",
     "build": "rm -rf dist && tsc",
-    "watch": "watch 'npm run build' './lib' --wait=1"
+    "watch": "watch 'npm run build' './src' --wait=1"
   },
   "engines": {
     "node": ">=12.0.0"

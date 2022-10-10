@@ -1,8 +1,10 @@
 import { IRecord } from '@neutrino/core';
-import { IParsedTemplate, ITemplateAst, IWebsite,makePageContext, render } from '@neutrino/runtime';
+import { IWebsite, renderRecord } from '@neutrino/runtime';
 import type { SimpleDocument } from '@simple-dom/interface';
 import { Fragment } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect } from 'preact/hooks';
+
+import highlight from './highlight.js';
 
 let isFirstRender = true;
 let queuedRender = 0;
@@ -10,51 +12,39 @@ let queuedRender = 0;
 interface PreviewProps {
   siteData: IWebsite;
   record: IRecord | null;
+  records: Record<string, IRecord>;
   templateName?: string;
   templateType?: string;
   pageId?: string;
   collectionId?: string;
 }
-
-export default function Preview({ siteData, record }: PreviewProps) {
-  const [ renderedAst, setRenderedAst ] = useState<ITemplateAst | null>(null);
-  const [ renderedRecord, setRenderedRecord ] = useState<IRecord | null>(null);
-
-  useEffect(() => {
-    const records = Object.values(siteData.records);
-    let ast = record ? siteData.hbs.pages[record.templateId] : null;
-    if (!record || (isFirstRender && !ast)) {
-      record = records.find(r => r.templateId === 'index-page') || null;
-      ast = siteData.hbs.pages['index-page'];
-    }
-    if (!ast) { return; }
-    setRenderedAst(ast);
-    setRenderedRecord(record);
-  }, [record]);
-
+let prevRender: IRecord | null = null;
+export default function Preview({ siteData, record, records }: PreviewProps) {
+  
   // If first render and we haven't found an AST match (e.g. loading a settings page), render the home page instead.
   useEffect(() => {
-    if (!renderedRecord || !renderedAst) { return; }
-    const localRecords = { ...siteData.records };
-    if (record?.id) { localRecords[record.id] = record; }
-    const records = Object.values(localRecords);
-
-    // Get our rendered page's AST.
-    const renderTemplate: IParsedTemplate | null = {
-      name: renderedAst.name,
-      type: renderedAst.type,
-      ast: renderedAst.ast,
-      templates: siteData.hbs.templates,
-      components: siteData.hbs.components,
-      stylesheets: siteData.hbs.stylesheets,
-    };
-    const context = makePageContext(renderedRecord, records, Object.values(siteData.hbs.templates), siteData);
+    const siteUpdate = JSON.parse(JSON.stringify(siteData)) as IWebsite;
+    const recordsUpdate = JSON.parse(JSON.stringify(records)) as Record<string, IRecord>;
+    record && (recordsUpdate[record.id] = record);
+    const recordsList = Object.values(recordsUpdate);
+    let renderedRecord = record;
+    if (!renderedRecord || (isFirstRender && !siteUpdate.hbs.pages[renderedRecord.templateId])) {
+      renderedRecord = recordsList.find(r => r.templateId === 'index-page') || null;
+    }
+    if (!renderedRecord || !siteUpdate.hbs.pages[renderedRecord.templateId]) { 
+      renderedRecord = prevRender; 
+    }
+    prevRender = renderedRecord;
     window.cancelAnimationFrame(queuedRender);
     queuedRender = window.requestAnimationFrame(async() => {
+
+      // Grab out iframe documents and render into the scratch doc.
       const doc = (document.getElementById('vapid-preview') as HTMLIFrameElement).contentDocument;
       const scratchDoc = (document.getElementById('vapid-preview-scratch') as HTMLIFrameElement).contentDocument;
-      if (!doc || !scratchDoc) { return; }
-      await render(scratchDoc as unknown as SimpleDocument, renderTemplate, context);
+      if (!renderedRecord || !doc || !scratchDoc) { return; }
+      await renderRecord(false, scratchDoc as unknown as SimpleDocument, renderedRecord, siteUpdate, recordsUpdate);
+
+      // Merge our scratch doc with our visible doc. (TODO: This can be better!)
       doc.body.replaceChildren(...Array.from((scratchDoc.body as HTMLElement).children));
       const oldList = Array.from(doc.head.children);
       const newList = Array.from(scratchDoc.head.children);
@@ -65,14 +55,16 @@ export default function Preview({ siteData, record }: PreviewProps) {
         else if (!updated) { doc.head.removeChild(old); }
         else if (!old.isEqualNode(updated)) { doc.head.replaceChild(updated, old); }
       }
+
+      // If it's our first render, inject our client side preview app script.
       if (isFirstRender) {
-        const script = document.createElement('script');
-        script.setAttribute('src', document.getElementById('highlight-script')?.getAttribute('href') || document.getElementById('highlight-script')?.getAttribute('src') || '');
+        const script = doc.createElement('script');
+        script.append(`(${highlight.toString()})()`);
         doc.head.appendChild(script);
       }
       isFirstRender = false;
     });
-  }, [ renderedRecord, renderedAst, siteData, record ]);
+  }, [ siteData, record, records ]);
 
   return <Fragment />;
 }

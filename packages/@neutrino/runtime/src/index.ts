@@ -4,6 +4,7 @@ export {
   makePageContext,
   parsedTemplateToAst,
   render,
+  renderRecord,
 } from './runtime.js';
 export type {
   GlimmerTemplate,

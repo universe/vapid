@@ -1,4 +1,4 @@
-import { IProvider, IRecord, ITemplate, PageType, Template  } from '@neutrino/core';
+import { IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Template  } from '@neutrino/core';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import http from 'http';
@@ -79,6 +79,9 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
       records: [...this.records.values()],
     });
   }
+
+  // TODO: Implement.
+  async getMetadata(): Promise<IWebsiteMeta> { return { name: 'Site', domain: '', media: '' }; }
 
   async getAllTemplates(): Promise<ITemplate[]> {
     return [...this.templates.values()];

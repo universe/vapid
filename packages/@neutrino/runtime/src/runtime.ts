@@ -1,19 +1,31 @@
-import { IRecord,  IRecordData, ITemplate, NAVIGATION_GROUP_ID,PageType, Record as DBRecord, RECORD_META, SerializedRecord, sortRecords, Template } from '@neutrino/core';
+import { 
+  IRecord, 
+  IRecordData, 
+  ITemplate, 
+  NAVIGATION_GROUP_ID, 
+  PageType, Record as DBRecord, 
+  RECORD_META, 
+  SerializedRecord, 
+  sortRecords, 
+  stampRecord, 
+  Template,
+} from '@neutrino/core';
 import type { SimpleDocument } from '@simple-dom/interface';
 import type { Json } from '@universe/util';
 
 import { HelperResolver, resolveHelper as defaultResolveHelper } from './helpers.js';
-import { render as rawRender } from './renderer.js';
-import { IPageContext, IParsedTemplate, ITemplateAst,IWebsite, RendererComponentResolver, RuntimeHelper } from './types.js';
+import { IRenderPageContext, render as rawRender } from './renderer.js';
+import { IPageContext, IParsedTemplate, ITemplateAst, IWebsite, RendererComponentResolver, RuntimeHelper } from './types.js';
 
 export * from './helpers.js';
 export * from './types.js';
 
-function templateFor(page: IRecord, templates: ITemplate[]): ITemplate {
+function templateFor(page: IRecord, templates: ITemplate[]): ITemplate | null {
   for (const template of templates) {
     if (page.templateId === Template.id(template)) { return template; }
   }
-  throw new Error(`Missing template for ${page.slug}`);
+  console.error(`Missing template for ${page.slug}`);
+  return null;
 }
 
 function parentFor(page: IRecord, records: IRecord[]): IRecord | null {
@@ -32,52 +44,74 @@ function childrenFor(page: IRecord, records: IRecord[]): IRecord[] {
   return out;
 }
 
-function makeRecordData(page: IRecord, fieldKey: 'content' | 'metadata', children: IRecord[] = [], parent: IRecord | null = null): IRecordData {
+function makeRecordData(page: IRecord, template: ITemplate, fieldKey: 'content' | 'metadata', children: IRecord[] = [], parent: IRecord | null = null): IRecordData {
   const out: IRecordData = {
     [RECORD_META]: DBRecord.getMetadata(DBRecord.permalink(page, parent), page, children, parent),
   } as IRecordData;
   for (const key of Object.keys(page[fieldKey])) {
     out[key] = page[fieldKey][key];
   }
+  for (const [ key, field ] of Object.entries(template[fieldKey === 'content' ? 'fields' : 'metadata'])) {
+    if (Object.hasOwnProperty.call(page[fieldKey], key) || field?.options.default === undefined) { continue; }
+    out[key] = field?.options.default;
+    if (field.type === 'choice') {
+      out[key] = out[key] || '';
+      out[key] = String(out[key]).split(',');
+    }
+  }
   return out;
 }
 
-export function makePageContext(page: IRecord, records: IRecord[], templates: ITemplate[], site: IWebsite): IPageContext {
-  const children = childrenFor(page, records);
-  const parent = parentFor(page, records);
-  const content = { this: makeRecordData(page, 'content', children, parent) };
-  const meta = makeRecordData(page, 'metadata', children, parent);
+export function makePageContext(isProduction: boolean, page: IRecord, records: Record<string, IRecord>, templates: ITemplate[], site: IWebsite): IPageContext {
+  const recordsList = Object.values(records);
+  const children = childrenFor(page, recordsList);
+  const parent = parentFor(page, recordsList);
+  const template = templateFor(page, templates);
+  if (!template) { throw new Error(`Missing template for "${page.templateId}"`); }
+  const content = { this: makeRecordData(page, template, 'content', children, parent) };
+  const collection: Record<string, IRecordData[]> = {};
+  const meta = makeRecordData(page, template, 'metadata', children, parent);
 
   // Generate our navigation menu.
   const navigation: SerializedRecord[] = [];
   const pages: SerializedRecord[] = [];
-  const currentUrl = DBRecord.permalink(page);
-  for (const page of records.sort(sortRecords)) {
+  const currentUrl = DBRecord.permalink(page, parent);
+  for (const page of recordsList.sort(sortRecords)) {
     if (page.deletedAt) { continue; }
     const template = templateFor(page, templates);
-    const children = childrenFor(page, records);
-    const parent = parentFor(page, records);
+    if (!template) { continue; }
+    const children = childrenFor(page, recordsList);
+    const parent = parentFor(page, recordsList);
     if (template.type === PageType.PAGE) {
       const meta = DBRecord.getMetadata(currentUrl, page, children, parent);
       pages.push(meta);
       if (page.parentId === NAVIGATION_GROUP_ID) { navigation.push(meta); }
     }
     else if (template.type === PageType.COLLECTION) {
-      const collection: IRecordData[] = content[template.name] = content[template.name] || [];
-      collection.push(makeRecordData(page, 'content', children, parent));
+      const collectionList: IRecordData[] = collection[template.name] = collection[template.name] || [];
+      collectionList.push(makeRecordData(page, template, 'content', children, parent));
     }
     else if (template.type === PageType.SETTINGS) {
-      content[template.name] = makeRecordData(page, 'content', children, parent);
+      content[template.name] = makeRecordData(page, template, 'content', children, parent);
+    }
+  }
+
+  // Ensure we create stub settings objects if they don't yet exist in our user generated records.
+  for (const template of templates) {
+    if (template.type === PageType.SETTINGS && !content[template.name]) {
+      content[template.name] = makeRecordData(stampRecord(template), template, 'content', [], null);
     }
   }
 
   return {
+    env: { isProd: isProduction, isDev: !isProduction },
     site: site.meta,
     meta,
     content,
     page: content.this[RECORD_META],
     pages,
     navigation,
+    collection,
   };
 }
 
@@ -110,6 +144,22 @@ async function makeRenderRecord(data: IRecordData, templates: Record<string, ITe
       },
     ).data(data?.[key] as unknown as never) : null;
   }
+  for (const [ key, field ] of Object.entries(template.fields)) {
+    if (!field || Object.hasOwnProperty.call(helperRecord, key)) { continue; }
+    const Helper = await defaultResolveHelper(field.type);
+    if (!Helper) { continue; }
+    const helper = await new Helper(
+      key,
+      field,
+      {
+        templateId: null,
+        record,
+        records: context.pages,
+        media: context.site.media,
+      },
+    );
+    helperRecord[key] = helperRecord[key] || helper ? await (helper.data as any)() : null;
+  }
   return helperRecord;
 }
 
@@ -122,21 +172,43 @@ export async function render(
 ) {
   const context: Record<string, Json | Record<string, RuntimeHelper> | Record<string, RuntimeHelper>[]> = {};
   for (const [ recordName, record ] of Object.entries(data.content)) {
-    if (!record) {
-      console.error(recordName, 'IS UNDEFINED');
-      continue;
-    }
+    if (!record) { continue; }
     context[recordName] = Array.isArray(record) ?
       await Promise.all(record.map(rec => makeRenderRecord(rec, tmpl.templates, data))) :
       await makeRenderRecord(record, tmpl.templates, data);
   }
 
+  const renderData: IRenderPageContext = { ...data, collection: {} };
+  for (const collectionName of Object.keys(data.collection || {})) {
+    const list = data.collection[collectionName];
+    if (!list) { continue; }
+    renderData.collection[collectionName] = await Promise.all(list.map(rec => makeRenderRecord(rec, tmpl.templates, data)));
+  }
+
   resolveComponent = resolveComponent || ((name: string) => tmpl.components[name]?.ast || null);
-  return rawRender(document, tmpl, resolveComponent, resolveHelper, context, {
-    meta: data.meta,
-    page: data.page,
-    pages: data.pages,
-    navigation: data.navigation,
-    site: data.site,
-  });
+  return rawRender(document, tmpl, resolveComponent, resolveHelper, renderData, context);
+}
+
+export async function renderRecord(
+  isProduction: boolean,
+  document: SimpleDocument, 
+  record: IRecord, 
+  siteData: IWebsite,
+  records: Record<string, IRecord>,
+  resolveComponent?: RendererComponentResolver,
+  resolveHelper: HelperResolver = defaultResolveHelper,
+) {
+  if (!record) { return; }
+  const renderedAst = siteData.hbs.pages[record.templateId];
+  if (!record || !renderedAst) { return; }
+  const renderTemplate: IParsedTemplate | null = {
+    name: renderedAst.name,
+    type: renderedAst.type,
+    ast: renderedAst.ast,
+    templates: siteData.hbs.templates,
+    components: siteData.hbs.components,
+    stylesheets: siteData.hbs.stylesheets,
+  };
+  const context = makePageContext(isProduction, record, records, Object.values(siteData.hbs.templates), siteData);
+  return render(document as unknown as SimpleDocument, renderTemplate, context, resolveComponent, resolveHelper);
 }

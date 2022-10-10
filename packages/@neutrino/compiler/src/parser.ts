@@ -51,7 +51,7 @@ function parseExpression(node:
         path = tmp[1];
         hash = tmp[0]?.hash || {};
       }
- else {
+      else {
         path = node.path;
         hash = parseHash(node.hash.pairs);
       }
@@ -81,18 +81,25 @@ function parseExpression(node:
 
 function ensureBranch(data: Record<string, ITemplate>, node: ASTv1.BlockStatement, aliases: Record<string, IAlias>) {
   const [expr] = parseExpression(node);
+
+  // If this is not an expression we care about, move on.
+  if (!expr) { return; }
+
+  // If no template name is passed, throw.
+  /* eslint-disable-next-line max-len */
+  if (!node.params[0]) { throw new Error(`Collection helpers must be passed a collection type as the first paramater. Instead found: {{${expr?.original}}} at ${node.loc.asString()}:${node.loc.startPosition.line}:${node.loc.startPosition.column}"`); }
+
+  const [collectionExpr] = parseExpression(node.params[0]);
   const [localExpr] = parseExpression(node.params[1]);
+
+  // If the template name provided does not actually live on the data object.
+  /* eslint-disable-next-line max-len */
+  if (!collectionExpr?.isPrivate || collectionExpr?.context !== 'collection') { throw new Error(`Collection helpers must be passed a collection type as the first paramater. Instead found: {{${expr?.original} ${collectionExpr?.original}}} at ${node.loc.asString()}:${node.loc.startPosition.line}:${node.loc.startPosition.column}"`); }
 
   if (localExpr && localExpr?.context !== 'this') {
     /* eslint-disable-next-line max-len */
     throw new Error(`Collection settings must be set on the page's "this" context. Instead found: {{${localExpr.original}}} at ${node.loc.asString()}:${node.loc.startPosition.line}:${node.loc.startPosition.column}`);
   }
-
-  // If this is not an expression we care about, move on.
-  if (!expr) { return; }
-
-  // If this block is referencing a data property, don't add it to our data model.
-  if (node.params.length && ((node.params[0] as ASTv1.PathExpression).data || expr.isPrivate)) { return; }
 
   // Record the type of this section appropriately
   const name = expr.context || expr.key;
@@ -117,22 +124,23 @@ function ensureBranch(data: Record<string, ITemplate>, node: ASTv1.BlockStatemen
       templateId: null,
       type: (prev.type === 'text' ? field.type : (field.type === 'text' ? prev.type : field.type)) || 'text',
       options: { ...prev.options, ...field.options },
-      priority: Math.min(prev.priority || Infinity, field.priority || Infinity),
+      priority: Math.min(prev.priority ?? Infinity, field.priority ?? Infinity),
       label: field.label,
     };
   }
 
   const page: ITemplate = stampTemplate({ name, type: PageType.PAGE });
   data[Template.id(page)] = data[Template.id(page)] || page;
-  console.log('COLLECTION', localExpr?.key, branchId);
-  data[Template.id(stampTemplate(aliases['this']))]['fields'][localExpr?.key || branchId] = {
-    key: localExpr?.key || branchId,
-    type: 'collection',
-    priority: Infinity,
-    label: '',
-    templateId: branchId,
-    options: {},
-  };
+  if (localExpr?.key) {
+    data[Template.id(stampTemplate(aliases['this']))]['fields'][localExpr?.key || branchId] = {
+      key: localExpr?.key || branchId,
+      type: 'collection',
+      priority: Infinity,
+      label: '',
+      templateId: branchId,
+      options: {},
+    };
+  }
 }
 
 interface IAlias {
@@ -154,8 +162,8 @@ interface IAlias {
  */
 function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv1.PathExpression | ASTv1.Literal, aliases: Record<string, IAlias>) {
   if (!leaf) { return data; }
-  const key = leaf.path.split('.').length >= 3 ? leaf.parts[0] : leaf.key;
   const context = (leaf.context === PAGE_META_KEYWORD && leaf.isPrivate) || leaf.path.startsWith('this.') ? 'this' : leaf.context;
+  const key = context === 'this' && !(leaf.context === PAGE_META_KEYWORD && leaf.isPrivate) ? leaf.parts[0] : (leaf.parts[1] || leaf.parts[0]);
   const contentLocation = leaf.context === PAGE_META_KEYWORD ? 'metadata' : 'fields';
 
   // If this is a private path, no-op.
@@ -170,7 +178,6 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
   if (isPrivateKey) { return data; }
 
   // Log a warning if we're referencing the default general context without an explicit reference.
-  // Update the original path node so we can actually render the template.
   if (!context && !leaf.isPrivate && !aliases[key]) {
     /* eslint-disable-next-line max-len */
     throw new Error(`Values referenced in a template must include a path context. Instead found: {{${leaf.original}}} at ${path.loc.asString()}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
@@ -187,17 +194,26 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
 
   // Ensure the field descriptor exists. Merge settings if already exists.
   const old: IField | null = data[sectionKey][contentLocation][key] || null;
-  const priority = parseInt(leaf.hash.priority, 10) ?? Infinity;
-  if (priority <= 0) {
-    /* eslint-disable-next-line max-len */
-    throw new Error(`Priority value must be a positive integer. Instead found: {{${leaf.original}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
+
+  // Correct for some weird behavior by Handlebars.
+  if (Object.hasOwnProperty.call(leaf.hash, 'priority') && leaf.hash.priority === undefined) {
+    leaf.hash.priority = '0';
   }
+
+  let priority = parseInt(leaf.hash.priority, 10) ?? Infinity;
+  if (isNaN(priority)) { priority = Infinity; }
+
+  if (Object.hasOwnProperty.call(leaf.hash, 'priority') && (priority < 0 || isNaN(priority))) {
+    /* eslint-disable-next-line max-len */
+    throw new Error(`Priority value must be a positive integer. Instead found: {{${leaf.original} priority=${leaf.hash.priority}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
+  }
+
   leaf.hash.type = leaf.hash.type || 'text'; // Text is the default type.
   data[sectionKey][contentLocation][key] = {
     key,
     templateId: null,
     type: (leaf.hash.type === 'text' ? (old?.type || leaf.hash.type) : (leaf.hash.type || old?.type)) || 'text',
-    priority: Math.min(leaf.hash.priority ?? Infinity, old?.priority ?? Infinity),
+    priority: Math.min(priority ?? Infinity, old?.priority ?? Infinity),
     label: leaf.hash.label || old?.label || '',
     options: { ...(old?.options || {}), ...leaf.hash },
   };
@@ -295,7 +311,7 @@ function walk(
 
       // Otherwise, this is a plain data value reference. Add it to the current object.
       }
- else {
+      else {
         const [ leaf, path ] = parseExpression(node);
         leaf && path && addToTree(template.templates, leaf, path, aliases);
       }
@@ -307,8 +323,11 @@ function walk(
       const helperName = (node.path as ASTv1.PathExpression).original;
       const HelperConstructor = helpers(helperName);
       const helper = HelperConstructor ? new HelperConstructor(helperName, node.hash, {} as unknown as DirectiveMeta) : null;
+      const [expr] = parseExpression(node.params[0]);
+      const isCollection = expr?.isPrivate && expr.context === 'collection';
+
       // Crawl all its params as potential data values in scope.
-      if (node.params.length && helper?.type !== HelperType.COLLECTION) {
+      if (node.params.length && !isCollection) {
         for (const param of node.params) {
           walk(template, param, aliases, resolveComponent, helpers);
         }
@@ -324,7 +343,7 @@ function walk(
       }
 
       // If this helper denotes the creation of a new model type, ensure the model.
-      if (helper?.type === HelperType.COLLECTION) {
+      if (isCollection) {
         ensureBranch(template.templates, node, aliases);
       }
 
@@ -334,25 +353,16 @@ function walk(
         const param = node.program.blockParams[idx];
         const path = (node.path as ASTv1.PathExpression);
         if (path.parts[0] === 'collection') {
-          const arg = node.params[0];
-          let name = '';
-          switch (arg.type) {
-            case 'BooleanLiteral':
-            case 'NullLiteral':
-            case 'NumberLiteral':
-            case 'StringLiteral':
-            case 'UndefinedLiteral':
-              name = `${arg.value}`; break;
-            case 'PathExpression':
-              name = arg.original; break;
-            case 'SubExpression':
-            default:
-              logger.error(node);
-              throw new Error(`Unexpected value for collection name.`);
-          }
+          const [arg] = parseExpression(node.params[0]);
+          
+          const name = arg?.parts[1];
+
+          /* eslint-disable-next-line max-len */
+          if (!name) { throw new Error(`Unexpected value for collection name. Found: {{${arg?.original} priority=${arg?.hash.priority}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);}
 
           if (name.startsWith('@') || name.startsWith('_')) {
-            throw new Error(`Unexpected value for collection name. Collection names can not begin with '@' or '_'.`);
+            /* eslint-disable-next-line max-len */
+            throw new Error(`Unexpected value for collection name. Collection names can not begin with '@' or '_'. Instead found: {{${arg?.original} priority=${arg?.hash.priority}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
           }
 
           aliases[param] = {
@@ -437,20 +447,6 @@ function walk(
     '': { name: 'general', type: PageType.SETTINGS, isPrivate: false },
     this: { name, type, isPrivate: false },
   }, resolveComponent, helpers);
-
-  // Normalize field priority orders.
-  for (const template of Object.values(templates)) {
-    let maxPriority = 0;
-    for (const field of Object.values(template.fields)) {
-      if (!field) { continue; }
-      if (field.priority !== Infinity) { maxPriority = Math.max(maxPriority, field.priority); }
-    }
-    maxPriority++;
-    for (const field of Object.values(template.fields)) {
-      if (!field) { continue; }
-      if (field.priority === Infinity) { field.priority = maxPriority++; }
-    }
-  }
 
   return parsedTemplate;
 }

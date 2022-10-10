@@ -69,6 +69,7 @@ export class Record implements IRecord {
 
   static getMetadata(currentUrl: string, record: IRecord, children: IRecord[] = [], parent: IRecord | null = null): SerializedRecord {
     const permalink = Record.permalink(record, parent);
+    const parentPermalink = parent ? Record.permalink(parent) : '/';
     currentUrl = currentUrl === 'index' ? '/' : currentUrl;
     return {
       id: record.id,
@@ -79,8 +80,8 @@ export class Record implements IRecord {
       slug: record.slug,
       permalink,
       isNavigation: Record.isNavigation(record),
-      isActive: currentUrl === permalink,
-      isParentActive: currentUrl === permalink || currentUrl.indexOf((parent ? Record.permalink(parent) : null) || '/') === 0,
+      isActive: currentUrl === permalink || currentUrl.startsWith(`${permalink  }/`),
+      isParentActive: currentUrl.startsWith(`${parentPermalink  }/`),
       hasChildren: !!children.length,
       children: children.filter(r => r.parentId === record.id && !r.deletedAt).map(r => Record.getMetadata(currentUrl, r, [], record)),
       parent: parent ? Record.getMetadata(currentUrl, parent) : null,

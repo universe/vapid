@@ -50,8 +50,8 @@
   left: 0;
   z-index: 1;
   opacity: 0;
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
   padding: 0;
   margin: 0;
   border: none;
@@ -87,15 +87,47 @@
 .pallette__cta--2 { background-color: var(--cta-2); color: var(--cta-10); }
 .pallette__cta--3 { background-color: var(--cta-3); color: var(--cta-10); }
 .pallette__cta--4 { background-color: var(--cta-4); color: var(--cta-10); }
-.pallette__cta--5 { background-color: var(--cta-5); color: var(--cta-10); }
+.pallette__cta--5 { background-color: var(--cta-5); color: var(--cta-10); font-size: 0; }
 .pallette__cta--6 { background-color: var(--cta-6); color: var(--cta-0); }
 .pallette__cta--7 { background-color: var(--cta-7); color: var(--cta-0); }
 .pallette__cta--8 { background-color: var(--cta-8); color: var(--cta-0); }
 .pallette__cta--9 { background-color: var(--cta-9); color: var(--cta-0); }
 .pallette__cta--10 { background-color: var(--cta-10); color: var(--cta-0); }
 
-.pallette__color--5::before {
+.pallette__color--5, .pallette__cta--5 {
+  border-width: 3px;
+  box-shadow: var(--elevation-2);
+  position: relative;
+  top: -1.5px;
+}
+
+.pallette__color--5::before, .pallette__cta--5::before {
   content: "\f044";
   font-family: "fontawesome";
   font-size: 1.8rem;
+}
+
+.pallette__clear-cta {
+  position: absolute;
+  position: absolute;
+  top: 100%;
+  left: -3px;
+  height: 1.8rem;
+  right: -3px;
+  border: none;
+  background: var(--black);
+  border-radius: 0 0 4px 4px;
+  font-size: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: transparent;
+  cursor: pointer;
+}
+
+.pallette__clear-cta::before {
+  content: "\f00d";
+  font-family: 'fontawesome';
+  color: var(--cta-0);
+  font-size: 1.2rem;
 }

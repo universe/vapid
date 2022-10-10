@@ -1,0 +1,188 @@
+const now = Date.now();
+const DATA = [
+  {
+    _type: "page",
+    parentId: "navigation",
+    metadata: {},
+    deletedAt: null,
+    updatedAt: now,
+    order: 0,
+    id: "index",
+    slug: "index",
+    templateId: "index-page",
+    createdAt: now,
+    name: "Home",
+    content: {
+        cta_3: {
+            description: null,
+            name: "Contribute",
+            favicon: null,
+            recordId: null,
+            keywords: [],
+            title: null,
+            url: "/",
+        },
+        endorsements_title: "   ",
+        cta_1: {
+            url: "/",
+            description: null,
+            keywords: [],
+            name: "Campaign Store",
+            favicon: null,
+            recordId: null,
+            title: null,
+        },
+        cta_2: {
+            recordId: null,
+            name: "Take Action",
+            favicon: null,
+            keywords: [],
+            url: "/",
+            title: null,
+            description: null,
+        },
+        "endorsements-collection": {
+            collectionId: "e9uhubnabe",
+            sort: null,
+            order: "desc",
+            limit: null,
+        },
+        show_issues: [
+            "show_issues",
+        ],
+        volunteer_image: {
+            src: "websites/default/uploads/ab52ad12bf070c4b8a068efe5405e026",
+            focus: {
+                y: 0.23794014084507042,
+                x: -0.29348859112119524,
+            },
+        },
+        issues__description: "<h3>On the Issues</h3>",
+        show_about: [
+            "show_about",
+        ],
+        /* eslint-disable-next-line max-len */
+        about_body: "<h3><span style=\"color: var(--cta-5);\">ABOUT</span></h3><h1><span class=\"ql-font-serif\">The Candidate</span></h1><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor. Voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><p><br></p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.</p><p><br></p><a class=\"quill-button\" id=\"2c4884a5-3853-4993-ac35-efafddc05cf2\" contenteditable=\"false\" tabindex=\"-1\" data-format=\"right\" href=\"/about\"><span class=\"quill-button__text\">Learn More</span></a>",
+        endorsements__description: "<h2>Endorsements</h2><p>We're proud to have the support of many amazing community members</p>",
+        show_volunteer: [],
+        about_image: {
+            src: "https://website.universe.app/uploads/ae89c49a7c788b63b67fe2daa15a11ba",
+            focus: {
+                x: 0,
+                y: 0,
+            },
+        },
+        subtitle: "Take Action",
+        volunteer_header: "Take Action",
+        header_image: {
+            src: "https://website.universe.app/uploads/639354eb28e9678d7f9592b09cdee221",
+            focus: {
+                x: 0,
+                y: 0,
+            },
+        },
+        about_title: "About",
+        title: "Building a better community by working together.",
+    },
+  }, {
+    _type: "settings",
+    slug: "design-settings",
+    deletedAt: null,
+    name: null,
+    id: "design-settings",
+    order: null,
+    parentId: null,
+    templateId: "design-settings",
+    content: {
+        color: {
+            hex: "#3781e2",
+            cta: "#f4ac3d",
+        },
+        serifFont: {
+            family: "Roboto Condensed",
+        },
+        sansSerifFont: {
+            family: "Montserrat",
+        },
+        theme: [
+            "faded_glory",
+        ],
+        logo: {
+            focus: {
+                y: 0,
+                x: 0,
+            },
+            src: "https://website.universe.app/uploads/4dd6758486f61bcf22ff48f202a62bf5",
+        },
+    },
+    metadata: {},
+    updatedAt: now,
+    createdAt: now,
+  }, {
+    _type: "settings",
+    parentId: null,
+    metadata: {},
+    deletedAt: null,
+    updatedAt: now,
+    order: 0,
+    id: "callstoaction-settings",
+    slug: "callstoaction-settings",
+    templateId: "callstoaction-settings",
+    createdAt: now,
+    name: null,
+    content: {
+        cta_1: {
+            url: "/",
+            description: null,
+            keywords: [],
+            name: "Campaign Store",
+            favicon: null,
+            recordId: null,
+            title: null,
+        },
+        cta_2: {
+            recordId: null,
+            name: "Take Action",
+            favicon: null,
+            keywords: [],
+            url: "/",
+            title: null,
+            description: null,
+        },
+        cta_3: {
+            description: null,
+            name: "Contribute",
+            favicon: null,
+            recordId: null,
+            keywords: [],
+            title: null,
+            url: "/",
+        },
+    },
+  }, {
+    _type: "settings",
+    parentId: null,
+    metadata: {},
+    deletedAt: null,
+    updatedAt: now,
+    order: 0,
+    id: "contributions",
+    slug: "contributions-settings",
+    templateId: "contributions-settings",
+    createdAt: now,
+    name: null,
+    content: {
+        default_contribution_link: {
+            url: "/",
+            description: null,
+            keywords: [],
+            name: "Contribute",
+            favicon: null,
+            recordId: null,
+            title: null,
+        },
+    },
+  },
+];
+
+export default DATA;

@@ -11,7 +11,9 @@ import {
   HelperResolver,
   IPageContext,
   IParsedTemplate,
+  IParsedTemplates,
   IStylesheet,
+  ITemplateAst,
   render,
   resolveHelper,
 } from '@neutrino/runtime';
@@ -63,27 +65,28 @@ import { ComponentResolver,parse } from './parser.js';
     if (dirname(filePath).endsWith('collections')) {
       type = PageType.COLLECTION;
     }
- else if (dirname(filePath).endsWith('components') || name.startsWith('_')) {
+    else if (dirname(filePath).endsWith('components') || name.startsWith('_')) {
       type = PageType.COMPONENT;
     }
     return parse(name, type, html, this.resolveComponent, this.resolveHelper);
   }
 
-  async parse(root: string): Promise<Record<string, IParsedTemplate>> {
-    const tree: Record<string, IParsedTemplate> = {};
+  async parse(root: string): Promise<IParsedTemplates> {
     const templates: Record<string, ITemplate> = {};
+    const pages: Record<string, ITemplateAst> = {};
+    const components: Record<string, ITemplateAst> = {};
     const stylesheets: Record<string, IStylesheet> = {};
-
     for (const tpl of glob.sync(resolve(root, '**/*.html'))) {
       const parsed = this.parseFile(tpl);
-      tree[Template.id(parsed as unknown as ITemplate)] = parsed;
+      const id = Template.id(parsed as unknown as ITemplate);
+      pages[id] = {
+        name: parsed.name,
+        type: parsed.type,
+        ast: parsed.ast,
+      };
 
       for (const [ path, stylesheet ] of Object.entries(parsed.stylesheets)) {
-        if (stylesheets[path]) {
-          parsed.stylesheets[path] = stylesheets[path];
-          continue;
-        }
-
+        if (stylesheets[path]) { continue; }
         const from = join(root, path);
         stylesheet.content = (await postcss([
           postcssImport({ root: dirname(from) }) as any, /* Types are off... this works though. */
@@ -94,11 +97,14 @@ import { ComponentResolver,parse } from './parser.js';
         stylesheets[path] = stylesheet;
       }
 
+      for (const [ name, template ] of Object.entries(parsed.components)) {
+        components[name] = template;
+      }
+
       for (const [ parsedName, parsedTemplate ] of Object.entries(parsed.templates)) {
         // We merge discovered fields across files, so we gradually collect configurations
         // for all sections here. Get or create this shared object as needed.
         const finalTemplate: ITemplate = templates[parsedName] = templates[parsedName] || stampTemplate({ name: parsedTemplate.name, type: parsedTemplate.type });
-        parsed.templates[parsedName] = finalTemplate;
 
         // Ensure the section name and type are set.
         finalTemplate.name = parsedTemplate.name || finalTemplate.name;
@@ -120,7 +126,26 @@ import { ComponentResolver,parse } from './parser.js';
         }
       }
     }
-    return tree;
+
+    // Normalize field priority orders.
+    for (const template of Object.values(templates)) {
+      let maxPriority = 0;
+      for (const field of Object.values(template.fields)) {
+        if (!field) { continue; }
+        if (typeof field.priority === 'number' && !isNaN(field.priority) && field.priority !== Infinity) { maxPriority = Math.max(maxPriority, field.priority); }
+      }
+
+      for (const field of Object.values(template.fields)) {
+        if (!field) { continue; }
+        if (isNaN(field.priority) || field.priority === Infinity) { field.priority = ++maxPriority; }
+      }
+    }
+    return {
+      templates,
+      pages,
+      components,
+      stylesheets,
+    };
   }
 
   /**

@@ -146,6 +146,7 @@ export class Template implements ITemplate {
       },
     ];
   }
+
   pageFields() { return Template.pageFields(this); }
 
   static metaFields(template: ITemplate): IField[] {

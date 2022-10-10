@@ -366,11 +366,14 @@
 .ql-editor .ql-color-purple {
   color: #93f;
 }
+.ql-editor .ql-font-sans {
+  font-family: var(--sans), 'Montserrat', sans-serif;
+}
 .ql-editor .ql-font-serif {
-  font-family: Georgia, Times New Roman, serif;
+  font-family: var(--serif), Georgia, Times New Roman, serif;
 }
 .ql-editor .ql-font-monospace {
-  font-family: Monaco, Courier New, monospace;
+  font-family: var(--mono), Monaco, Courier New, monospace;
 }
 .ql-editor .ql-size-small {
   font-size: 0.75em;

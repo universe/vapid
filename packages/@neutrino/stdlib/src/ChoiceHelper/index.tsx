@@ -21,6 +21,7 @@ import ReactTags, { ClassNames,Tag } from 'react-tag-autocomplete';
 }
 
 interface ChoiceOptions {
+  default: string;
   options: string;
   placeholder: string;
   multiple: boolean;
@@ -40,6 +41,15 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
     this.possibilities = possibilities(this.options.options || '');
     if (!this.possibilities.length && !this.options.custom) { this.possibilities.push(this.key); }
     this.possibilities = this.possibilities.filter(val => Boolean(val.trim()));
+    // If the default value is simply "true" we use the first value in possibilities.
+    if ((typeof this.options.default === 'boolean' && this.options.default) || this.options.default === 'true') { 
+      this.default = [this.possibilities[0]];
+    }
+
+    // Otherwise, we treat it as a possibilities string.
+    else {
+      this.default = possibilities(this.options.default || '').filter(val => Boolean(val.trim()));
+    }
     return this;
   }
 
@@ -47,7 +57,13 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
     return Array.from(value).filter(value => Boolean(value?.trim())).map(toTitleCase).join(', ');
   }
 
-  async data(value: string[]) {
+  async data(value: string[] = []) {
+    // For single checkbox choice types, we only want to use the default if no other value is set.
+    if (this.possibilities.length <= 1 && !this.options.custom) {
+      if (value === undefined) { value = this.default; }
+    }
+    // For all other choice input types, if no value is provided, use the default.
+    else if (value === undefined || value?.length === 0) { value = this.default; }
     const out = Array.from(value).filter(Boolean);
     out.toString = () => Array.isArray(value) ? value.join(',') : '';
     return out;
@@ -66,15 +82,21 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
   }
 
   private checkbox(name: string, value = this.default) {
-    let values: string[] = Array.isArray(value) ? value : [value];
-    values = values.filter(value => Boolean(value?.trim()));
+    let values: string[];
+    
+    if (value === undefined) {
+      values = this.default;
+    }
+    else {
+      values = Array.isArray(value) ? value : [value];
+      values = values.filter(value => Boolean(value?.trim()));
+    }
 
     const inputs: JSX.Element[] = [];
     for (const val of this.possibilities) {
       const checked = !!values.includes(val);
-      const id = `${name}[${toSnakeCase(val)}]`;
+      const id = this.possibilities.length === 1 ? `content[${name}]` : `${name}[${toSnakeCase(val)}]`;
       inputs.push(<fieldset className="checkbox__fieldset">
-        <input type="hidden" name={!checked ? id : ''} value="false" />
         <input
           type="checkbox"
           id={id}
@@ -108,7 +130,6 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
       const checked = !!values.includes(val);
       const id = `${name}[${toSnakeCase(val)}]`;
       inputs.push(<fieldset className="checkbox__fieldset">
-        <input type="hidden" name={!checked ? id : ''} value="false" />
         <input
           type="radio"
           id={id}
@@ -133,7 +154,7 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
     values = values.filter(value => Boolean(value?.trim()));
 
     return <select
-      {...this.options}
+      placeholder={this.options.placeholder}
       name={name}
       aria-describedby={`help-${name}`}
       className="vapid__select"
@@ -171,7 +192,7 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
       }
     }
 
-    if (localCustom && this.options.custom) {
+    if (typeof localCustom === 'string' && this.options.custom) {
       suggestions.unshift({ id: toSnakeCase(localCustom), name: toTitleCase(localCustom) });
     }
 

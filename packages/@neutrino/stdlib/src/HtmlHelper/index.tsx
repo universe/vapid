@@ -1,8 +1,9 @@
 import { DirectiveProps, SafeString,ValueHelper } from '@neutrino/core';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import sanitizeHtml from 'sanitize-html';
 
 import type { Quill } from './editor.js';
+// import { Quill, options } from './editor.js';
 
 /* eslint-disable max-len */
 const ICONS = {
@@ -29,6 +30,12 @@ interface HTMLHelperOptions {
 export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
   default = '';
 
+  private quill: Quill | null = null;
+  private prev = '';
+  private pendingReset: number | null = null;
+  // private editor: HTMLDivElement | null = null;
+  // private menu: HTMLUListElement | null = null;
+
   /**
    * Returns a WYSIWYG editor, depending on the options
    *
@@ -37,26 +44,25 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
    * @return rendered input
    */
   input({ value = this.default, directive }: DirectiveProps<string, this>) {
-    const [ quill, setQuill ] = useState<Quill | null>(null);
     const editor = useRef<HTMLDivElement | null | undefined>(undefined);
     const menu = useRef<HTMLUListElement | null>(null);
 
     useEffect(() => {
       (async() => {
-        if (!editor.current) { return; }
-
         const { Quill, options } = await import('./editor');
-        const newQuill = new Quill(editor.current, options, { media: directive.meta.media });
-        newQuill.on('editor-change', () => {
+        if (!editor.current) { return; }
+        directive.prev = editor.current.innerHTML = value;
+        directive.quill = new Quill(editor.current, options, { media: directive.meta.media });
+        directive.quill.on('editor-change', () => {
           const $menu = menu.current;
           if (!$menu) { return true; }
-          const range = newQuill.getSelection(false);
+          const range = directive.quill!.getSelection(false);
           const hasFocus = editor.current?.querySelector(':focus-within');
           if (!range || !hasFocus) {
             $menu.classList.toggle('visible', false);
             return true;
           }
-          const [blot] = newQuill.getLine(range.index);
+          const [blot] = directive.quill!.getLine(range.index);
           let showMenu = !blot.domNode.innerText.trim().length;
           if (blot.isBlock) { showMenu = false; }
           $menu.classList.toggle('visible', showMenu);
@@ -67,9 +73,8 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
         });
 
         let pending: number | null = null;
-        let prev = '';
         let isFirst = true;
-        newQuill.on('editor-change', () => {
+        directive.quill.on('editor-change', () => {
           const $editor = editor?.current;
           if (isFirst) { return isFirst = false; }
           if (!$editor) { return; }
@@ -79,34 +84,45 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
             const $tooltip = editor?.current?.querySelector('.ql-tooltip') as HTMLElement | undefined;
             $tooltip && $arrow && ($arrow.style.transform = `translateX(${$tooltip.style.left})`);
             const update = $editor.querySelector('.ql-editor')?.innerHTML || '';
-            if (prev === update) { return; }
-            prev = update;
+            if (directive.prev === update) { return; }
+            directive.prev = update;
             directive.update(update === '<p><br></p>' ? '' : update);
           });
           return true;
         });
-        newQuill.root.innerHTML = value;
-        setQuill(newQuill);
+        directive.quill?.enable();
       })();
     }, [editor.current]);
 
+    // When we receive a new value, if we weren't the ones to set it, update our current state to reflect.
+    useEffect(() => {
+      if (directive.prev === value) { return; }
+      if (directive.pendingReset) { cancelAnimationFrame(directive.pendingReset); }
+      directive.pendingReset = requestAnimationFrame(() => {
+        if (directive.quill?.root?.contains(document.activeElement)) { return; }
+        directive.quill?.disable(); // To prevent auto focus on HTML paste.
+        directive.quill?.clipboard.dangerouslyPasteHTML(value);
+        directive.quill?.enable();
+      });
+    }, [value]);
+
     function insert(evt: Event, obj?: { insert(quill: Quill): void; }) {
-      quill && obj?.insert(quill);
+      directive.quill && obj?.insert(directive.quill);
       evt.stopPropagation();
       evt.preventDefault();
       return false;
     }
 
     /* eslint-disable max-len */
-    return <>
-      <ul className="wysiwyg-blocks" ref={menu as any} tabIndex={-1} onFocus={quill?.resetSelection}>
-        <li><a href="#" className="wysiwyg-blocks__block wysiwyg-blocks__block--btn" onClick={(evt) =>insert(evt as unknown as Event, quill?.buttonBlot) }>Button {ICONS.btn}</a></li>
-        <li><a href="#" className="wysiwyg-blocks__block wysiwyg-blocks__block--hr" onClick={(evt) => insert(evt as unknown as Event, quill?.hrBlot)}>Divider {ICONS.hr}</a></li>
-        <li><a href="#" className="wysiwyg-blocks__block wysiwyg-blocks__block--img" onClick={(evt) => insert(evt as unknown as Event, quill?.imgBlot)}>Image {ICONS.img}</a></li>
-        <li><a href="#" className="wysiwyg-blocks__block wysiwyg-blocks__block--video" onClick={(evt) => insert(evt as unknown as Event, quill?.videoBlot)}>Video {ICONS.vid}</a></li>
+    return <div onClick={evt => { evt.stopImmediatePropagation(); evt.preventDefault(); }}>
+      <ul className="wysiwyg-blocks" ref={menu as any} tabIndex={-1} onFocus={directive.quill?.resetSelection}>
+        <li><a href="#" className="wysiwyg-blocks__block wysiwyg-blocks__block--btn" onClick={(evt) =>insert(evt as unknown as Event, directive.quill?.buttonBlot) }>Button {ICONS.btn}</a></li>
+        <li><a href="#" className="wysiwyg-blocks__block wysiwyg-blocks__block--hr" onClick={(evt) => insert(evt as unknown as Event, directive.quill?.hrBlot)}>Divider {ICONS.hr}</a></li>
+        <li><a href="#" className="wysiwyg-blocks__block wysiwyg-blocks__block--img" onClick={(evt) => insert(evt as unknown as Event, directive.quill?.imgBlot)}>Image {ICONS.img}</a></li>
+        <li><a href="#" className="wysiwyg-blocks__block wysiwyg-blocks__block--video" onClick={(evt) => insert(evt as unknown as Event, directive.quill?.videoBlot)}>Video {ICONS.vid}</a></li>
       </ul>
       <div className="wysiwyg" ref={editor as any} />
-    </>;
+    </div>;
     /* eslint-enable max-len */
   }
 

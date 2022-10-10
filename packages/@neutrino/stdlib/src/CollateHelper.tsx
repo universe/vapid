@@ -1,7 +1,7 @@
-import { appendFragment, CollectionHelper, DirectiveProps, NeutrinoHelperOptions,SafeString } from '@neutrino/core';
+import { appendFragment, CollectionHelper, compileExpression, DirectiveProps, NeutrinoHelperOptions,SafeString } from '@neutrino/core';
 import { toKebabCase, toTitleCase } from '@universe/util';
 
-interface CollateHelperOptions { key?: string; default?: string; }
+interface CollateHelperOptions { key?: string; default?: string; filter?: string; }
 
 interface CollectionHelperValue {
   collectionId: string | null;
@@ -51,14 +51,18 @@ export default class CollateHelper extends CollectionHelper<CollectionHelperValu
 
     const values: Set<string | number | undefined> = new Set();
     const valueCounts: Map<string | number | undefined, number> = new Map();
+    const recordsMap: Map<string | number | undefined, Set<any>> = new Map();
     const out = options.fragment;
     const prop = hash.key;
+    const filter = hash.filter ? compileExpression(hash.filter) : null;
 
     if (!prop) { throw new Error('You must provide a key to the `{{collate}}` helper.'); }
 
     for (const record of collection || []) {
       if (record['@record'].deletedAt) { continue; }
       if (!config || record['@record']?.parent?.id !== config.collectionId) { continue; }
+      if (filter && !filter(record)) { continue; }
+
       let value = typeof record[prop] === 'function' ? record[prop]() : record[prop];
       if (!Array.isArray(value)) { value = value ? [value] : []; }
       if (!value.length && hash.default) {
@@ -68,6 +72,9 @@ export default class CollateHelper extends CollectionHelper<CollectionHelperValu
         if (v instanceof SafeString) { v = v.toString(); }
         values.add(v);
         valueCounts.set(v, (valueCounts.get(v) || 0) + 1);
+        const records = recordsMap.get(v) || new Set();
+        records.add(record);
+        recordsMap.set(v, records);
       }
     }
 
@@ -77,6 +84,7 @@ export default class CollateHelper extends CollectionHelper<CollectionHelperValu
         value,
         title: toTitleCase(`${value || hash.default || ''}`),
         slug: value ? toKebabCase(`${value}`) : toKebabCase(hash.default || ''),
+        records: [...(recordsMap.get(value)|| [])],
         count: valueCounts.get(value) || 0,
       }]));
     }

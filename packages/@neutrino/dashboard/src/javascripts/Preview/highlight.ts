@@ -1,7 +1,7 @@
-function start() {
+export default function highlight() {
   if ((window as any).__HIGHLIGHT__) { return; }
   (window as any).__HIGHLIGHT__ = true;
-
+  console.log('START');
   const marker = document.getElementById('editor-marker') || document.createElement('div');
   marker.id = 'editor-marker';
   marker.classList.add('editor-marker');
@@ -181,5 +181,3 @@ function start() {
     evt.stopImmediatePropagation();
   });
 }
-
-start();

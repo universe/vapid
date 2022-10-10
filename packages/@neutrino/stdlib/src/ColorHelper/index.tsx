@@ -1,9 +1,10 @@
 import './index.css';
 
-import { DirectiveProps,ValueHelper } from '@neutrino/core';
+import { DirectiveProps, SafeString,ValueHelper } from '@neutrino/core';
 import Color from 'color';
+import colorjs from 'colorjs.io';
 import { createPalleteFromColor } from 'palettey';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect } from 'preact/hooks';
 
 interface ColorHelperOptions {
   placeholder: string,
@@ -11,6 +12,7 @@ interface ColorHelperOptions {
 
 interface ColorHelperValue {
   hex: string;
+  cta: string | null;
 }
 
 interface Pallette {
@@ -53,8 +55,9 @@ function ensureDark(color: string) {
   return matte.hex();
 }
 
-function getPallette(color: string) {
+function getPallette(color: string, cta: string | null) {
   const pallette = createPalleteFromColor('primary', color.replaceAll('#', ''), { useLightness: true }).primary as unknown as Pallette;
+  const ctaPallette = cta ? createPalleteFromColor('primary', cta.replaceAll('#', ''), { useLightness: true }).primary as unknown as Pallette : null;
 
   return {
     primary:  pallette[500],
@@ -70,18 +73,18 @@ function getPallette(color: string) {
     primary9: pallette[900],
     primary10: ensureDark(pallette[900]),
 
-    cta: Color(pallette[500]).rotate(CTA_ROTATION).hex(),
-    cta0: ensureLight(Color(pallette[50]).rotate(CTA_ROTATION).hex()),
-    cta1: Color(pallette[100]).rotate(CTA_ROTATION).hex(),
-    cta2: Color(pallette[200]).rotate(CTA_ROTATION).hex(),
-    cta3: Color(pallette[300]).rotate(CTA_ROTATION).hex(),
-    cta4: Color(pallette[400]).rotate(CTA_ROTATION).hex(),
-    cta5: Color(pallette[500]).rotate(CTA_ROTATION).hex(),
-    cta6: Color(pallette[600]).rotate(CTA_ROTATION).hex(),
-    cta7: Color(pallette[700]).rotate(CTA_ROTATION).hex(),
-    cta8: Color(pallette[800]).rotate(CTA_ROTATION).hex(),
-    cta9: Color(pallette[900]).rotate(CTA_ROTATION).hex(),
-    cta10: ensureDark(Color(pallette[900]).rotate(CTA_ROTATION).hex()),
+    cta: ctaPallette?.[500] || Color(pallette[500]).rotate(CTA_ROTATION).hex(),
+    cta0: ctaPallette?.[50] ? ensureLight(ctaPallette?.[50]) : ensureLight(Color(pallette[50]).rotate(CTA_ROTATION).hex()),
+    cta1: ctaPallette?.[100] || Color(pallette[100]).rotate(CTA_ROTATION).hex(),
+    cta2: ctaPallette?.[200] || Color(pallette[200]).rotate(CTA_ROTATION).hex(),
+    cta3: ctaPallette?.[300] || Color(pallette[300]).rotate(CTA_ROTATION).hex(),
+    cta4: ctaPallette?.[400] || Color(pallette[400]).rotate(CTA_ROTATION).hex(),
+    cta5: ctaPallette?.[500] || Color(pallette[500]).rotate(CTA_ROTATION).hex(),
+    cta6: ctaPallette?.[600] || Color(pallette[600]).rotate(CTA_ROTATION).hex(),
+    cta7: ctaPallette?.[700] || Color(pallette[700]).rotate(CTA_ROTATION).hex(),
+    cta8: ctaPallette?.[800] || Color(pallette[800]).rotate(CTA_ROTATION).hex(),
+    cta9: ctaPallette?.[900] || Color(pallette[900]).rotate(CTA_ROTATION).hex(),
+    cta10: ctaPallette?.[500] ? ensureDark(ctaPallette?.[500]) : ensureDark(Color(pallette[900]).rotate(CTA_ROTATION).hex()),
 
     gray: Color(pallette[500]).desaturate(GRAY_DESATURATION).hex(),
     gray0: ensureLight(Color(pallette[50]).desaturate(GRAY_DESATURATION).alpha(95).hex()),
@@ -98,8 +101,8 @@ function getPallette(color: string) {
   };
 }
 
-function getPalletteCSS(color: string) {
-  const pallette = getPallette(color);
+function getPalletteCSS(color: string, cta: string | null) {
+  const pallette = getPallette(color, cta);
   return `
     --primary: ${pallette.primary};
     --primary-0: ${pallette.primary0};
@@ -142,11 +145,25 @@ function getPalletteCSS(color: string) {
   `;
 }
 
-export const Pallette = ({ hidden, color, onChange }: { hidden?: boolean; color: string, onChange?: (color: string) => any }) => {
-  const [ localColor, _setLocalColor ] = useState(color);
+export interface IPalletteProps {
+  hidden?: boolean; 
+  color: string;
+  cta: string | null;
+  onChange?: (color: string) => any;
+  onChangeCta?: (color: string | null) => any;
+  onDefaultCta?: (color: string) => any;
+}
+
+export const Pallette = ({ hidden, color, cta, onChange, onChangeCta, onDefaultCta }: IPalletteProps) => {
   useEffect(() => {
-    document.body.setAttribute('style', getPalletteCSS(color));
+    document.body.setAttribute('style', getPalletteCSS(color, cta));
+  }, [ color, cta ]);
+
+  useEffect(() => {
+    const pallette = getPallette(color, null);
+    onDefaultCta?.(pallette.cta);
   }, [color]);
+
   return <ul class={`pallette ${hidden === true ? 'pallette--hidden' : ''}`}>
     <li class="pallette__set">
       <ol class="pallette__list">
@@ -157,7 +174,7 @@ export const Pallette = ({ hidden, color, onChange }: { hidden?: boolean; color:
         <li class="pallette__color pallette__color--4">4</li>
         <li class="pallette__color pallette__color--5">
           5
-          <input class="pallette__input" type="color" value={localColor} onInput={(evt) => onChange?.((evt.target as HTMLInputElement).value)} />
+          <input class="pallette__input" type="color" value={color} onInput={(evt) => onChange?.((evt.target as HTMLInputElement).value)} />
         </li>
         <li class="pallette__color pallette__color--6">6</li>
         <li class="pallette__color pallette__color--7">7</li>
@@ -188,7 +205,11 @@ export const Pallette = ({ hidden, color, onChange }: { hidden?: boolean; color:
         <li class="pallette__cta pallette__cta--2">2</li>
         <li class="pallette__cta pallette__cta--3">3</li>
         <li class="pallette__cta pallette__cta--4">4</li>
-        <li class="pallette__cta pallette__cta--5">5</li>
+        <li class="pallette__cta pallette__cta--5">
+          5
+          <input class="pallette__input" type="color" value={cta || ''} onInput={(evt) => onChangeCta?.((evt.target as HTMLInputElement).value)} />
+          {cta && <button class="pallette__clear-cta" onClick={() => onChangeCta?.(null)}>Use Default Secondary Color</button>}
+        </li>
         <li class="pallette__cta pallette__cta--6">6</li>
         <li class="pallette__cta pallette__cta--7">7</li>
         <li class="pallette__cta pallette__cta--8">8</li>
@@ -199,58 +220,42 @@ export const Pallette = ({ hidden, color, onChange }: { hidden?: boolean; color:
   </ul>;
 };
 
+// let update: number | null = null;
+
 export default class ColorHelper extends ValueHelper<ColorHelperValue, ColorHelperOptions> {
 
-  default = { hex: '#000000' };
+  default = { hex: '#000000', cta: null };
 
   /**
    * Renders either a text or textarea input
    */
-  input({ name, value = this.default }: DirectiveProps<ColorHelperValue>) {
-    // const EyeDropper = (window as any)?.EyeDropper as { new(): { open(): Promise<{ sRGBHex: string; }>} };
-    const hex = value.hex || this.options.placeholder || this.default.hex;
-    const pallette = getPallette(hex);
+  input({ value = this.default }: DirectiveProps<ColorHelperValue>) {
     return <>
-      <input
-        {...this.options}
-        type="color"
-        name={name}
-        aria-describedby={`help-${name}`}
-        value={hex}
-        onChange={(evt) => {
-          const hex = (evt.target as HTMLInputElement).value;
-          this.update({ hex });
-        }}
-      />
-      {/* <button onClick={async() => {
-        const eyeDropper = new EyeDropper();
-        const result = await eyeDropper.open();
-        this.update({ hex: result.sRGBHex });
-      }}>Eyedropper</button> */}
-      <Pallette color={value.hex} onChange={(hex) => this.update({ hex })} />
-      <input
-        {...this.options}
-        type="color"
-        name={name}
-        aria-describedby={`help-${name}`}
-        value={pallette.cta}
-        onChange={(evt) => {
-          const hex = (evt.target as HTMLInputElement).value;
-          this.update({ hex });
-        }}
+      <Pallette 
+        color={value.hex} 
+        cta={value.cta || null} 
+        onChange={(hex) => this.update({ hex, cta: value.cta })} 
+        onChangeCta={(cta) => this.update({ hex: value.hex, cta })} 
       />
     </>;
   }
 
-  async data(value: ColorHelperValue) {
+  async data(value: ColorHelperValue = this.default) {
     const color = new Color(value.hex);
-    const pallette = getPallette(value.hex);
+    const pallette = getPallette(value.hex, value.cta || null);
+    const ctaWhiteContrast = colorjs.contrastAPCA(value.hex, pallette.gray0);
+    const ctaBlackContrast = colorjs.contrastAPCA(value.hex, pallette.gray10);
+    const primaryWhiteContrast = colorjs.contrastAPCA(value.hex, pallette.gray0);
+    const primaryBlackContrast = colorjs.contrastAPCA(value.hex, pallette.gray10);
     return {
       toString() { return value.hex; },
       hex: value.hex,
+      textColor: new SafeString(Math.abs(primaryWhiteContrast) > Math.abs(primaryBlackContrast) ? pallette.gray0 : pallette.gray10),
+      primaryTextColor: new SafeString(Math.abs(ctaWhiteContrast) > Math.abs(ctaBlackContrast) ? pallette.gray0 : pallette.gray10),
+      ctaTextColor: new SafeString(Math.abs(primaryWhiteContrast) > Math.abs(primaryBlackContrast) ? pallette.gray0 : pallette.gray10),
       pallette: {
         ...pallette,
-        css: getPalletteCSS(value.hex),
+        css: getPalletteCSS(value.hex, value.cta || null),
       },
 
       rgb: color.rgb().string(),

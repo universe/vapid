@@ -14,20 +14,20 @@ function splitText(text: string) {
   return spans;
 }
 
-export default function RocketButton({ onClick }: { onClick: () => void | Promise<void>}) {
+export default function RocketButton({ initialText, finalText, onClick }: { initialText?: string; finalText?: string; onClick: (cb: () => void) => void | Promise<void>}) {
   const [ phase, setPhase ] = useState<'default' | 'animated' | 'live'>('default');
 
   /* eslint-disable max-len */
   return <button class={`rocket-button rocket-button--${phase}`} onClick={(evt) => {
     evt.preventDefault();
     setPhase(phase === 'live' ? 'default' : 'live');
-    onClick();
+    onClick(() => setPhase('default'));
   }}>
-    <div class="default">{splitText('Deploy Site')}</div>
+    <div class="default">{splitText(initialText || 'Deploy Website')}</div>
 
     <div class="success">
       <svg><use xlinkHref="#check" /></svg>
-      <div>{splitText('Site is Deployed')}</div>
+      <div>{splitText(finalText || 'Site is Deployed')}</div>
     </div>
 
     <div class="animation">

@@ -1,14 +1,18 @@
 import preact from '@preact/preset-vite';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import * as path from 'path';
 import { defineConfig } from 'vite';
 
 module.exports = defineConfig({
   root: './src',
-  base: 'https://neutrino.dev',
+  base: 'https://website.universe.app',
+  envDir: path.join(__dirname),
+  envPrefix: [ 'API_URL', 'SITE_DATA_URL' ],
   server: {
     https: true,
   },
   resolve: {
+    dedupe: [ 'preaact', 'preact/hooks', 'preact/compat' ],
     alias: [
       { find: 'react', replacement: 'preact/compat' },
       { find: 'react-dom', replacement: 'preact/compat' },
@@ -18,30 +22,22 @@ module.exports = defineConfig({
     ],
   },
   plugins: [
+    basicSsl(),
     preact({
       babel: {
         plugins: [
           [ '@babel/plugin-proposal-decorators', { legacy: true }],
+          // [ 'babel-plugin-transform-hook-names', false ],
         ],
       },
     }),
   ],
   build: {
     outDir: '../dist',
-    lib: {
-      entry: path.resolve(__dirname, 'src/javasripts/highlight.ts'),
-      name: 'highlight',
-      fileName: 'highlight',
-      formats: ['es'],
-    },
+    minify: false,
     rollupOptions: {
-      // output: {
-      //   inlineDynamicImports: true
-      // },
       input: {
         index: path.join(__dirname, 'src/index.html'),
-        upload: path.join(__dirname, 'src/upload.html'),
-        // highlight: path.join(__dirname, 'src/javascripts/highlight.ts')
       },
     },
   },

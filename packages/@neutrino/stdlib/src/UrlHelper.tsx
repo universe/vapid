@@ -24,7 +24,7 @@ const LINK_ICON = <svg
 export default class UrlHelper extends ValueHelper<string, UrlHelperOptions> {
   default = '';
 
-  input({ name, value, directive }: DirectiveProps<string, this>) {
+  input({ name, value = this.default, directive }: DirectiveProps<string, this>) {
     if (value === directive.default) { value = ''; }
     const isError = value.startsWith('__error__/');
     value = value.replace('__error__/', '');

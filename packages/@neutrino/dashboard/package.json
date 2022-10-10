@@ -6,7 +6,7 @@
   "repository": "universe/vapid",
   "author": "Adam Miller <adam@universe.app>",
   "source": "src/index.html",
-  "homepage": "https://neutrino.dev",
+  "homepage": "https://website.universe.app",
   "bin": {
     "vapid": "./dist/lib/cli.js"
   },
@@ -39,22 +39,30 @@
     "dist"
   ],
   "dependencies": {
+    "@neutrino/cli": "1.0.0-beta.0",
     "@neutrino/core": "1.0.0-beta.0",
     "@neutrino/runtime": "1.0.0-beta.0",
-    "@universe/aether": "^0.1.3",
+    "@universe/aether": "^0.2.0",
     "@universe/util": "^1.1.2",
-    "font-picker-react": "^3.5.2",
+    "colorthief": "^2.3.2",
+    "file2md5": "^1.3.0",
     "html5sortable": "^0.13.2",
     "preact": "^10.8.1",
     "preact-router": "^4.0.1",
-    "react-hot-toast": "^2.2.0"
+    "react-hot-toast": "^2.2.0",
+    "react-spring": "^9.5.2",
+    "react-text-transition": "^3.0.2",
+    "react-with-gesture": "^4.0.8"
   },
   "devDependencies": {
     "@babel/plugin-proposal-decorators": "^7.18.2",
-    "@preact/preset-vite": "^2.2.0",
+    "@preact/preset-vite": "^2.3.0",
+    "@types/colorthief": "link:../../../types-local/colorthief",
     "@types/html-escaper": "^3.0.0",
     "@types/html5sortable": "link:../../../types-local/html5sortable",
+    "@universe/admin": "^1.0.1",
+    "@vitejs/plugin-basic-ssl": "^0.1.2",
     "simple-dom": "^1.4.0",
-    "vite": "2.9.12"
+    "vite": "2.9.14"
   }
 }

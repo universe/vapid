@@ -42,16 +42,22 @@
   cursor: pointer;
   position: relative;
   z-index: 1;
+  background: var(--blue-6);
   transition: background-color .18s ease-in-out, box-shadow .18s ease-in-out, border-color .18s ease-in-out;
+  -webkit-user-select: none; /* Safari 3.1+ */ 
+  -moz-user-select: none; /* Firefox 2+ */
+  -ms-user-select: none; /* IE 10+ */ 
+  user-select: none; /* Standard syntax */ 
+  user-drag: none; 
+  -webkit-user-drag: none; 
 }
 
-.collection__row-select:hover {
+.collection__row-select:hover, 
+.collection__row--grab .collection__row-select,
+.collection__preview-row:hover .collection__row-select {
   background-color: white;
   box-shadow: var(--elevation-2);
   border: 1px solid var(--blue-3);
-}
-
-.collection__row-select:hover {
   text-decoration: none;
 }
 
@@ -167,10 +173,6 @@
 
 .collection__new:hover::after {
   color: var(--slate-0);
-}
-
-.collection__preview.sortable {
-  padding-left: 1.8rem;
 }
 
 .collection__preview.sortable .collection__preview-row::before {

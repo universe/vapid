@@ -1,4 +1,7 @@
 import { DirectiveProps, NeutrinoHelperOptions, SafeString,ValueHelper } from '@neutrino/core';
+// import { FocusPicker } from './focus.js';
+// import { editImage } from './editor.js';
+import { useRef } from 'preact/hooks';
 
 export enum ImageType {
   JPEG = 'jpeg',
@@ -24,7 +27,7 @@ const DEFAULT = {
   width: 1,
   height: 1,
   aspectRatio: 1,
-  blurhash: 'LPFYGm~U9D9H~p-pIVRiSbohakn}',
+  blurhash: '',
   focus: { x: 0, y: 0 },
 };
 
@@ -53,25 +56,34 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
     this.update(out.file);
   }
 
+  private getRealUrl(src: string): string {
+    if (src !== TRANSPARENT_PIXEL && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:')) {
+      return `${this.meta.media}/${src}`;
+    }
+    return src;
+  }
+
   /**
    * Renders inputs necessary to upload, preview, and optionally remove images
    */
-  input({ name, value, directive }: DirectiveProps<ImageHelperValue, this>) {
-    value = JSON.parse(JSON.stringify(value));
-    const src = value?.src && value.src !== TRANSPARENT_PIXEL ? `${directive.meta.media}/${value.src}` : TRANSPARENT_PIXEL;
+  input({ name, value: update = this.default, directive }: DirectiveProps<ImageHelperValue, this>) {
+    const value = useRef<ImageHelperValue>(update);
+    const directiveRef = useRef<ImageHelper>(directive);
+    directiveRef.current = directive;
+    value.current = JSON.parse(JSON.stringify(update));
+    const src = this.getRealUrl(value.current.src);
     const hasSrc = src !== TRANSPARENT_PIXEL;
     return <div class="previewable">
       {src === TRANSPARENT_PIXEL ? <input type="file" name={name} accept="image/*" aria-describedby={`help-${name}`} onInput={directive.onInput.bind(directive)} /> : null}
-      <input type="hidden" name={`${name}[src]`} value={value?.src || ''} aria-describedby={`help-${name}`} />
+      <input type="hidden" name={`${name}[src]`} value={value.current?.src || ''} aria-describedby={`help-${name}`} />
       <div class={`preview ${src === TRANSPARENT_PIXEL ? 'image-directive__empty-preview' : ''}`} >
-        <img src={src} id={name} data-focus-x={value?.focus?.x || 0} data-focus-y={value?.focus?.y || 0} ref={async(ref) => {
+        <img src={src} id={name} data-focus-x={value.current?.focus?.x || 0} data-focus-y={value.current?.focus?.y || 0} ref={async(ref) => {
           if (!ref) { return; }
           const { FocusPicker } = await import('./focus');
           new FocusPicker(ref, {
             onChange: (focus: { x: number; y: number; }) => {
-              console.log(focus);
-              if (value?.focus?.x === focus.x && value?.focus?.y === focus.y) { return; }
-              directive.update({ ...value, focus });
+              if (value.current?.focus?.x === focus.x && value.current?.focus?.y === focus.y) { return; }
+              directiveRef.current.update({ ...value.current, focus });
             },
           });
         }} />
@@ -89,7 +101,7 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
    * Renders image src or block data
    */
   async data(value: ImageHelperValue = this.default): Promise<ImageHelperValue> {
-    const src = (value?.src && value.src?.indexOf('data:') === -1) ? `${this.meta.media}/${value.src}` : value.src;
+    const src = this.getRealUrl(value.src);
     return {
       ...value,
       src: src || this.default.src,
@@ -104,7 +116,7 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
    * @return {string}
    */
   preview(value: ImageHelperValue = this.default) {
-    const src = value?.src?.indexOf('data:') === -1 ? `${this.meta.media}/${value.src}` : value.src;
+    const src = this.getRealUrl(value.src);
     return <img src={src || TRANSPARENT_PIXEL} data-focus-x={value?.focus?.x || 0} data-focus-y={value?.focus?.y || 0} />;
   }
 
@@ -116,6 +128,10 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
   inject() {
     return new SafeString(`
       <script>
+        function getBackgroundColor(el) {
+          const bounds = el.getBoundingClientRect();
+          const els = document.elementFromPoint(bounds.x + (bouds.width / 2), bounds.y + (bounds.height / 2));
+        }
         function _unsupportedIterableToArray(o, minLen) {
           if (!o) return;
           if (typeof o === "string") return _arrayLikeToArray(o, minLen);
@@ -136,14 +152,14 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
               if (i >= o.length) return { done: true };
               return { done: false, value: o[i++] };
             };
-            throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+            throw new TypeError("Invalid attempt to iterate non-iterable instance. In order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
           }
           i = o[Symbol.iterator]();
           return i.next.bind(i);
         }
         
         var QUERY_SELECTOR = 'img[data-focus-x][data-focus-y]';
-        window.startImage = function startImage() {
+        window.addEventListener('DOMContentLoaded', function() {
           var observing = new WeakSet(); // Calculate the new left/top percentage shift of an image
 
           function calcShift(containerSize, imageSize, focusSize, toMinus) {
@@ -279,8 +295,7 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
             childList: true,
             attributeFilter: ['data-focus-x', 'data-focus-y']
           });
-        }
-        startImage();
+        });
       </script>
     `);
   }

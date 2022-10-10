@@ -43,7 +43,9 @@ export interface ParsedExpr {
 }
 
 export type BlockRenderer = Json | { toString: () => string; };
-export type NeutrinoValue = string | boolean | number | SafeString | SimpleDocumentFragment | null;
+export type SimpleNeutrinoValue = string | boolean | number | SafeString | SimpleDocumentFragment;
+export type RuntimeHelper = () => SimpleNeutrinoValue;
+export type NeutrinoValue = SimpleNeutrinoValue | RuntimeHelper | null;
 
 /**
  * Attempts to cast value to the correct type
@@ -70,7 +72,7 @@ export type DirectiveField = Partial<IField>;
 export type DirectiveCallback<DirectiveType> = (key: string, value: DirectiveType) => void | Promise<void>;
 export interface DirectiveProps<DirectiveType, T extends BaseHelper<any> = BaseHelper<any>> {
   name: string;
-  value: DirectiveType;
+  value?: DirectiveType | undefined;
   directive: T;
 }
 
@@ -115,7 +117,7 @@ export abstract class BaseHelper<DirectiveType, Options = object> {
   }
 
   private static fileHandlers: FileHandler[] = [];
-  static async registerFileHandler(handler: FileHandler) { BaseHelper.fileHandlers.push(handler); }
+  static async registerFileHandler(handler: FileHandler) { BaseHelper.fileHandlers = [handler]; }
   static async emitFile(id: string, b64Image: string | Blob, type = 'image/png') {
     for (const handler of BaseHelper.fileHandlers) { const res = await handler(id, b64Image, type); if (res) { return res; }}
     return { file: { src: '' } };
@@ -131,8 +133,8 @@ export abstract class BaseHelper<DirectiveType, Options = object> {
   /**
    * Display methods for data, previews, and page renders.
    */
-  public async data(value: DirectiveType = this.default): Promise<BlockRenderer> { return `${value || this.default}`; }
-  public preview(value: DirectiveType | undefined): ComponentChildren { return `${value || this.default}`; }
+  public async data(value?: DirectiveType | undefined): Promise<BlockRenderer> { return `${value || this.default}`; }
+  public preview(value?: DirectiveType | undefined): ComponentChildren { return `${value || this.default}`; }
   public render(_params: any[], _hash: DirectiveOptions & Options, _options: NeutrinoHelperOptions): NeutrinoValue { return ''; }
   public inject(): BlockRenderer { return ''; }
 }

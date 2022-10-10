@@ -2,8 +2,8 @@ import './dashboard.css';
 
 import { BaseHelper, IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, Record as DBRecord, sortRecords, sortTemplatesAlphabetical, stampRecord, Template } from '@neutrino/core';
 import type { IWebsite } from '@neutrino/runtime';
+import Spinner from '@universe/aether/esm/src/components/Spinner';
 import { toTitleCase } from '@universe/util';
-import jsonStringify from 'fast-json-stable-stringify';
 import { ComponentChildren,Fragment } from 'preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useState } from 'preact/hooks';
@@ -132,34 +132,41 @@ function Content(params: RouteParts) {
   const [ previewLayout, setPreviewLayout ] = useState<'full' | 'desktop' | 'mobile'>('desktop');
   const [ localRecord, setLocalRecord ] = useState<IRecord | null>(null);
   const [ siteData, setSiteData ] = useState<IWebsite | null>(null);
+  const [ records, setRecords ] = useState<Record<string, IRecord>>({});
 
   // If loading at root, route to the index page.
   useEffect(() => { window.location.pathname === '/' && route(`/page/index/index`); }, [window.location.pathname]);
 
   // Start watching our web socket in dev mode.
   useEffect(() => {
+    if (!adapter) { return; }
     if ('WebSocket' in window) {
-      const ws = new WebSocket(`ws${location.protocol === 'https:' ? 's' : ''}://${(location.host || 'localhost').split(':')[0]}:35729/livereload`);
-      ws.onmessage = (evt) => {
-        const { command, data } = JSON.parse(evt.data);
-        console.log(command, data);
-        switch (command) {
-          case 'update': setSiteData(data as IWebsite);
-        }
-      };
+      try {
+        // const ws = new WebSocket(`ws${location.protocol === 'https:' ? 's' : ''}://${(location.host || 'localhost').split(':')[0]}:35729/livereload`);
+        const ws = new WebSocket(`ws://${(location.host || 'localhost').split(':')[0]}:35729/livereload`);
+        ws.onmessage = async(evt) => {
+          const { command, data } = JSON.parse(evt.data) as { command: string; data: IWebsite; };
+          console.log(command, data);
+          const siteData = await adapter.getSiteData();
+          switch (command) {
+            case 'update': setSiteData({ ...siteData, hbs: data.hbs });
+          }
+        };
+      }
+ catch { 1; }
     }
-  }, []);
+  }, [adapter]);
 
   // Make sure our sortables are sortable.
   useEffect(() => {
     if (!adapter || !siteData) return;
     return sortable.init(adapter, ({ id, to, parentId }) => {
-      const record = siteData.records[id];
+      const record = records[id];
       record.parentId = parentId;
       record.order = to;
       setSiteData({ ...siteData });
     });
-  }, [ templateName, templateType, pageId, collectionId, jsonStringify(siteData) ]);
+  }, [ templateName, templateType, pageId, collectionId, siteData, records ]);
 
   // Once we have an adapter initialized, fetch our site data.
   useEffect(() => {
@@ -167,16 +174,16 @@ function Content(params: RouteParts) {
       if (!adapter) { return; }
       BaseHelper.registerFileHandler(adapter.saveFile.bind(adapter));
       setSiteData(await adapter.getSiteData());
+      setRecords(await adapter.getAllRecords());
     })();
   }, [adapter]);
 
-  const records = Object.values(siteData?.records || {}).sort(sortRecords);
+  const recordsList = Object.values(records || {}).sort(sortRecords);
   const permalinks: Record<string, string> = {};
-  for (const record of records) { permalinks[DBRecord.permalink(record)] = record.id; }
+  for (const record of recordsList) { permalinks[DBRecord.permalink(record)] = record.id; }
 
   const isNewRecord = pageId === 'new' || collectionId === 'new';
   const templates = Object.values(siteData?.hbs?.templates || {});
-
   const template = (!templateType && !templateName) ? getTemplate(PageType.PAGE, 'index', templates) : getTemplate(templateType, templateName, templates);
 
   let record: IRecord | null = null;
@@ -185,12 +192,12 @@ function Content(params: RouteParts) {
 
   if (template) {
     if (templateType === PageType.SETTINGS) {
-      record = settingFor(template, records) || (drafts[Template.id(template)] = drafts[Template.id(template)] || stampRecord(template));
+      record = settingFor(template, recordsList) || (drafts[Template.id(template)] = drafts[Template.id(template)] || stampRecord(template));
     }
-    else if (templateType === PageType.PAGE) { record = getRecord(records, Template.id(template), pageId); }
+    else if (templateType === PageType.PAGE) { record = getRecord(recordsList, Template.id(template), pageId); }
     else if (templateType === PageType.COLLECTION) {
-      record = getRecord(records, Template.id(template), collectionId, pageId);
-      parent = getRecord(records, `${template.name}-${PageType.PAGE}`, pageId);
+      record = getRecord(recordsList, Template.id(template), collectionId, pageId);
+      parent = getRecord(recordsList, `${template.name}-${PageType.PAGE}`, pageId);
     }
   
     draftKey = Template.id(template) + (parent?.id || '');
@@ -199,12 +206,10 @@ function Content(params: RouteParts) {
     }
   }
 
-  useEffect(() => setLocalRecord(JSON.parse(JSON.stringify(record))), [record]);
+  useEffect(() => { setLocalRecord(JSON.parse(JSON.stringify(record))); }, [record?.id]);
 
-  if (!siteData) return <div>Loading</div>;
-  if (!template) return <div>404</div>;
-
-  console.log('APP RENDER', params, siteData, template, record, parent);
+  if (!siteData) return <div class="dashboard__loading"><Spinner size="large" /></div>;
+  if (!template) return <div class="dashboard__loading">404</div>;
 
   document.getElementById('preview-device')?.classList.toggle('device-iphone-x', previewLayout === 'mobile');
   document.getElementById('preview-container')?.classList.toggle('preview-container--full-screen', previewLayout === 'full');
@@ -222,7 +227,7 @@ function Content(params: RouteParts) {
               Add a Page
             </button>
             <div class="menu sortable">
-              {records.map((page) => page.parentId === NAVIGATION_GROUP_ID 
+              {recordsList.map((page) => page.parentId === NAVIGATION_GROUP_ID 
                 ? navLink(
                     page, 
                     templateFor(page, templates), 
@@ -232,7 +237,7 @@ function Content(params: RouteParts) {
                 : null,
               )}
               <hr class="sidebar__divider" />
-              {records.map((page) => {
+              {recordsList.map((page) => {
                 if (page.parentId) { return null; }
                 const tmpl = templateFor(page, templates);
                 const collection = collectionFor(tmpl, templates);
@@ -247,6 +252,7 @@ function Content(params: RouteParts) {
               <div class="menu">
                 {templates.sort(sortTemplatesAlphabetical).map((tmpl) => {
                   if (tmpl?.type !== PageType.SETTINGS) { return null; }
+                  if (!Object.keys(tmpl?.fields).length) { return null; }
                   return navLink(null, tmpl, null, `${params.templateName}-${params.templateType}`);
                 })}
               </div>
@@ -254,16 +260,18 @@ function Content(params: RouteParts) {
         </nav>
 
         <section class="vapid-nav__controls">
-          <RocketButton onClick={() => {
-            setTimeout(() => window.open('/dashboard/deploy'), 3200);
+          <RocketButton onClick={(reset: () => void) => {
+            adapter?.deploy(siteData, records);
+            setTimeout(() => reset(), 6000);
           }} />
         </section>
       </section>
 
       <section class="vapid-editor sidebar vapid-nav" id="vapid-editor">
-        {adapter ? <Editor adapter={adapter} isNewRecord={isNewRecord} template={template} record={localRecord} parent={parent} siteData={siteData}
+        <Editor adapter={adapter || null} isNewRecord={isNewRecord} template={template} record={localRecord} parent={parent} records={records} siteData={siteData}
           onCancel={() => {
             delete drafts[draftKey];
+            setLocalRecord(JSON.parse(JSON.stringify(record)));
             route(`/${template.type}/${template.name}/${(parent || record)?.slug || ''}`);
           }}
           onChange={record => {
@@ -271,32 +279,37 @@ function Content(params: RouteParts) {
             if ((slugId && slugId !== record.id) || record.slug === 'new') { record.slug = `__error__/${record.slug}`; }
             setLocalRecord(JSON.parse(JSON.stringify(record)));
           }}
-          onSave={record => {
-            siteData.records[record.id] = record;
+          onSave={(recordUpdates: IRecord | IRecord[], navigate?: boolean) => {
+            delete drafts[draftKey];
+            recordUpdates = Array.isArray(recordUpdates) ? recordUpdates : [recordUpdates];
+            for (const record of recordUpdates) {
+              records[record.id] = record;
+              if (record.deletedAt) {
+                const parent = record.parentId ? (records[record.parentId] || null) : null;
+                const parentTemplate = parent ? (siteData.hbs.templates[parent.templateId] || null) : null;
+                const permalink = parent ? DBRecord.permalink(parent) : null;
+                if (parent && parentTemplate) {
+                  route(`/${parentTemplate.type}/${parentTemplate.name}${(!permalink || permalink === '/') ? '/index' : permalink}`);
+                }
+                else {
+                  route('/page/index/index');
+                  scrollToNav();
+                }
+              }
+              else if (navigate !== false) {
+                setLocalRecord(JSON.parse(JSON.stringify(record)));
+                const permalink = DBRecord.permalink(record, parent);
+                route(`/${template.type}/${template.name}${(!permalink || permalink === '/') ? '/index' : permalink}`);
+              }
+            }
             setSiteData({ ...siteData });
-            setLocalRecord(JSON.parse(JSON.stringify(record)));
-            if (record.deletedAt) {
-              const parent = record.parentId ? (siteData.records[record.parentId] || null) : null;
-              const parentTemplate = parent ? (siteData.hbs.templates[parent.templateId] || null) : null;
-              const permalink = parent ? DBRecord.permalink(parent) : null;
-              if (parent && parentTemplate) {
-                route(`/${parentTemplate.type}/${parentTemplate.name}${(!permalink || permalink === '/') ? '/index' : permalink}`);
-              }
-              else {
-                route('/page/index/index');
-                scrollToNav();
-              }
-            }
-            else {
-              const permalink = DBRecord.permalink(record, parent);
-              route(`/${template.type}/${template.name}${(!permalink || permalink === '/') ? '/index' : permalink}`);
-            }
+            setRecords({ ...records });
           }}
-        /> : null}
+        />
       </section>
     </menu>
 
-    <Preview siteData={siteData} record={localRecord || parent} />
+    <Preview siteData={siteData} record={localRecord || parent} records={JSON.parse(JSON.stringify(records))} />
 
     {createPortal(
       <dialog class="section page-templates" id="page-templates" open={pageTemplatesOpen}>
@@ -304,7 +317,7 @@ function Content(params: RouteParts) {
         <button class="page-templates__close" onClick={() => setPageTemplatesOpen(false)}>Cancel</button>
         <ul class="page-templates__list">
           {templates.map((template) => {
-            if (template.type !== PageType.PAGE) { return null; }
+            if (template.type !== PageType.PAGE || !siteData.hbs.templates[Template.id(template)]) { return null; }
             return <li key={template.name} class="page-templates__template">
               <a href={`/page/${template.name}/new`} onClick={() => { setPageTemplatesOpen(false); scrollToEdit(); }}>{toTitleCase(template.name)}</a>
             </li>;
@@ -323,7 +336,7 @@ function Content(params: RouteParts) {
           <li><button class="preview-controls__button preview-controls__button--full-screen" onClick={() => setPreviewLayout('full')}>Full Screen</button></li>
           <li><button onClick={() => setPreviewLayout('mobile')} class={`preview-controls__button preview-controls__button--mobile ${previewLayout === 'mobile' ? 'preview-controls__button--active' : ''}`}>Mobile</button></li>
           <li><button onClick={() => setPreviewLayout('desktop')} class={`preview-controls__button preview-controls__button--desktop ${previewLayout == 'desktop' ? 'preview-controls__button--active' : ''}`}>Desktop</button></li>
-          <li><a href={window.location.href} target="_blank" class="preview-controls__button preview-controls__button--breakout" rel="noreferrer">Breakout</a></li>
+          <li><a href={`https://${siteData?.meta?.domain}`} target="_blank" class="preview-controls__button preview-controls__button--breakout" rel="noreferrer">Breakout</a></li>
         </ul>
         <button class="preview-controls__exit preview-controls__button" onClick={() => setPreviewLayout('desktop')}>Exit</button>
       </nav>,
@@ -342,7 +355,7 @@ export function Dashboard({ adapter, children, root }: { adapter: DataAdapter | 
     <article class="vapid-preview" id="preview-container">
       <div id="preview-device" class="device">
         <div class="device-frame">
-          <iframe src="about:blank" id="vapid-preview" class="vapid-preview__iframe" />
+          <iframe src="about:blank" id="vapid-preview" class="vapid-preview__iframe" sandbox="allow-same-origin allow-scripts" />
         </div>
         <div class="device-stripe" />
         <div class="device-header" />
@@ -350,7 +363,7 @@ export function Dashboard({ adapter, children, root }: { adapter: DataAdapter | 
         <div class="device-btns" />
         <div class="device-power" />
       </div>
-      <iframe src="about:blank" id="vapid-preview-scratch" class="vapid-preview__scratch-iframe" />
+      <iframe src="about:blank" id="vapid-preview-scratch" class="vapid-preview__scratch-iframe" sandbox="allow-same-origin allow-scripts" />
     </article>
   </>;
 }

@@ -1,8 +1,11 @@
-import { Helper,NeutrinoValue } from '@neutrino/core';
+import { Helper,NeutrinoValue, SafeString } from '@neutrino/core';
 
 export default class OrHelper extends Helper {
   render(params: NeutrinoValue[]) {
-    for (const condition of params) {
+    for (let condition of params) {
+      if (`${condition}`.startsWith('data:')) { condition = false; }
+      if (condition instanceof SafeString) { condition = condition.toString(); }
+      if (Array.isArray(condition) && !condition.length) { condition = false; }
       if (condition) { return condition; }
     }
     return false;

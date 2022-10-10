@@ -70,7 +70,8 @@
   position: fixed;
   bottom: 0;
   right: 0;
-  background: white;
+  background: var(--red);
+  color: white;
   opacity: 0;
   transition: opacity .28s ease-in-out;
   margin: 0;
@@ -83,6 +84,11 @@
   will-change: opacity;
   contain: strict;
   pointer-events: none;
+}
+
+.preview-controls__button.preview-controls__exit:hover, 
+.preview-controls__button.preview-controls__exit:focus { 
+  color: white !important; 
 }
 
 .preview-controls__exit::before {
@@ -130,4 +136,13 @@
   top: 0;
   right: 0;
   border-width: 0;
+}
+
+.dashboard__loading {
+  color: var(--blue-3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 38rem;
+  height: 100vh;
 }

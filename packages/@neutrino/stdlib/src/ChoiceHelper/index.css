@@ -58,8 +58,10 @@
   opacity: 0 !important;
   outline: none;
   z-index: 3;
-  width: 17px;
-  height: 17px;
+  width: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
 }
 
 /*--------------
@@ -700,18 +702,15 @@
 
 }
 
-.react-tags__selected:empty {
-  display: none;
-}
-
 .react-tags__selected {
   display: inline;
+  margin-top: 0.4rem;
 }
 
 .react-tags__selected-tag {
   display: inline-block;
   box-sizing: border-box;
-  margin: 0 6px 6px 0;
+  margin: 0rem 0.4rem 0.4rem 0;
   padding: 6px 8px;
   border: 1px solid var(--slate-2);
   border-radius: 2px;

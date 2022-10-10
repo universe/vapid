@@ -7,3 +7,4 @@ assets/dashboard/javascripts
 .parcel-cache
 firebase-debug.log
 firestore-debug.log
+yarn-error.log

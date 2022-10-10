@@ -1,4 +1,5 @@
 import { IProvider, IRecord, ITemplate, PageType, Template } from '@neutrino/core';
+import { IWebsiteMeta } from '@neutrino/runtime'; 
 import { md5 } from '@universe/util';
 import { deleteApp, FirebaseApp, FirebaseOptions,initializeApp } from 'firebase/app';
 import { Auth, connectAuthEmulator, getAuth, signInWithCustomToken, signInWithEmailAndPassword, User } from 'firebase/auth';
@@ -24,13 +25,25 @@ import pino from 'pino';
 
 const logger = pino();
 const ENV = globalThis?.process?.env || {};
+const DEFAULT_STORAGE_ROOT = 'uploads';
+
+export interface FireBaseStorageConfig {
+  root?: string;
+}
+
+export interface FireBaseFirestoreConfig {
+  scope?: string;
+}
 
 export interface FireBaseProviderConfig {
   type: 'firebase';
+  app?: FirebaseApp | null;
   projectId?: string;
   config?: FirebaseOptions;
-  scope?: string;
-  app?: FirebaseApp | null;
+  firestore?: FireBaseFirestoreConfig;
+  storage?: FireBaseStorageConfig;
+  username?: string;
+  password?: string;
 }
 
 function normalizeDocument(doc: DocumentSnapshot<DocumentData> | undefined | null): IRecord | null {
@@ -48,8 +61,8 @@ function normalizeTemplate(doc: DocumentSnapshot<DocumentData> | undefined | nul
 
 export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> {
   private getFirebasePrefix() {
-    logger.info(this.config.database.scope || `websites/${this.config.domain || 'default'}`);
-    return this.config.database.scope || `websites/${this.config.domain || 'default'}`;
+    logger.info(this.config.database?.firestore?.scope || `websites/${this.config.domain || 'default'}`);
+    return this.config.database?.firestore?.scope || `websites/${this.config.domain || 'default'}`;
   }
   private getTemplatesPath() { return `${this.getFirebasePrefix()}/templates`; }
   private getRecordsPath() { return `${this.getFirebasePrefix()}/records`; }
@@ -98,12 +111,12 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
         try {
           config = await (await fetch(configPath)).json() as FirebaseOptions;
         }
-        catch {
+        catch (err) {
+          console.error(err);
           throw new Error(`Error fetching Firebase app config from projectId (${configPath}).`);
         }
       }
       if (!config) { throw new Error('Firebase app config is required.'); }
-  
       logger.info(`Initializing Firebase App`);
       this.#firebase = initializeApp(config, `vapid-${Math.floor(Math.random() * 100000)}`);
     }
@@ -115,6 +128,10 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
       connectAuthEmulator(this.#auth, `http://${ENV.FIREBASE_AUTH_EMULATOR_HOST}`);
     }
     logger.info(`Firebase Provider Started`);
+
+    if (dbConfig.username && dbConfig.password) {
+      await this.signIn(dbConfig.username, dbConfig.password);
+    }
   }
 
   currentUser(): User | null {
@@ -140,7 +157,7 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     try {
       this.#firebase && await deleteApp(this.#firebase);
     }
- catch {
+    catch {
       logger.error(`App Already Deleted`);
     }
   }
@@ -163,9 +180,14 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     return data.docs.map(doc => normalizeTemplate(doc)).filter(Boolean) as ITemplate[];
   }
 
+  async getMetadata(): Promise<IWebsiteMeta> {
+    const db = this.getDatabase();
+    const data = await getDoc(doc(db, this.getFirebasePrefix()));
+    return (data.data() || { name: this.config.name, domain: this.config.domain, media: this.config.domain }) as IWebsiteMeta;
+  }
+
   async getAllRecords(): Promise<IRecord[]> {
     const db = this.getDatabase();
-    console.log(this.getRecordsPath());
     const data = await getDocs(collection(db, this.getRecordsPath()));
     return data.docs.map(doc => normalizeDocument(doc)).filter(Boolean) as IRecord[];
   }
@@ -238,20 +260,23 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
    * Update a section's attributes
    * Primarily used by the Vapid module when rebuilding the site
    */
-  async updateRecord(update: IRecord): Promise<IRecord> {
+  async updateRecord(update: IRecord, type?: PageType): Promise<IRecord> {
     const db = this.getDatabase();
-    const template = await this.getTemplateById(update.templateId);
-    if (!template) {
-      try {
-        throw new Error(`Error creating record. Unknown template id "${update.templateId}"`);
+    if (!type) {
+      const template = await this.getTemplateById(update.templateId);
+      if (!template) {
+        try {
+          throw new Error(`Error creating record. Unknown template id "${update.templateId}"`);
+        }
+        catch (err) {
+          logger.error(err);
+          throw err;
+        }
       }
-      catch (err) {
-        logger.error(err);
-        throw err;
-      }
+      type = template.type;
     }
 
-    await setDoc(doc(db, `${this.getRecordsPath()}/${update.id}`), { ...update, _type: template.type });
+    await setDoc(doc(db, `${this.getRecordsPath()}/${update.id}`), { ...update, _type: type });
     return update;
   }
 
@@ -273,8 +298,7 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     const storage = this.getStorage();
     const ext = name.split('.').pop();
     const hash = md5(file.toString());
-    const fileRef = ref(storage, `uploads/${hash}`);
-    console.log('upload', hash, mime.getType(ext || ''), fileRef);
+    const fileRef = ref(storage, `${this.config?.database?.storage?.root || DEFAULT_STORAGE_ROOT}/${hash}`);
     const uploadTask = uploadBytesResumable(fileRef, file, { contentType: mime.getType(ext || '') || 'application/octet-stream' });
 
     // Listen for state changes, errors, and completion of the upload.
@@ -299,7 +323,7 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
           // https://firebase.google.com/docs/storage/web/handle-errors
           reject(error.code);
         },
-        () => resolve(`uploads/${hash}`),
+        () => resolve(`${this.config?.database?.storage?.root || DEFAULT_STORAGE_ROOT}/${hash}`),
       );
     });
   }

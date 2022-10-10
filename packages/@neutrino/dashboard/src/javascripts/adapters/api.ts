@@ -4,29 +4,34 @@ import type { IWebsite } from '@neutrino/runtime';
 import { DataAdapter, SortableUpdate } from "./types";
 
 export default class APIAdapter extends DataAdapter {
-  private csrf = 'REPLACE_ME';
-  private API_URL = 'http://localhost:1776';
+  private API_URL = import.meta.env.API_URL;
 
   constructor(url?: string) {
     super();
     this.API_URL = url || this.API_URL;
   }
 
+  getDomain(): string {
+    return '';
+  }
+
   async getSiteData(): Promise<IWebsite> {
     return (await fetch(`${this.API_URL}/api/data`, {
       method: 'GET',
       headers: {
-        'x-csrf-token': this.csrf,
         'Content-Type': 'application/json',
       },
     })).json() as Promise<IWebsite>;
+  }
+
+  async getAllRecords(): Promise<Record<string, IRecord>> {
+    return {};
   }
 
   async updateRecord(record: IRecord): Promise<IRecord> {
     const res = await window.fetch(`${this.API_URL}/api/record`, {
       method: 'POST',
       headers: {
-        'x-csrf-token': this.csrf,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(record),
@@ -40,13 +45,12 @@ export default class APIAdapter extends DataAdapter {
       await window.fetch(`${this.API_URL}/api/reorder`, {
         method: 'POST',
         headers: {
-          'x-csrf-token': this.csrf,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(update),
       });
     }
- catch {
+    catch {
       alert('Error: could not reorder records');
     }
   }
@@ -55,7 +59,6 @@ export default class APIAdapter extends DataAdapter {
     const res = await window.fetch(`${this.API_URL}/api/record`, {
       method: 'DELETE',
       headers: {
-        'x-csrf-token': this.csrf,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(record),
@@ -78,4 +81,6 @@ export default class APIAdapter extends DataAdapter {
     if (res.status !== 'success') { throw new Error(res.message); }
     return res.data;
   }
+
+  async deploy() { 1; }
 }

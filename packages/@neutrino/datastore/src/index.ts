@@ -1,4 +1,4 @@
-import { IProvider, IRecord,ITemplate, PageType, Record, Template } from '@neutrino/core';
+import { IProvider, IRecord,ITemplate, IWebsiteMeta,PageType, Record, Template } from '@neutrino/core';
 
 declare global {
   /* eslint-disable-next-line @typescript-eslint/no-namespace */
@@ -28,6 +28,7 @@ export default class Database<T extends { type: string; } = { type: string; }> e
     this.provider = provider;
   }
 
+  getMetadata(): Promise<IWebsiteMeta> { return this.provider.getMetadata(); }
   getAllTemplates(): Promise<ITemplate[]> { return this.provider.getAllTemplates(); }
   getAllRecords(): Promise<IRecord[]> { return this.provider.getAllRecords(); }
   getTemplateById(id: string): Promise<ITemplate | null> { return this.provider.getTemplateById(id); }

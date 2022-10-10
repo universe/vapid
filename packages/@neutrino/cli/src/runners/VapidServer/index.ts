@@ -51,9 +51,6 @@ export default class VapidServer extends Vapid {
     const db = this.database;
 
     app.setErrorHandler(async(error, _request, _reply) => ({ status: error.code || 500, title: error.message, message: error.message, stack: error.stack }));
-    app.addHook('onSend', async(_req, _res, payload) => {
-      return payload;
-    });
 
     app.register(favicon, { path: this.paths.www });
     app.register(helmet, { contentSecurityPolicy: false, frameguard: false });
@@ -266,38 +263,15 @@ export default class VapidServer extends Vapid {
     this.database.stop();
   }
 
-  private async getSiteData() {
-    const templates: ITemplate[] = await this.database.getAllTemplates();
-    const records: IRecord[] = await this.database.getAllRecords();
+  private async getSiteData(): Promise<IWebsite> {
     const siteData: IWebsite = {
       meta: {
         name: this.config.name,
         domain: this.config.domain,
         media: await this.database.mediaUrl(),
       },
-      records: {},
-      hbs: {
-        pages: {},
-        templates: {},
-        components: {},
-        stylesheets: {},
-      },
+      hbs: await this.compiler.parse(this.paths.www),
     };
-
-    for (const record of records) {
-      siteData.records[record.id] = record;
-    }
-
-    const tree = await this.compiler.parse(this.paths.www);
-    for (const template of templates) {
-      const id = Template.id(template);
-      siteData.hbs.templates[Template.id(template)] = template;
-      const parsed = tree[id];
-      if (!parsed) { continue; }
-      siteData.hbs.pages[id] = { name: parsed.name, type: parsed.type, ast: parsed.ast };
-      siteData.hbs.components = { ...siteData.hbs.components, ...parsed.components };
-      siteData.hbs.stylesheets = { ...siteData.hbs.stylesheets, ...parsed.stylesheets };
-    }
 
     fs.writeFileSync('./site.json', JSON.stringify(siteData));
     return siteData;
@@ -307,20 +281,25 @@ export default class VapidServer extends Vapid {
    * Parses templates and updates the database
    */
    private async rebuild(): Promise<void> {
-    const tree = await this.compiler.parse(this.paths.www);
-    const templates: { [templateId: string]: ITemplate } = {};
-    const saves: Promise<ITemplate>[] = [];
-    // Update every template in our database.
-    // TODO: Only save templates that have changes.
-    for (const ctx of Object.values(tree) as IParsedTemplate[]) {
-      for (const template of Object.values(ctx.templates)) {
-        const id = Template.id(template);
-        if (templates[id]) { continue; }
-        templates[id] = template;
-        saves.push(this.database.updateTemplate(template));
+    try {
+      const tree = await this.compiler.parse(this.paths.www);
+      const templates: { [templateId: string]: ITemplate } = {};
+      const saves: Promise<ITemplate>[] = [];
+      // Update every template in our database.
+      // TODO: Only save templates that have changes.
+      for (const ctx of Object.values(tree) as IParsedTemplate[]) {
+        for (const template of Object.values(ctx.templates || {})) {
+          const id = Template.id(template);
+          if (templates[id]) { continue; }
+          templates[id] = template;
+          saves.push(this.database.updateTemplate(template));
+        }
       }
+      await Promise.all(saves);
     }
-
-    await Promise.all(saves);
+ catch (err) {
+      console.error(err);
+      this.watcher?.broadcast({ command: 'error', data: err });
+    }
   }
 }

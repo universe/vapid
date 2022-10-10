@@ -6,6 +6,10 @@ import { QuillHr, QuillHrBindings } from 'quill-hr';
 import { QuillImage, QuillImageBindings } from 'quill-image';
 import { QuillVideo, QuillVideoBindings } from 'quill-video-embed';
 
+const Font = Quill.import('formats/font');
+Font.whitelist = [ 'sans', 'serif', 'monospace' ];
+Quill.register(Font, true);
+
 let prefix = '';
 const imgBlot = new QuillImage(Quill, {
   handler: async(id: string, base64: string, type?: string) => {
@@ -67,9 +71,10 @@ const bindings = Object.assign(
 );
 
 const options = {
+  readOnly: true,
   modules: {
     toolbar: [
-      [{ font: [] }],
+      [{ font: [ 'sans', 'serif', 'monospace' ] }],
       [{ header: [ 1, 2, 3, 4, 5, 6, false ] }],
       [{ color: [
         'var(--primary-1)', 'var(--cta-1)','var(--gray-1)', undefined, undefined, undefined, undefined,
@@ -80,7 +85,7 @@ const options = {
       [{ align: [] }, { list: 'ordered' }, { list: 'bullet' }],
     ],
     clipboard: {
-      matchVisual: false,
+      matchVisual: true,
     },
     keyboard: {
       bindings,

@@ -1,6 +1,43 @@
-import { DirectiveProps,ValueHelper } from '@neutrino/core';
+import { DirectiveOptions, DirectiveProps,ValueHelper } from '@neutrino/core';
 
 const LOCALE = 'en-us';
+
+function formatDate(type: 'datetime' | 'time' | string, value: number, options: DateHelperOptions): string {
+  const date = new Date(value);
+  const commonOptions = {
+    localeMatcher: options.localeMatcher || undefined,
+    timeZoneName: options.timeZoneName || undefined,
+    timeZone: options.timeZone || undefined,
+    formatMatcher: options.formatMatcher || undefined,
+  };
+
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    weekday: options.weekday || 'long',
+    era: options.era || undefined,
+    year: options.year || 'numeric',
+    month: options.month || 'long',
+    day: options.day || 'numeric',
+  };
+
+  const timeOptions = {
+    hour: options.hour || '2-digit',
+    minute: options.minute || '2-digit',
+    second: options.second || undefined,
+    hour12: options.hour12 || undefined,
+  };
+
+  // toLocale*String can error if the options are invalid. Catch this so things still render even if something goes wrong.
+  try {
+    switch (type) {
+      case 'datetime': return date.toLocaleString(LOCALE, { ...commonOptions, ...dateOptions, ...timeOptions });
+      case 'time': return date.toLocaleTimeString(LOCALE, { ...commonOptions, ...timeOptions });
+      default: return date.toLocaleDateString(LOCALE, { ...commonOptions, ...dateOptions });
+    }
+  }
+  catch {
+    return 'Invalid Date';
+  }
+}
 
 interface DateHelperOptions extends Intl.DateTimeFormatOptions {
   time: boolean;
@@ -70,36 +107,10 @@ export default class DateHelper extends ValueHelper<number, DateHelperOptions> {
    * @return {string} formatted date
    */
   async data(value: number) {
-    const date = new Date(value);
-    const commonOptions = {
-      localeMatcher: this.options.localeMatcher || undefined,
-      timeZoneName: this.options.timeZoneName || undefined,
-      timeZone: this.options.timeZone || undefined,
-      formatMatcher: this.options.formatMatcher || undefined,
-    };
-
-    const dateOptions: Intl.DateTimeFormatOptions = {
-      weekday: this.options.weekday || 'long',
-      era: this.options.era || undefined,
-      year: this.options.year || 'numeric',
-      month: this.options.month || 'long',
-      day: this.options.day || 'numeric',
-    };
-
-    const timeOptions = {
-      hour: this.options.hour || '2-digit',
-      minute: this.options.minute || '2-digit',
-      second: this.options.second || undefined,
-      hour12: this.options.hour12 || undefined,
-    };
-
-    switch (this.options.type) {
-      case 'datetime': return date.toLocaleString(LOCALE, { ...commonOptions, ...dateOptions, ...timeOptions });
-      case 'time': return date.toLocaleTimeString(LOCALE, { ...commonOptions, ...timeOptions });
-      default: return date.toLocaleDateString(LOCALE, { ...commonOptions, ...dateOptions });
-    }
+    return formatDate(this.options?.type || 'date', value, this.options);
   }
-  render([value]: [string]) {
-    return value || '';
+
+  render([value]: [number], options: DirectiveOptions & DateHelperOptions) {
+    return formatDate(options?.type || 'date', value, options);
   }
 }

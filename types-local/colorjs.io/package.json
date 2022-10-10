@@ -1,0 +1,7 @@
+{
+  "dependencies": {},
+  "description": "TypeScript definitions for colorjs.io",
+  "name": "@types/colorjs.io",
+  "typings": "index.d.ts",
+  "version": "0.0.0"
+}

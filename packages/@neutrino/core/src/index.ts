@@ -1,4 +1,4 @@
-import { IRecord, ITemplate, PageType } from './types.js';
+import { IRecord, ITemplate, IWebsiteMeta,PageType } from './types.js';
 
 export * from './helpers.js';
 export * from './models/index.js';
@@ -18,6 +18,7 @@ export abstract class IProvider<DatabaseConfig extends { type: string } = { type
   abstract start(): Promise<void>;
   abstract stop(): Promise<void>;
 
+  abstract getMetadata(): Promise<IWebsiteMeta>;
   abstract getAllTemplates(): Promise<ITemplate[]>;
   abstract getAllRecords(): Promise<IRecord[]>;
 

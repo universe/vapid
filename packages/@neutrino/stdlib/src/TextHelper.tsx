@@ -37,7 +37,7 @@ export default class TextHelper extends ValueHelper<string, TextHelperOptions> {
         {...attrs}
         name={name}
         aria-describedby={`help-${name}`}
-        onChange={evt => { const el = evt.target as HTMLTextAreaElement; autoExpand(el); directive.update(el.value); }}
+        onInput={evt => { const el = evt.target as HTMLTextAreaElement; autoExpand(el); directive.update(el.value); }}
         ref={current => autoExpand(current)}
       >{value}</textarea>;
     }
@@ -48,7 +48,7 @@ export default class TextHelper extends ValueHelper<string, TextHelperOptions> {
       name={name}
       aria-describedby={`help-${name}`}
       value={value}
-      onChange={evt => directive.update((evt.target as HTMLInputElement).value)}
+      onInput={evt => directive.update((evt.target as HTMLInputElement).value)}
     />;
   }
 }

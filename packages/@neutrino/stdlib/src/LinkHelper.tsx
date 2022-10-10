@@ -34,7 +34,7 @@ export default class LinkHelper extends ValueHelper<ILinkValue> {
    * @param {string} [value=this.options.default]
    * @return rendered input
    */
-   input({ name, value, directive }: DirectiveProps<ILinkValue, this>) {
+   input({ name, value = this.default, directive }: DirectiveProps<ILinkValue, this>) {
     value = JSON.parse(JSON.stringify(value));
     let namePlaceholder = value?.url || '';
     let selectedPage = null;
@@ -78,7 +78,7 @@ export default class LinkHelper extends ValueHelper<ILinkValue> {
           unfurled = host ? (cache.get(host) || await (await window.fetch(`/api/unfurl/${host}`)).json()) : null;
           if (unfurled) { cache.set(host, unfurled); }
         }
- catch (err) { console.error(`Error requesting website metadata for ${url}`, err); }
+        catch (err) { console.error(`Error requesting website metadata for ${url}`, err); }
 
         directive.update({
           url,

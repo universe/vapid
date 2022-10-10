@@ -41,6 +41,6 @@
     "traceResolution": false,
     "module": "esnext",
     "esModuleInterop": true,
-    "isolatedModules": true
+    "isolatedModules": false
   }
 }

@@ -2,7 +2,6 @@ import { TemplateCompiler } from '@neutrino/compiler';
 import { IRecord, IRecordData, NAVIGATION_GROUP_ID, PageType, Record as DBRecord, RECORD_META, SerializedRecord,sortRecords, Template, VapidSettings } from '@neutrino/core';
 import Database, { DatabaseConfig, FireBaseProvider, FireBaseProviderConfig, MemoryProvider, MemoryProviderConfig } from '@neutrino/datastore';
 import { IPageContext,IParsedTemplate, resolveHelper } from '@neutrino/runtime';
-import { Json } from '@universe/util';
 import dotenv from 'dotenv';
 import { mkdirSync,readFileSync } from 'fs';
 import { join,resolve } from 'path';
@@ -130,6 +129,7 @@ export class Vapid {
 
     // Create our page context data.
     const content = { this: await makeRecordData(record, 'content', this.database) };
+    const collection: Record<string, IRecordData[]> = {};
 
     /* eslint-disable no-await-in-loop */
     for (const model of Object.values(tmpl.templates)) {
@@ -139,11 +139,11 @@ export class Vapid {
       const records = template ? await this.database.getRecordsByTemplateId(Template.id(template)) : [];
 
       if (model.type === PageType.COLLECTION) {
-        const collection: Json[] = content[model.name] = [];
+        const collectionList: IRecordData[] = content[model.name] = [];
         for (const record of records) {
-          collection.push(await makeRecordData(record, 'content', this.database));
+          collectionList.push(await makeRecordData(record, 'content', this.database));
         }
-        content[model.name] = collection;
+        collection[model.name] = collectionList;
       }
       else {
         // TODO: Create stub record if none exist yet.
@@ -152,10 +152,12 @@ export class Vapid {
     }
 
     return {
+      env: { isProd: true, isDev: false },
       content,
       meta: await makeRecordData(record, 'metadata', this.database),
       page: content.this[RECORD_META],
       pages: pageMeta,
+      collection,
       navigation,
       site: {
         name: this.config.name,

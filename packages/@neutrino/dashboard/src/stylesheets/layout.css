@@ -35,6 +35,10 @@ body.dashboard > div {
   color: var(--red-3);
 }
 
+.vapid-nav--new + .form .collection__new { 
+  display: none; 
+}
+
 .vapid-nav .button.vapid-nav__settings {
   color: transparent;
   background: transparent;

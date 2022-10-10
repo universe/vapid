@@ -1,11 +1,15 @@
 export { default as and } from './AndHelper.js';
+export { default as arr } from './ArrayHelper.js';
 export { default as choice } from './ChoiceHelper/index.js';
 export { default as collate } from './CollateHelper.js';
 export { default as collection } from './CollectionHelper.js';
 export { default as color } from './ColorHelper/index.js';
+export { default as count } from './CountHelper.js';
 export { default as date } from './DateHelper.js';
+export { default as docs } from './DocsHelper.js';
 export { default as each } from './EachHelper.js';
 export { default as eq } from './EqHelper.js';
+export { default as font } from './FontHelper/index.js';
 export { default as html } from './HtmlHelper/index.js';
 export { default as if } from './IfHelper.js';
 export { default as image } from './ImageHelper/index.js';
