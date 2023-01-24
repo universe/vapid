@@ -93,7 +93,7 @@
     "strftime": "^0.10.0",
     "style-loader": "^0.20.3",
     "tmp": "^0.0.33",
-    "tui-image-editor": "^3.9.0",
+    "tui-image-editor": "^3.15.3",
     "turbolinks": "^5.2.0",
     "umzug": "^2.1.0",
     "unfurl.js": "^1.1.6",

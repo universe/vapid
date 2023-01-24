@@ -2172,11 +2172,6 @@ core-async@0.0.5:
   dependencies:
     co "^4.6.0"
 
-core-js-pure@^3.6.4:
-  version "3.6.5"
-  resolved "https://registry.yarnpkg.com/core-js-pure/-/core-js-pure-3.6.5.tgz#c79e75f5e38dbc85a662d91eea52b8256d53b813"
-  integrity sha512-lacdXOimsiD0QyNf9BC/mxivNJ/ybBGJXQFKzRekp1WTHoVUWsUHEn+2T8GJAzzIhyOuXA+gOxCVN3l+5PLPUA==
-
 core-util-is@1.0.2, core-util-is@^1.0.2, core-util-is@~1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/core-util-is/-/core-util-is-1.0.2.tgz#b5fd54220aa2bc5ab57aab7140c940754503c1a7"
@@ -3545,13 +3540,13 @@ extsprintf@^1.2.0:
   resolved "https://registry.yarnpkg.com/extsprintf/-/extsprintf-1.4.0.tgz#e2689f8f356fad62cca65a3a91c5df5f9551692f"
   integrity sha1-4mifjzVvrWLMplo6kcXfX5VRaS8=
 
-fabric@3.6.0:
-  version "3.6.0"
-  resolved "https://registry.yarnpkg.com/fabric/-/fabric-3.6.0.tgz#900a2b3033146a1d6224dac7bdf8a8fcae3a854b"
-  integrity sha512-m4EY3PIbucBo0yHYfzufLM6eWOZWfzjcWmZeoDYkUMQNXcF9yWNDOeyYQf9T54tmcipkjVJiijgJODVt2t9rnw==
+fabric@^4.2.0:
+  version "4.6.0"
+  resolved "https://registry.yarnpkg.com/fabric/-/fabric-4.6.0.tgz#bd11c2baf165db2c97e4d05740d931586cb26bbb"
+  integrity sha512-MhJXCD/ZugOGV5aPHIG0MY1q2EfrlzC2sasrAHj0HHXN50JTe1bHFrlRdkXBijCJ0dG81fGu/A/Pct9DyuwCzQ==
   optionalDependencies:
     canvas "^2.6.1"
-    jsdom "^15.1.0"
+    jsdom "^15.2.1"
 
 faker@^4.1.0:
   version "4.1.0"
@@ -5749,7 +5744,7 @@ jsdom@^11.5.1:
     ws "^5.2.0"
     xml-name-validator "^3.0.0"
 
-jsdom@^15.1.0:
+jsdom@^15.2.1:
   version "15.2.1"
   resolved "https://registry.yarnpkg.com/jsdom/-/jsdom-15.2.1.tgz#d2feb1aef7183f86be521b8c6833ff5296d07ec5"
   integrity sha512-fAl1W0/7T2G5vURSyxBzrJ1LSdQn6Tr5UX/xD4PXDx/PDgwygedfW6El/KIj3xJ7FU61TTYnc/l/B7P49Eqt6g==
@@ -9907,15 +9902,15 @@ tty-browserify@0.0.0:
   resolved "https://registry.yarnpkg.com/tty-browserify/-/tty-browserify-0.0.0.tgz#a157ba402da24e9bf957f9aa69d524eed42901a6"
   integrity sha1-oVe6QC2iTpv5V/mqadUk7tQpAaY=
 
-tui-code-snippet@^1.5.0:
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/tui-code-snippet/-/tui-code-snippet-1.5.2.tgz#f4b8f0f1ac996b0b5b621f77c9507af19a0de238"
-  integrity sha512-6UqTlQaaC1KLcmC0HAoq5dtl1G4Fib+R+NC7pmaV7kiIlZ7JqKhUmnOoGRcreAyzd81UTK/vCvhrw9QJskpCFQ==
-
 tui-code-snippet@^2.2.0:
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/tui-code-snippet/-/tui-code-snippet-2.3.2.tgz#39eb3ce46ea92043b3244f155797248535880c5d"
   integrity sha512-6jGbM/m7A2L59lJSripwMVp87awrWgJXezlLV8GuAha3s0k01E4+MndoU5WlXd4dauVRgzHhKguTVslx/jMehw==
+
+tui-code-snippet@^2.3.3:
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/tui-code-snippet/-/tui-code-snippet-2.3.3.tgz#87e2e31a6396a1ea1ae0f401fd84833a9bca8535"
+  integrity sha512-5NEHTDFKillDNPy6MCgpXDNBTB7SZkHBFOF6vXfCDIFZcBdFYFXTd2xvAVvIeM3UYFRWu27xUf/Kxl5f9+RooQ==
 
 tui-color-picker@^2.2.6:
   version "2.2.6"
@@ -9924,14 +9919,13 @@ tui-color-picker@^2.2.6:
   dependencies:
     tui-code-snippet "^2.2.0"
 
-tui-image-editor@^3.9.0:
-  version "3.10.0"
-  resolved "https://registry.yarnpkg.com/tui-image-editor/-/tui-image-editor-3.10.0.tgz#27830101f5d5e3a72c5f36a58260adae64ea157b"
-  integrity sha512-euc5gmZn4LJgzkZAdhsFw/1fiq1Ts1PCKaAa6P2l1w8IkjaEaJB0p7VoVQheyLTMG4MzT/+z9fFl37MG0iyQGw==
+tui-image-editor@^3.15.3:
+  version "3.15.3"
+  resolved "https://registry.yarnpkg.com/tui-image-editor/-/tui-image-editor-3.15.3.tgz#b016c53de5ed11c0ed4a91604a868e7964d1b431"
+  integrity sha512-7B5YUxe2eSSh+8YrlREmjqkgeFFKrVkdy0D/G0dWCJIQ2WLPQ/Bkm02WXQeWJiFPzgvargZjn7eAe80p3qBHPQ==
   dependencies:
-    core-js-pure "^3.6.4"
-    fabric "3.6.0"
-    tui-code-snippet "^1.5.0"
+    fabric "^4.2.0"
+    tui-code-snippet "^2.3.3"
     tui-color-picker "^2.2.6"
 
 tunnel-agent@^0.6.0:
