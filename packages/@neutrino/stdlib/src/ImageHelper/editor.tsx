@@ -1,10 +1,11 @@
-import ImageEditor from 'tui-image-editor';
+import type ImageEditor from 'tui-image-editor';
 
 // TODO: Add instagram like filters somehow
 // https://una.im/CSSgram/
 // http://camanjs.com/guides/#BasicUsage
 let imageEditor: ImageEditor | null = null;
 async function ensureEditor(path: string) {
+  const { default: ImageEditor } = await import('tui-image-editor');
   if (imageEditor) {
     await imageEditor.loadImageFromURL(path, 'image');
     return imageEditor;

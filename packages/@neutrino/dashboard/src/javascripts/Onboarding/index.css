@@ -22,7 +22,7 @@
   transition: opacity .18s ease-in-out, visibility .18s ease-in-out;
 }
 
-.onboarding .pallette {
+.onboarding .palette {
   width: 100%;
   margin: 0;
 
@@ -92,6 +92,23 @@
 
 .onboarding__login .login-form {
   width: 48rem;
+  max-width: unset;
+}
+
+.login-form .login-form__input, .login-form__code-block {
+  border: none !important;
+}
+
+.text-input__input+.text-input__label:before {
+  height: 3px !important;
+}
+
+.login-form__code-block .login-form__code-input {
+  font-family: var(--serif) !important;
+}
+
+.login-form__label, .login-form__code .login-form__label {
+  letter-spacing: 0.2px !important;
 }
 
 .onboarding__step {
@@ -425,29 +442,29 @@ input:checked + .onboarding__theme-button, .onboarding__theme-button:hover, .onb
   align-items: center;
 }
 
-.onboarding__pallette-suggestions {
+.onboarding__palette-suggestions {
   display: flex;
   justify-content: flex-start;
   align-items: center;
   flex-flow: row;
   list-style: none;
-  margin: 0.8rem 0;
+  margin: 1.8rem 0;
 }
 
-.onboarding__pallette-square {
+.onboarding__palette-square {
   width: 3.2rem;
   height: 3.2rem;
   display: inline-block;
   cursor: pointer;
 }
 
-.onboarding__pallette-label {
+.onboarding__palette-label {
   width: 8.2rem;
   font-weight: bold;
   color: var(--slate-2);
 }
 
-.onboarding__pallette-auto {
+.onboarding__palette-auto {
   width: 3.2rem;
   height: 3.2rem;
   display: inline-block;

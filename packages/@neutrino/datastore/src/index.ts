@@ -1,4 +1,4 @@
-import { IProvider, IRecord,ITemplate, IWebsiteMeta,PageType, Record, Template } from '@neutrino/core';
+import { IProvider, IRecord, ITemplate, IWebsiteMeta,PageType, Record, Template,UploadResult } from '@neutrino/core';
 
 declare global {
   /* eslint-disable-next-line @typescript-eslint/no-namespace */
@@ -44,7 +44,13 @@ export default class Database<T extends { type: string; } = { type: string; }> e
   deleteTemplate(templateId: string): Promise<void> { return this.provider.deleteTemplate(templateId); }
   deleteRecord(recordId: string): Promise<void> { return this.provider.deleteRecord(recordId); }
   mediaUrl(name?: string): Promise<string> { return this.provider.mediaUrl(name); }
-  saveFile(name: string, file: Uint8Array): Promise<string | null> { return this.provider.saveFile(name, file); }
+  
+  saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
+  saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
+  /* eslint-disable-next-line require-yield */
+  async * saveFile(_file: File | string, _type?: string, _name?: string): AsyncIterableIterator<UploadResult> {
+    return { status: 'error', message: 'No file handler provided.' };
+  }
 
   async start() {
     await this.provider.start();

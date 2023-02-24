@@ -10,11 +10,9 @@ const Font = Quill.import('formats/font');
 Font.whitelist = [ 'sans', 'serif', 'monospace' ];
 Quill.register(Font, true);
 
-let prefix = '';
 const imgBlot = new QuillImage(Quill, {
-  handler: async(id: string, base64: string, type?: string) => {
-    const data = await Helper.emitFile(id, base64, type);
-    return `${prefix}/${data.file.src}`;
+  handler: async(file: File | string, type?: string, name?: string) => {
+    return Helper.emitFile(file as string, type as string, name as string);
   },
 });
 const hrBlot = new QuillHr(Quill);
@@ -95,9 +93,8 @@ const options = {
 };
 
 class UniverseQuill extends Quill {
-  constructor(root: Element, options: QuillOptionsStatic, universeOptions: { media: string; }) {
+  constructor(root: Element, options: QuillOptionsStatic) {
     super(root, options);
-    prefix = universeOptions.media;
     this.resetSelection = this.resetSelection.bind(this);
   }
   hrBlot = hrBlot;

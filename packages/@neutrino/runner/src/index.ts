@@ -163,6 +163,10 @@ export class Vapid {
         name: this.config.name,
         domain: this.config.domain,
         media: await this.database.mediaUrl(),
+        theme: {
+          name: '',
+          version: '',
+        },
       },
     };
   }

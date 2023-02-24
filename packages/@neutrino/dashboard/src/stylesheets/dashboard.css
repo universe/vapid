@@ -165,6 +165,42 @@ body {
   right: 1.2rem;
 }
 
+.image-helper__layout {
+  position: absolute;
+  left: 50%;
+  bottom: 0.8rem;
+  transform: translateX(-50%);
+  display: flex;
+  flex-flow: column;
+  justify-content: center;
+  align-items: center;
+  border: none;
+}
+
+
+.image-helper__layout--cover {
+  transform: translateX(calc(-100% - 0.4rem));
+}
+.image-helper__layout--cover::before {
+  content: "\f31e";
+  font-family: 'fontawesome';
+}
+
+.image-helper__layout--contain {
+  transform: translateX(0.4rem);
+}
+
+.image-helper__layout--cover::before {
+  content: "\f31e";
+  content: "\f065";
+  font-family: 'fontawesome';
+}
+.image-helper__layout--contain::before {
+  content: "\f78c";
+  content: "\f066";
+  font-family: 'fontawesome';
+}
+
 .tui-image-editor-header {
   display: none;
 }

@@ -107,7 +107,7 @@ export default class VapidBuilder extends Vapid {
           await this.renderUrl(dest, permalink);
           logger.info([`Rendered: "${permalink}"`]);
         }
- catch (err) {
+        catch (err) {
           console.error(err);
           logger.error([`Error Rendering: "${permalink}"`]);
         }

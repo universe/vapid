@@ -147,7 +147,7 @@ export default class VapidServer extends Vapid {
       }
     };
 
-    app.get('/api/data', async(_req: FastifyRequest, res: FastifyReply) =>  res.code(200).send(await this.getSiteData()));
+    app.get('/api/data/*', async(_req: FastifyRequest, res: FastifyReply) =>  res.code(200).send(await this.getTheme()));
     app.post('/api/record', saveRecord);
     app.delete('/api/record', saveRecord);
 
@@ -227,7 +227,7 @@ export default class VapidServer extends Vapid {
         logger.info(`Unfurled ${JSON.stringify(data)}`);
         res.code(200).send(data);
       }
- catch (err) {
+      catch (err) {
         logger.error(`Error Unfurling ${url}`);
         logger.error(err);
         res.code(500);
@@ -249,7 +249,7 @@ export default class VapidServer extends Vapid {
     // Trigger liveReload when DB changes
     this.watcher.listen(async() => {
       await this.rebuild();
-      this.watcher?.broadcast({ command: 'update', data: await this.getSiteData() });
+      this.watcher?.broadcast({ command: 'update', data: await this.getTheme() });
     });
 
     await app.listen(this.config.port || 3000);
@@ -263,12 +263,16 @@ export default class VapidServer extends Vapid {
     this.database.stop();
   }
 
-  private async getSiteData(): Promise<IWebsite> {
+  private async getTheme(): Promise<IWebsite> {
     const siteData: IWebsite = {
       meta: {
         name: this.config.name,
         domain: this.config.domain,
         media: await this.database.mediaUrl(),
+        theme: {
+          name: this.config.name,
+          version: '0.0.1',
+        },
       },
       hbs: await this.compiler.parse(this.paths.www),
     };

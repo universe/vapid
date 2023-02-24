@@ -1,4 +1,5 @@
-import { IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Template  } from '@neutrino/core';
+import { IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Template, UploadResult } from '@neutrino/core';
+import { uuid } from '@universe/util';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import http from 'http';
@@ -81,7 +82,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
   }
 
   // TODO: Implement.
-  async getMetadata(): Promise<IWebsiteMeta> { return { name: 'Site', domain: '', media: '' }; }
+  async getMetadata(): Promise<IWebsiteMeta> { return { name: 'Site', domain: '', media: '', theme: { name: '', version: '' } }; }
 
   async getAllTemplates(): Promise<ITemplate[]> {
     return [...this.templates.values()];
@@ -207,9 +208,13 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
     return `http://localhost:1991/${name}`.replace(/\/$/, '');
   }
 
-  async saveFile(name: string, file: Uint8Array) {
-    const ext = path.extname(name);
-    const savePath = path.join(this.workingDirectory, name);
+  saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
+  saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
+  async * saveFile(file: File | string, _type?: string, name?: string): AsyncIterableIterator<UploadResult> { 
+    yield { status: 'pending', progress: 0 };
+    const filename = (file instanceof File ? file.name : name) || uuid();
+    const ext = path.extname(filename);
+    const savePath = path.join(this.workingDirectory, filename);
     fs.writeFileSync(savePath, file);
     const hash = await new Promise((resolve, reject) => {
       const hash = crypto.createHash('md5');

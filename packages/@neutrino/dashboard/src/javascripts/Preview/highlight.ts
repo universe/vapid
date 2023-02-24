@@ -177,7 +177,22 @@ export default function highlight() {
   });
 
   document.addEventListener('click', (evt: Event) => {
+    let el: HTMLElement | null = evt.target as HTMLElement;
+    while (el) {
+      if (el.hasAttribute('data-neutrino-interactive')) {
+        return;
+      }
+      el = el.parentElement;
+    }
     evt.preventDefault();
     evt.stopImmediatePropagation();
   });
+
+  const resizeObserver = new ResizeObserver(() => {
+    if (document.body.clientWidth < 600) {
+      const container = document.getElementById('body');
+      container && (container.scrollLeft = document.body.clientWidth);
+    }
+  });
+  resizeObserver.observe(document.body);
 }

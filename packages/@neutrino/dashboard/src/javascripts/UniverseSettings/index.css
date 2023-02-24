@@ -1,15 +1,15 @@
 .universe-settings {
   position: fixed;
-  top: 0.8rem;
+  top: 0;
   left: 38rem;
   width: calc(100vw - 38rem - 0.8rem);
-  height: calc(100vh - 6.6rem);
+  height: 100vh;
   z-index: 99999999999999;
-  background: white;
+  background: rgba(255,255,255,.76);
   border-radius: 0.8rem;
   display: flex;
   flex-flow: column;
-  align-items: flex-start;
+  align-items: center;
   overflow: visible;
   padding: 8.2rem 1.8rem 0;
   opacity: 0;
@@ -28,7 +28,7 @@
   pointer-events: none !important;
 }
 
-.universe-settings::before {
+/* .universe-settings::before {
   content: "";
   width: 100%;
   height: 100%;
@@ -37,9 +37,8 @@
   left: 0;
   z-index: -1;
   background-color: white;
-  border-radius: 0.8rem;
-  border: 2px solid var(--blue-3);
-}
+  border-left: 2px solid black;
+} */
 
 .universe-settings::after {
   content: "";
@@ -49,7 +48,7 @@
   top: 0;
   left: 0;
   z-index: -2;
-  background-color: rgba(0,0,0,.55);
+  background-color: rgba(255,255,255,.85);
   backdrop-filter: blur(3px);
 }
 
@@ -68,6 +67,7 @@
 
 .universe-settings__nav {
   width: 38rem;
+  /* padding-right: 0.4rem; */
   height: 100%;
   position: absolute;
   right: 100%;
@@ -84,30 +84,67 @@
   flex-flow: column;
   justify-content: center;
   align-items: flex-end;
-  padding-right: 0.8rem;
-  padding-bottom: 5.2rem;
+  padding-right: 0.6rem;
+  padding-bottom: 4.8rem;
   color: var(--blue-6);
-  font-size: 2.8rem;
+  font-size: 3.2rem;
   font-weight: 600;
   list-style: none;
-  gap: 0.8rem;
+  gap: 1.4rem;
 }
 
 .universe-settings__menu-link {
-  color: white;
-  padding: 0.8rem 0rem 0.6rem;
+  color: black;
+  padding: 0.8rem 0rem 0.2rem;
   display: block;
   cursor: pointer;
   background-color: transparent;
   border: none;
   font-size: inherit;
-  transition: box-shadow .18s ease-in-out;
-  box-shadow: inset 0 0px 0 0 white;
+  transition: color .18s ease-in-out, text-shadow .18s .18s ease-in-out;
+  box-shadow: inset 0 0px 0 0 black;
+  font-weight: 600;
+  border-radius: 0.8rem;
   user-select: none;
+  border: 8px solid transparent;
+  border-width: 2px 8px;
+  box-sizing: content-box;
+  position: relative;
+  /* text-shadow: 0 3px 0 white, -2px 2px 0 white, 2px 2px 0 white; */
 }
 
-.universe-settings__menu-link:hover, .universe-settings__menu-link--active {
-  box-shadow: inset 0 -4px 0 0 white;
+.universe-settings__menu-link::before {
+  content: "";
+  width: 100%;
+  height: 0px;
+  left: 0;
+  bottom: 0;
+  position: absolute;
+  background-color: var(--blue-3);
+  transition: height .18s ease-in-out, box-shadow .18s ease-in-out, border-radius .18s ease-in-out, transform .18s ease-in-out;
+  z-index: -1;
+  transform: translateY(2px);
+}
+
+.universe-settings__menu-link:hover {
+  color: var(--blue-3);
+}
+
+.universe-settings__menu-link:hover::before {
+  height: 4px;
+}
+
+.universe-settings__menu-link--active {
+  text-shadow: none;
+  color: white !important;
+  transition: text-shadow 0s ease-in-out;
+}
+
+.universe-settings__menu-link--active::before {
+  height: 100% !important;
+  box-shadow: 0 0 0 4px var(--blue-3), -6px 0 0 4px var(--blue-3), 6px 0 0 4px var(--blue-3), 0 2px 2px 4px rgba(0,0,0,.15) !important;
+  border-radius: 0.8rem;
+  transform: translateY(2px);
 }
 
 .universe-settings__section {
@@ -142,28 +179,52 @@
 
 .universe-settings__back {
   position: fixed;
-  top: 1.8rem;
-  left: 38rem;
-  color: white;
+  top: 0.9rem;
+  left: 40rem;
+  width: 4.8rem;
+  height: 4.8rem;
+  color: black;
   background-color: transparent;
   border: none;
-  font-size: 2.4rem;
+  font-weight: bold;
   cursor: pointer;
-  text-shadow: 0 0 10px black;
-  text-shadow: 0 0 32px black;
   transform: translateX(calc(-100% - 1.8rem));
   transition: box-shadow .18s ease-in-out;
   padding: 0.8rem 0 0.6rem;
-  box-shadow: inset 0 0px 0 0 white;
+  box-shadow: inset 0 0px 0 0 black;
   user-select: none;
+  font-size: 0px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .universe-settings__back::before {
-  content: "\f0d9";
+  content: "\f00d";
   font-family: 'fontawesome';
+  font-size: 2.8rem;
+}
+
+.universe-settings__account {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.3rem;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.universe-settings__account-image {
+  width: 4.2rem;
+  height: 4.2rem;
+  border-radius: 0.4rem;
   margin-right: 0.8rem;
 }
 
-.universe-settings__back:hover {
-  box-shadow: inset 0 -4px 0 0 white;
+.universe-settings__account-realm {
+  font-size: 1.6rem;
+  color: black;
+  text-shadow: 0 0 0.8rem white;
 }

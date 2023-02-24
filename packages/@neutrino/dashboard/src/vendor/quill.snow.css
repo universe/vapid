@@ -4,6 +4,9 @@
  * Copyright (c) 2014, Jason Chen
  * Copyright (c) 2013, salesforce.com
  */
+ textarea.quill-image__caption-edit {
+  box-shadow: none !important;
+ }
 .ql-container {
   box-sizing: border-box;
   font-family: Helvetica, Arial, sans-serif;

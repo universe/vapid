@@ -27,7 +27,8 @@
 .sidebar .menu .item {
   position: relative;
   display: block;
-  padding: 1rem 4.3rem 1rem 2.8rem;
+  padding: 0rem 4.3rem 0rem 3.2rem;
+  height: 4.2rem;
   text-decoration: none;
   color: var(--black);
   display: flex;
@@ -44,7 +45,7 @@
 .sidebar .menu .item img {
   position: absolute;
   top: 50%;
-  left: 0.8rem;
+  left: 1rem;
   transform: translateY(-50%);
   transition: filter .18s;
 }
@@ -73,23 +74,22 @@
 .sidebar .menu.sortable a:not(:empty)::after {
   content: ".. .. ..";
   width: 10px;
-  height: 20px;
   display: inline-block;
   overflow: hidden;
   line-height: 5px;
   padding: 3px 4px;
   cursor: move;
   vertical-align: middle;
-  margin-top: -0.7em;
-  margin-right: 0.3em;
+  margin: 0;
   font-size: 12px;
   font-family: sans-serif;
   letter-spacing: 2px;
   color: currentColor;
   font-weight: bold;
   position: absolute;
-  right: 6px;
-  top: 17px;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
   width: 11px;
   height: 18px;
   line-height: 4px;

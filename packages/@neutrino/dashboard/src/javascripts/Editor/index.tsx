@@ -5,7 +5,7 @@ import './Editor.css';
 import { BaseHelper, DirectiveField, DirectiveMeta,IField, IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, sortRecords } from '@neutrino/core';
 import { IPageContext, IWebsite, makePageContext, resolveHelper,Template } from '@neutrino/runtime';
 import { toTitleCase } from '@universe/util';
-import { ComponentChildren, Fragment } from 'preact';
+import { ComponentChildren, createElement,Fragment } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { Router } from 'preact-router';
 import toast from 'react-hot-toast';
@@ -81,7 +81,7 @@ function CollectionList({ domain, template, page, collection, site, onChange }: 
           if (!field || field.type === 'image') { return null; }
           const directive = findDirective('content', domain, column, field, { templateId: record.templateId, record: null, records: [], media: site.meta.media });
           const rendered = directive?.preview(record?.content?.[column] as unknown as any) || null;
-          return <div key={`${field.templateId}-${field.key}`} class={`collection__preview-value collection__preview-value--${field.type}`}>{rendered}</div>;
+          return rendered ? <div key={`${field.templateId}-${field.key}`} class={`collection__preview-value collection__preview-value--${field.type}`}>{rendered}</div> : null;
         })}
       </a>
     </li>;
@@ -114,13 +114,16 @@ function renderFields(
       case 'metadata': value = record.metadata?.[field.key] as any; break;
       case 'content': value = record.content?.[field.key] as any; break;
     }
-    const input = (directive?.input.call(directive, {
+    const inputFunc = directive?.input;
+    if (!inputFunc) { continue; }
+    const inputComponent = createElement(inputFunc, {
+      id: `${record.id}-${type}-${field.key}-input`,
       key: `${record.id}-${type}-${field.key}-input`,
       name: field.key,
       value: value ?? directive?.default,
       directive,
-    })) as (props: any) => JSX.Element;
-    input && out.push(
+    });
+    out.push(
       <div 
         id={`${record.id}-${type}-${field.key}-container`}
         key={`${record.id}-${type}-${field.key}-container`} 
@@ -132,7 +135,7 @@ function renderFields(
           {field.options.label || toTitleCase(field.key)}
           {field.options.help && <small id={`help-content[${field.key}]`} class="help">{field.options.help}</small>}
         </label>
-        {input}
+        {inputComponent}
       </div>,
     );
   }
@@ -333,54 +336,52 @@ export default function Editor({ adapter, isNewRecord, template, record, records
         class={`metadata ${isNewRecord || metaOpen ? 'open' : ''}`}
         style={{ height: `${metaOpen}px` }}
       >
-        <div class="content">
-          {pageFields}
-          {metaFields}
-          {!isNewRecord && template.type !== PageType.SETTINGS ? <button
-            type="button"
-            class="metadata__delete floated left basic red button"
-            onClick={async() => {
-              const toastId = toast.loading('Deleting Page...', {
-                position: 'bottom-center',
+        {pageFields}
+        {metaFields}
+        {!isNewRecord && template.type !== PageType.SETTINGS ? <button
+          type="button"
+          class="metadata__delete floated left basic red button"
+          onClick={async() => {
+            const toastId = toast.loading('Deleting Page...', {
+              position: 'bottom-center',
+              style: {
+                fontFamily: 'fontawesome, var(--sans-stack)',
+                background: 'white',
+                color: 'black',
+                fontWeight: 'bold',
+              },
+            });
+            try {
+              record ? await adapter?.deleteRecord(record) : null;
+              toast.success('Successfully Deleted', {
+                id: toastId,
                 style: {
                   fontFamily: 'fontawesome, var(--sans-stack)',
-                  background: 'white',
-                  color: 'black',
+                  background: 'var(--green-4)',
+                  color: 'white',
                   fontWeight: 'bold',
                 },
+                icon: <div class="toast--success" />,
+                duration: 3000,
               });
-              try {
-                record ? await adapter?.deleteRecord(record) : null;
-                toast.success('Successfully Deleted', {
-                  id: toastId,
-                  style: {
-                    fontFamily: 'fontawesome, var(--sans-stack)',
-                    background: 'var(--green-4)',
-                    color: 'white',
-                    fontWeight: 'bold',
-                  },
-                  icon: <div class="toast--success" />,
-                  duration: 3000,
-                });
-                record && (record.deletedAt = Date.now());
-                record && onSave(record);
-              }
-              catch (err) {
-                toast.success('Error Deleting', {
-                  id: toastId,
-                  style: {
-                    fontFamily: 'fontawesome, var(--sans-stack)',
-                    background: 'var(--red-4)',
-                    color: 'white',
-                    fontWeight: 'bold',
-                  },
-                  icon: <div class="toast--error" />,
-                  duration: 3000,
-                });
-              }
-            }}
-          >Delete</button> : null}
-        </div>
+              record && (record.deletedAt = Date.now());
+              record && onSave(record);
+            }
+            catch (err) {
+              toast.success('Error Deleting', {
+                id: toastId,
+                style: {
+                  fontFamily: 'fontawesome, var(--sans-stack)',
+                  background: 'var(--red-4)',
+                  color: 'white',
+                  fontWeight: 'bold',
+                },
+                icon: <div class="toast--error" />,
+                duration: 3000,
+              });
+            }
+          }}
+        >Delete</button> : null}
       </section>
       <section class="content">
         {/* eslint-disable max-len */}

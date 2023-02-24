@@ -64,7 +64,7 @@ export function DraggableList({ items, onChange }: { items: any[]; onChange?: (o
 
   return (
     <div 
-      class="content" 
+      class="collection__preview-list"
       style={{ height: items.length * ITEM_HEIGHT }} 
       onClickCapture={evt => { if (Math.abs(delta) < 25) return; evt.preventDefault(); evt.stopImmediatePropagation(); }}
     >
@@ -74,9 +74,10 @@ export function DraggableList({ items, onChange }: { items: any[]; onChange?: (o
           key={items[i].key}
           className={down.goal ? 'collection__row--grab' : ''}
           style={{
-            width: 'calc(100% - 1.8rem)',
+            width: 'calc(100% - 0.8rem)',
             position: 'absolute',
             top: 0,
+            left: '2rem',
             zIndex,
             transform: interpolate([ y, scale ], (y, s) => `translate3d(0,${y}px,0) scale(${s})`),
           }}

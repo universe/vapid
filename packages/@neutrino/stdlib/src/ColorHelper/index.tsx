@@ -1,13 +1,18 @@
 import './index.css';
 
-import { DirectiveProps, SafeString,ValueHelper } from '@neutrino/core';
+import { DirectiveProps, SafeString, ValueHelper } from '@neutrino/core';
+import { uuid } from '@universe/util';
 import Color from 'color';
 import colorjs from 'colorjs.io';
 import { createPalleteFromColor } from 'palettey';
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 
 interface ColorHelperOptions {
-  placeholder: string,
+  placeholder: string;
+  palette: boolean;
+  cta: boolean;
+  grayscale: boolean;
+  alpha: boolean;
 }
 
 interface ColorHelperValue {
@@ -15,7 +20,7 @@ interface ColorHelperValue {
   cta: string | null;
 }
 
-interface Pallette {
+interface palette {
   50: string;
   100: string;
   200: string;
@@ -55,97 +60,227 @@ function ensureDark(color: string) {
   return matte.hex();
 }
 
-function getPallette(color: string, cta: string | null) {
-  const pallette = createPalleteFromColor('primary', color.replaceAll('#', ''), { useLightness: true }).primary as unknown as Pallette;
-  const ctaPallette = cta ? createPalleteFromColor('primary', cta.replaceAll('#', ''), { useLightness: true }).primary as unknown as Pallette : null;
+interface Ipalette {
+  primary: string;
+  primary0: string;
+  primary1: string;
+  primary2: string;
+  primary3: string;
+  primary4: string;
+  primary5: string;
+  primary6: string;
+  primary7: string;
+  primary8: string;
+  primary9: string;
+  primary10: string;
 
+  cta: string;
+  cta0: string;
+  cta1: string;
+  cta2: string;
+  cta3: string;
+  cta4: string;
+  cta5: string;
+  cta6: string;
+  cta7: string;
+  cta8: string;
+  cta9: string;
+  cta10: string;
+
+  gray: string;
+  gray0: string;
+  gray1: string;
+  gray2: string;
+  gray3: string;
+  gray4: string;
+  gray5: string;
+  gray6: string;
+  gray7: string;
+  gray8: string;
+  gray9: string;
+  gray10: string;
+}
+
+interface IpaletteText {
+  primaryText: string;
+  primary0Text: string;
+  primary1Text: string;
+  primary2Text: string;
+  primary3Text: string;
+  primary4Text: string;
+  primary5Text: string;
+  primary6Text: string;
+  primary7Text: string;
+  primary8Text: string;
+  primary9Text: string;
+  primary10Text: string;
+
+  ctaText: string;
+  cta0Text: string;
+  cta1Text: string;
+  cta2Text: string;
+  cta3Text: string;
+  cta4Text: string;
+  cta5Text: string;
+  cta6Text: string;
+  cta7Text: string;
+  cta8Text: string;
+  cta9Text: string;
+  cta10Text: string;
+}
+
+function getpaletteText(palette: Ipalette): IpaletteText {
   return {
-    primary:  pallette[500],
-    primary0: ensureLight(pallette[50]),
-    primary1: pallette[100],
-    primary2: pallette[200],
-    primary3: pallette[300],
-    primary4: pallette[400],
-    primary5: pallette[500],
-    primary6: pallette[600],
-    primary7: pallette[700],
-    primary8: pallette[800],
-    primary9: pallette[900],
-    primary10: ensureDark(pallette[900]),
+    primaryText: getTextColorFor(palette.primary, palette),
+    primary0Text: getTextColorFor(palette.primary0, palette),
+    primary1Text: getTextColorFor(palette.primary1, palette),
+    primary2Text: getTextColorFor(palette.primary2, palette),
+    primary3Text: getTextColorFor(palette.primary3, palette),
+    primary4Text: getTextColorFor(palette.primary4, palette),
+    primary5Text: getTextColorFor(palette.primary5, palette),
+    primary6Text: getTextColorFor(palette.primary6, palette),
+    primary7Text: getTextColorFor(palette.primary7, palette),
+    primary8Text: getTextColorFor(palette.primary8, palette),
+    primary9Text: getTextColorFor(palette.primary9, palette),
+    primary10Text: getTextColorFor(palette.primary10, palette),
 
-    cta: ctaPallette?.[500] || Color(pallette[500]).rotate(CTA_ROTATION).hex(),
-    cta0: ctaPallette?.[50] ? ensureLight(ctaPallette?.[50]) : ensureLight(Color(pallette[50]).rotate(CTA_ROTATION).hex()),
-    cta1: ctaPallette?.[100] || Color(pallette[100]).rotate(CTA_ROTATION).hex(),
-    cta2: ctaPallette?.[200] || Color(pallette[200]).rotate(CTA_ROTATION).hex(),
-    cta3: ctaPallette?.[300] || Color(pallette[300]).rotate(CTA_ROTATION).hex(),
-    cta4: ctaPallette?.[400] || Color(pallette[400]).rotate(CTA_ROTATION).hex(),
-    cta5: ctaPallette?.[500] || Color(pallette[500]).rotate(CTA_ROTATION).hex(),
-    cta6: ctaPallette?.[600] || Color(pallette[600]).rotate(CTA_ROTATION).hex(),
-    cta7: ctaPallette?.[700] || Color(pallette[700]).rotate(CTA_ROTATION).hex(),
-    cta8: ctaPallette?.[800] || Color(pallette[800]).rotate(CTA_ROTATION).hex(),
-    cta9: ctaPallette?.[900] || Color(pallette[900]).rotate(CTA_ROTATION).hex(),
-    cta10: ctaPallette?.[500] ? ensureDark(ctaPallette?.[500]) : ensureDark(Color(pallette[900]).rotate(CTA_ROTATION).hex()),
-
-    gray: Color(pallette[500]).desaturate(GRAY_DESATURATION).hex(),
-    gray0: ensureLight(Color(pallette[50]).desaturate(GRAY_DESATURATION).alpha(95).hex()),
-    gray1: Color(pallette[100]).desaturate(GRAY_DESATURATION).hex(),
-    gray2: Color(pallette[200]).desaturate(GRAY_DESATURATION).hex(),
-    gray3: Color(pallette[300]).desaturate(GRAY_DESATURATION).hex(),
-    gray4: Color(pallette[400]).desaturate(GRAY_DESATURATION).hex(),
-    gray5: Color(pallette[500]).desaturate(GRAY_DESATURATION).hex(),
-    gray6: Color(pallette[600]).desaturate(GRAY_DESATURATION).hex(),
-    gray7: Color(pallette[700]).desaturate(GRAY_DESATURATION).hex(),
-    gray8: Color(pallette[800]).desaturate(GRAY_DESATURATION).hex(),
-    gray9: Color(pallette[900]).desaturate(GRAY_DESATURATION).hex(),
-    gray10: ensureDark(Color(pallette[900]).desaturate(GRAY_DESATURATION).hex()),
+    ctaText: getTextColorFor(palette.cta, palette),
+    cta0Text: getTextColorFor(palette.cta0, palette),
+    cta1Text: getTextColorFor(palette.cta1, palette),
+    cta2Text: getTextColorFor(palette.cta2, palette),
+    cta3Text: getTextColorFor(palette.cta3, palette),
+    cta4Text: getTextColorFor(palette.cta4, palette),
+    cta5Text: getTextColorFor(palette.cta5, palette),
+    cta6Text: getTextColorFor(palette.cta6, palette),
+    cta7Text: getTextColorFor(palette.cta7, palette),
+    cta8Text: getTextColorFor(palette.cta8, palette),
+    cta9Text: getTextColorFor(palette.cta9, palette),
+    cta10Text: getTextColorFor(palette.cta10, palette),
   };
 }
 
-function getPalletteCSS(color: string, cta: string | null) {
-  const pallette = getPallette(color, cta);
+function getpalette(color: string, cta: string | null): Ipalette {
+  const palette = createPalleteFromColor('primary', color.replaceAll('#', ''), { useLightness: true }).primary as unknown as palette;
+  const ctapalette = cta ? createPalleteFromColor('primary', cta.replaceAll('#', ''), { useLightness: true }).primary as unknown as palette : null;
+
+  return {
+    primary:  palette[500],
+    primary0: ensureLight(palette[50]),
+    primary1: palette[100],
+    primary2: palette[200],
+    primary3: palette[300],
+    primary4: palette[400],
+    primary5: palette[500],
+    primary6: palette[600],
+    primary7: palette[700],
+    primary8: palette[800],
+    primary9: palette[900],
+    primary10: ensureDark(palette[900]),
+
+    cta: ctapalette?.[500] || Color(palette[500]).rotate(CTA_ROTATION).hex(),
+    cta0: ctapalette?.[50] ? ensureLight(ctapalette?.[50]) : ensureLight(Color(palette[50]).rotate(CTA_ROTATION).hex()),
+    cta1: ctapalette?.[100] || Color(palette[100]).rotate(CTA_ROTATION).hex(),
+    cta2: ctapalette?.[200] || Color(palette[200]).rotate(CTA_ROTATION).hex(),
+    cta3: ctapalette?.[300] || Color(palette[300]).rotate(CTA_ROTATION).hex(),
+    cta4: ctapalette?.[400] || Color(palette[400]).rotate(CTA_ROTATION).hex(),
+    cta5: ctapalette?.[500] || Color(palette[500]).rotate(CTA_ROTATION).hex(),
+    cta6: ctapalette?.[600] || Color(palette[600]).rotate(CTA_ROTATION).hex(),
+    cta7: ctapalette?.[700] || Color(palette[700]).rotate(CTA_ROTATION).hex(),
+    cta8: ctapalette?.[800] || Color(palette[800]).rotate(CTA_ROTATION).hex(),
+    cta9: ctapalette?.[900] || Color(palette[900]).rotate(CTA_ROTATION).hex(),
+    cta10: ctapalette?.[500] ? ensureDark(ctapalette?.[500]) : ensureDark(Color(palette[900]).rotate(CTA_ROTATION).hex()),
+
+    gray: Color(palette[500]).desaturate(GRAY_DESATURATION).hex(),
+    gray0: ensureLight(Color(palette[50]).desaturate(GRAY_DESATURATION).alpha(95).hex()),
+    gray1: Color(palette[100]).desaturate(GRAY_DESATURATION).hex(),
+    gray2: Color(palette[200]).desaturate(GRAY_DESATURATION).hex(),
+    gray3: Color(palette[300]).desaturate(GRAY_DESATURATION).hex(),
+    gray4: Color(palette[400]).desaturate(GRAY_DESATURATION).hex(),
+    gray5: Color(palette[500]).desaturate(GRAY_DESATURATION).hex(),
+    gray6: Color(palette[600]).desaturate(GRAY_DESATURATION).hex(),
+    gray7: Color(palette[700]).desaturate(GRAY_DESATURATION).hex(),
+    gray8: Color(palette[800]).desaturate(GRAY_DESATURATION).hex(),
+    gray9: Color(palette[900]).desaturate(GRAY_DESATURATION).hex(),
+    gray10: ensureDark(Color(palette[900]).desaturate(GRAY_DESATURATION).hex()),
+  };
+}
+
+function getTextColorFor(color: string, palette: Ipalette): string {
+  const whiteContrast = colorjs.contrastAPCA(color, palette.gray0);
+  const blackContrast = colorjs.contrastAPCA(color, palette.gray10);
+  return Math.abs(whiteContrast) > Math.abs(blackContrast) ? palette.gray0 : palette.gray10;
+}
+
+function getpaletteCSS(palette: Ipalette, paletteText: IpaletteText) {
   return `
-    --primary: ${pallette.primary};
-    --primary-0: ${pallette.primary0};
-    --primary-1: ${pallette.primary1};
-    --primary-2: ${pallette.primary2};
-    --primary-3: ${pallette.primary3};
-    --primary-4: ${pallette.primary4};
-    --primary-5: ${pallette.primary5};
-    --primary-6: ${pallette.primary6};
-    --primary-7: ${pallette.primary7};
-    --primary-8: ${pallette.primary8};
-    --primary-9: ${pallette.primary9};
-    --primary-10: ${pallette.primary10};
+    --primary: ${palette.primary};
+    --primary-0: ${palette.primary0};
+    --primary-1: ${palette.primary1};
+    --primary-2: ${palette.primary2};
+    --primary-3: ${palette.primary3};
+    --primary-4: ${palette.primary4};
+    --primary-5: ${palette.primary5};
+    --primary-6: ${palette.primary6};
+    --primary-7: ${palette.primary7};
+    --primary-8: ${palette.primary8};
+    --primary-9: ${palette.primary9};
+    --primary-10: ${palette.primary10};
 
-    --cta: ${pallette.cta};
-    --cta-0: ${pallette.cta0};
-    --cta-1: ${pallette.cta1};
-    --cta-2: ${pallette.cta2};
-    --cta-3: ${pallette.cta3};
-    --cta-4: ${pallette.cta4};
-    --cta-5: ${pallette.cta5};
-    --cta-6: ${pallette.cta6};
-    --cta-7: ${pallette.cta7};
-    --cta-8: ${pallette.cta8};
-    --cta-9: ${pallette.cta9};
-    --cta-10: ${pallette.cta10};
+    --primary-text:    ${paletteText.primaryText};
+    --primary-0-text:  ${paletteText.primary0Text};
+    --primary-1-text:  ${paletteText.primary1Text};
+    --primary-2-text:  ${paletteText.primary2Text};
+    --primary-3-text:  ${paletteText.primary3Text};
+    --primary-4-text:  ${paletteText.primary4Text};
+    --primary-5-text:  ${paletteText.primary5Text};
+    --primary-6-text:  ${paletteText.primary6Text};
+    --primary-7-text:  ${paletteText.primary7Text};
+    --primary-8-text:  ${paletteText.primary8Text};
+    --primary-9-text:  ${paletteText.primary9Text};
+    --primary-10-text: ${paletteText.primary10Text};
 
-    --gray: ${pallette.gray};
-    --gray-0: ${pallette.gray0};
-    --gray-1: ${pallette.gray1};
-    --gray-2: ${pallette.gray2};
-    --gray-3: ${pallette.gray3};
-    --gray-4: ${pallette.gray4};
-    --gray-5: ${pallette.gray5};
-    --gray-6: ${pallette.gray6};
-    --gray-7: ${pallette.gray7};
-    --gray-8: ${pallette.gray8};
-    --gray-9: ${pallette.gray9};
-    --gray-10: ${pallette.gray10};
+    --cta: ${palette.cta};
+    --cta-0: ${palette.cta0};
+    --cta-1: ${palette.cta1};
+    --cta-2: ${palette.cta2};
+    --cta-3: ${palette.cta3};
+    --cta-4: ${palette.cta4};
+    --cta-5: ${palette.cta5};
+    --cta-6: ${palette.cta6};
+    --cta-7: ${palette.cta7};
+    --cta-8: ${palette.cta8};
+    --cta-9: ${palette.cta9};
+    --cta-10: ${palette.cta10};
+
+    --cta-text:    ${paletteText.ctaText};
+    --cta-0-text:  ${paletteText.cta0Text};
+    --cta-1-text:  ${paletteText.cta1Text};
+    --cta-2-text:  ${paletteText.cta2Text};
+    --cta-3-text:  ${paletteText.cta3Text};
+    --cta-4-text:  ${paletteText.cta4Text};
+    --cta-5-text:  ${paletteText.cta5Text};
+    --cta-6-text:  ${paletteText.cta6Text};
+    --cta-7-text:  ${paletteText.cta7Text};
+    --cta-8-text:  ${paletteText.cta8Text};
+    --cta-9-text:  ${paletteText.cta9Text};
+    --cta-10-text: ${paletteText.cta10Text};
+
+    --gray: ${palette.gray};
+    --gray-0: ${palette.gray0};
+    --gray-1: ${palette.gray1};
+    --gray-2: ${palette.gray2};
+    --gray-3: ${palette.gray3};
+    --gray-4: ${palette.gray4};
+    --gray-5: ${palette.gray5};
+    --gray-6: ${palette.gray6};
+    --gray-7: ${palette.gray7};
+    --gray-8: ${palette.gray8};
+    --gray-9: ${palette.gray9};
+    --gray-10: ${palette.gray10};
   `;
 }
 
-export interface IPalletteProps {
+export interface IpaletteProps {
   hidden?: boolean; 
   color: string;
   cta: string | null;
@@ -154,67 +289,92 @@ export interface IPalletteProps {
   onDefaultCta?: (color: string) => any;
 }
 
-export const Pallette = ({ hidden, color, cta, onChange, onChangeCta, onDefaultCta }: IPalletteProps) => {
+const NEXT_CHANGE: Map<string, string> = new Map();
+const CHANGE_THROTTLES: Map<string, number> = new Map();
+
+export const Palette = ({ hidden, color, cta, onChange, onChangeCta, onDefaultCta }: IpaletteProps) => {
+  const [id] = useState(uuid());
   useEffect(() => {
-    document.body.setAttribute('style', getPalletteCSS(color, cta));
+    const palette = getpalette(color, cta);
+    const paletteText = getpaletteText(palette);
+    document.body.setAttribute('style', getpaletteCSS(palette, paletteText));
   }, [ color, cta ]);
 
   useEffect(() => {
-    const pallette = getPallette(color, null);
-    onDefaultCta?.(pallette.cta);
+    const palette = getpalette(color, null);
+    onDefaultCta?.(palette.cta);
   }, [color]);
 
-  return <ul class={`pallette ${hidden === true ? 'pallette--hidden' : ''}`}>
-    <li class="pallette__set">
-      <ol class="pallette__list">
-        <li class="pallette__color pallette__color--0">0</li>
-        <li class="pallette__color pallette__color--1">1</li>
-        <li class="pallette__color pallette__color--2">2</li>
-        <li class="pallette__color pallette__color--3">3</li>
-        <li class="pallette__color pallette__color--4">4</li>
-        <li class="pallette__color pallette__color--5">
+  return <ul class={`palette ${hidden === true ? 'palette--hidden' : ''}`}>
+    <li class="palette__set">
+      <ol class="palette__list">
+        <li class="palette__color palette__color--0">0</li>
+        <li class="palette__color palette__color--1">1</li>
+        <li class="palette__color palette__color--2">2</li>
+        <li class="palette__color palette__color--3">3</li>
+        <li class="palette__color palette__color--4">4</li>
+        <li class="palette__color palette__color--5">
           5
-          <input class="pallette__input" type="color" value={color} onInput={(evt) => onChange?.((evt.target as HTMLInputElement).value)} />
+          <input class="palette__input" type="color" value={color} onInput={(evt) => {
+              NEXT_CHANGE.set(id, (evt.target as HTMLInputElement).value);
+              if (CHANGE_THROTTLES.has(id)) { return; }
+              CHANGE_THROTTLES.set(id, window.requestAnimationFrame(() => {
+                const value = NEXT_CHANGE.get(id);
+                value && onChange?.(value);
+                CHANGE_THROTTLES.delete(id);
+                NEXT_CHANGE.delete(id);
+              }));
+            }}
+          />
         </li>
-        <li class="pallette__color pallette__color--6">6</li>
-        <li class="pallette__color pallette__color--7">7</li>
-        <li class="pallette__color pallette__color--8">8</li>
-        <li class="pallette__color pallette__color--9">9</li>
-        <li class="pallette__color pallette__color--10">10</li>
+        <li class="palette__color palette__color--6">6</li>
+        <li class="palette__color palette__color--7">7</li>
+        <li class="palette__color palette__color--8">8</li>
+        <li class="palette__color palette__color--9">9</li>
+        <li class="palette__color palette__color--10">10</li>
       </ol>
     </li>
-    <li class="pallette__set">
-      <ol class="pallette__list">
-        <li class="pallette__gray pallette__gray--0">0</li>
-        <li class="pallette__gray pallette__gray--1">1</li>
-        <li class="pallette__gray pallette__gray--2">2</li>
-        <li class="pallette__gray pallette__gray--3">3</li>
-        <li class="pallette__gray pallette__gray--4">4</li>
-        <li class="pallette__gray pallette__gray--5">5</li>
-        <li class="pallette__gray pallette__gray--6">6</li>
-        <li class="pallette__gray pallette__gray--7">7</li>
-        <li class="pallette__gray pallette__gray--8">8</li>
-        <li class="pallette__gray pallette__gray--9">9</li>
-        <li class="pallette__gray pallette__gray--10">10</li>
+    <li class="palette__set">
+      <ol class="palette__list">
+        <li class="palette__gray palette__gray--0">0</li>
+        <li class="palette__gray palette__gray--1">1</li>
+        <li class="palette__gray palette__gray--2">2</li>
+        <li class="palette__gray palette__gray--3">3</li>
+        <li class="palette__gray palette__gray--4">4</li>
+        <li class="palette__gray palette__gray--5">5</li>
+        <li class="palette__gray palette__gray--6">6</li>
+        <li class="palette__gray palette__gray--7">7</li>
+        <li class="palette__gray palette__gray--8">8</li>
+        <li class="palette__gray palette__gray--9">9</li>
+        <li class="palette__gray palette__gray--10">10</li>
       </ol>
     </li>
-    <li class="pallette__set">
-      <ol class="pallette__list">
-        <li class="pallette__cta pallette__cta--0">0</li>
-        <li class="pallette__cta pallette__cta--1">1</li>
-        <li class="pallette__cta pallette__cta--2">2</li>
-        <li class="pallette__cta pallette__cta--3">3</li>
-        <li class="pallette__cta pallette__cta--4">4</li>
-        <li class="pallette__cta pallette__cta--5">
+    <li class="palette__set">
+      <ol class="palette__list">
+        <li class="palette__cta palette__cta--0">0</li>
+        <li class="palette__cta palette__cta--1">1</li>
+        <li class="palette__cta palette__cta--2">2</li>
+        <li class="palette__cta palette__cta--3">3</li>
+        <li class="palette__cta palette__cta--4">4</li>
+        <li class="palette__cta palette__cta--5">
           5
-          <input class="pallette__input" type="color" value={cta || ''} onInput={(evt) => onChangeCta?.((evt.target as HTMLInputElement).value)} />
-          {cta && <button class="pallette__clear-cta" onClick={() => onChangeCta?.(null)}>Use Default Secondary Color</button>}
+          <input class="palette__input" type="color" value={cta || ''} onInput={(evt) => {
+            NEXT_CHANGE.set(id, (evt.target as HTMLInputElement).value);
+            if (CHANGE_THROTTLES.has(id)) { return; }
+            CHANGE_THROTTLES.set(id, window.requestAnimationFrame(() => {
+              const value = NEXT_CHANGE.get(id);
+              value && onChangeCta?.(value);
+              CHANGE_THROTTLES.delete(id);
+              NEXT_CHANGE.delete(id);
+            }));
+          }} />
+          {cta && <button class="palette__clear-cta" onClick={() => onChangeCta?.(null)}>Use Default Secondary Color</button>}
         </li>
-        <li class="pallette__cta pallette__cta--6">6</li>
-        <li class="pallette__cta pallette__cta--7">7</li>
-        <li class="pallette__cta pallette__cta--8">8</li>
-        <li class="pallette__cta pallette__cta--9">9</li>
-        <li class="pallette__cta pallette__cta--10">10</li>
+        <li class="palette__cta palette__cta--6">6</li>
+        <li class="palette__cta palette__cta--7">7</li>
+        <li class="palette__cta palette__cta--8">8</li>
+        <li class="palette__cta palette__cta--9">9</li>
+        <li class="palette__cta palette__cta--10">10</li>
       </ol>
     </li>
   </ul>;
@@ -231,7 +391,7 @@ export default class ColorHelper extends ValueHelper<ColorHelperValue, ColorHelp
    */
   input({ value = this.default }: DirectiveProps<ColorHelperValue>) {
     return <>
-      <Pallette 
+      <Palette
         color={value.hex} 
         cta={value.cta || null} 
         onChange={(hex) => this.update({ hex, cta: value.cta })} 
@@ -242,20 +402,25 @@ export default class ColorHelper extends ValueHelper<ColorHelperValue, ColorHelp
 
   async data(value: ColorHelperValue = this.default) {
     const color = new Color(value.hex);
-    const pallette = getPallette(value.hex, value.cta || null);
-    const ctaWhiteContrast = colorjs.contrastAPCA(value.hex, pallette.gray0);
-    const ctaBlackContrast = colorjs.contrastAPCA(value.hex, pallette.gray10);
-    const primaryWhiteContrast = colorjs.contrastAPCA(value.hex, pallette.gray0);
-    const primaryBlackContrast = colorjs.contrastAPCA(value.hex, pallette.gray10);
+    const palette = getpalette(value.hex, value.cta || null);
+    const paletteText = getpaletteText(palette);
     return {
       toString() { return value.hex; },
       hex: value.hex,
-      textColor: new SafeString(Math.abs(primaryWhiteContrast) > Math.abs(primaryBlackContrast) ? pallette.gray0 : pallette.gray10),
-      primaryTextColor: new SafeString(Math.abs(ctaWhiteContrast) > Math.abs(ctaBlackContrast) ? pallette.gray0 : pallette.gray10),
-      ctaTextColor: new SafeString(Math.abs(primaryWhiteContrast) > Math.abs(primaryBlackContrast) ? pallette.gray0 : pallette.gray10),
+      textColor: new SafeString(paletteText.primaryText),
+      primaryTextColor: new SafeString(paletteText.primaryText),
+      ctaTextColor: new SafeString(paletteText.ctaText),
+      palette: {
+        ...palette,
+        ...paletteText,
+        css: getpaletteCSS(palette, paletteText),
+      },
+
+      // TODO: Remove. For back compat.
       pallette: {
-        ...pallette,
-        css: getPalletteCSS(value.hex, value.cta || null),
+        ...palette,
+        ...paletteText,
+        css: getpaletteCSS(palette, paletteText),
       },
 
       rgb: color.rgb().string(),

@@ -1,4 +1,4 @@
-import type { IMedia, IRecord } from '@neutrino/core';
+import type { IRecord,UploadResult } from '@neutrino/core';
 import type { IWebsite } from '@neutrino/runtime';
 
 import { DataAdapter, SortableUpdate } from "./types";
@@ -15,13 +15,17 @@ export default class APIAdapter extends DataAdapter {
     return '';
   }
 
-  async getSiteData(): Promise<IWebsite> {
+  async getTheme(): Promise<IWebsite> {
     return (await fetch(`${this.API_URL}/api/data`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     })).json() as Promise<IWebsite>;
+  }
+
+  async deployTheme(): Promise<IWebsite> {
+    throw new Error('Missing Theme.');
   }
 
   async getAllRecords(): Promise<Record<string, IRecord>> {
@@ -66,21 +70,29 @@ export default class APIAdapter extends DataAdapter {
     return await res.json();
   }
 
-  async saveFile(id: string, b64Image: string | Blob, type = 'image/png'): Promise<IMedia | null> {
-    const blob = typeof b64Image === 'string' ? await fetch(b64Image).then(res => res.blob()) : b64Image;
-    const filename = [ id, '.', type.match(/^image\/(\w+)$/i)?.[1] ].join('');
-
-    // generate a form data
-    const formData = new FormData();
-    formData.set('file', blob, filename);
-    // formData.set('_csrf', this.csrf);
-    const res = await fetch(`${this.API_URL}/api/upload`, {
-      method: 'POST',
-      body: formData,
-    }).then(r => r.json());
-    if (res.status !== 'success') { throw new Error(res.message); }
-    return res.data;
+  saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
+  saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
+  /* eslint-disable-next-line require-yield */
+  async * saveFile(_file: File | string, _type?: string, _name?: string): AsyncIterableIterator<UploadResult> { 
+    return { status: 'error', message: 'File upload not implemented.' };
   }
+
+  // async saveFile(id: string, b64Image: string | Blob, type = 'image/png'): Promise<IMedia | null> {
+  //   const blob = typeof b64Image === 'string' ? await fetch(b64Image).then(res => res.blob()) : b64Image;
+  //   const filename = [ id, '.', type.match(/^image\/(\w+)$/i)?.[1] ].join('');
+
+  //   // generate a form data
+  //   const formData = new FormData();
+  //   formData.set('file', blob, filename);
+  //   // formData.set('_csrf', this.csrf);
+  //   debugger;
+  //   const res = await fetch(`${this.API_URL}/api/upload`, {
+  //     method: 'POST',
+  //     body: formData,
+  //   }).then(r => r.json());
+  //   if (res.status !== 'success') { throw new Error(res.message); }
+  //   return res.data;
+  // }
 
   async deploy() { 1; }
 }

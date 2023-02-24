@@ -76,8 +76,15 @@ export interface DirectiveProps<DirectiveType, T extends BaseHelper<any> = BaseH
   directive: T;
 }
 
-export interface IMedia { file: { src: string } }
-export type FileHandler = (id: string, b64Image: string | Blob, type: string) => Promise<IMedia | null>;
+export type UploadResult = { status: 'pending'; progress: number; } 
+  | { status: 'paused'; progress: number; } 
+  | { status: 'success'; url: string; } 
+  | { status: 'error'; message: string; };
+
+export type UploadFileFunction = {
+  (file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
+  (file: File, name?: string): AsyncIterableIterator<UploadResult>;
+}
 
 /**
  * The base class that all directives inherit from.
@@ -85,7 +92,6 @@ export type FileHandler = (id: string, b64Image: string | Blob, type: string) =>
  */
 /* eslint-disable @typescript-eslint/ban-types */
 export abstract class BaseHelper<DirectiveType, Options = object> {
-
   abstract default: DirectiveType;
   #onChange: DirectiveCallback<DirectiveType>;
   key: string;
@@ -114,13 +120,20 @@ export abstract class BaseHelper<DirectiveType, Options = object> {
     for (const [ key, value ] of Object.entries(options)) {
       this.options[key] = coerceType(value);
     }
+    this.input = this.input.bind(this);
   }
 
-  private static fileHandlers: FileHandler[] = [];
-  static async registerFileHandler(handler: FileHandler) { BaseHelper.fileHandlers = [handler]; }
-  static async emitFile(id: string, b64Image: string | Blob, type = 'image/png') {
-    for (const handler of BaseHelper.fileHandlers) { const res = await handler(id, b64Image, type); if (res) { return res; }}
-    return { file: { src: '' } };
+  private static fileHandlers: UploadFileFunction[] = [];
+  static async registerFileHandler(handler: UploadFileFunction) { BaseHelper.fileHandlers = [handler]; }
+
+  static emitFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
+  static emitFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
+  static emitFile(file: File | string, type?: string, name?: string): AsyncIterableIterator<UploadResult> {
+    for (const handler of BaseHelper.fileHandlers) {
+      return handler(file as string, type as string, name as string);
+    }
+    throw new Error('No file handler provided.');
+    // return { async next() { return { status: 'error', message: 'No file handler provided.' }; } }
   }
 
   /**

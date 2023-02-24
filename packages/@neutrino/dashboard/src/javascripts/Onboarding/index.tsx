@@ -2,10 +2,10 @@
 import './index.css';
 import './imageUpload.css';
 
-import { Pallette } from '@neutrino/stdlib/src/ColorHelper/index.js';
-import type { SubDomain } from '@universe/admin';
+import { Palette } from '@neutrino/stdlib/src/ColorHelper/index.js';
 import LogInForm from '@universe/aether/esm/src/components/LogInForm';
 import Spinner from '@universe/aether/esm/src/components/Spinner';
+import type { SubDomain } from '@universe/campaign';
 import ColorThief from 'colorthief';
 import file2md5 from 'file2md5';
 import type { FirebaseApp } from "firebase/app";
@@ -92,7 +92,7 @@ function LoginPanel({ app, visible, onClose }: { app: FirebaseApp | null; visibl
   const user = auth?.currentUser;
   const dismissable = !!user;
   return <section class={`onboarding__login ${visible === true ? 'onboarding__login--active' : ''} ${dismissable ? 'onboarding__login--dismissable' : ''}`}>
-    <LogInForm serverUrl={import.meta.env.API_URL} redirectUrl={window.location.toString()} app={app!} onEmailInput={console.log} />
+    <LogInForm serverUrl={import.meta.env.API_URL} app={app!} onEmailInput={console.log} />
     <button onClick={() => onClose()} disabled={!user?.emailVerified} class="onbaording__login-dismiss">{user?.emailVerified ? 'Get Started!' : 'Verify Your Email'}</button>
   </section>;
 }
@@ -106,7 +106,7 @@ function StepOne({ dismissable, active, onNext, subdomain, status, onChange, onC
         {subdomain || 'website'}
         <input type="text" class="onboarding__subdomain-input" value={subdomain === 'website' ? '' : subdomain} onChange={evt => onChange((evt.target as HTMLInputElement).value.toLowerCase())} placeholder="website" />
       </div>
-      .universe.app
+      .campaign.win
     </fieldset>
     {typeof status === 'number' ? <label class="onboarding__subdomain-status"><Spinner size="small" />Checking name availability</label> : null}
     {typeof status === 'string' ? <label class="onboarding__subdomain-status">{status}</label> : null}
@@ -144,7 +144,7 @@ function StepTwo({ active, onNext, onPrevious, theme, onChange }: IStepProps & {
   </section>;
 }
 
-function StepThree({ src, onChange, active, onNext, onPrevious, uploadFile, onPallette }: IStepProps & { src: string; onChange: (src: string) => void; onPallette: (pallette: [number, number, number][]) => void }) {
+function StepThree({ src, onChange, active, onNext, onPrevious, uploadFile, onPalette }: IStepProps & { src: string; onChange: (src: string) => void; onPalette: (palette: [number, number, number][]) => void }) {
   const [fileInputId] = useState(String(Math.floor(Math.random() * 1000)));
   const [ localBanner, setLocalBanner ] = useState<string | null>(null);
   const [ hexBanner, setHexBanner ] = useState<string | null>(null);
@@ -181,7 +181,7 @@ function StepThree({ src, onChange, active, onNext, onPrevious, uploadFile, onPa
       {typeof bannerUploadProgress === 'number' ? <progress class="article__banner-image-progress" value={bannerUploadProgress} min="0" max="100" /> : null}
       {typeof bannerUploadProgress === 'string' ? <div class="article__banner-image-error">{bannerUploadProgress}</div> : null}
       <img class="article__image" onError={evt => (evt.target as HTMLImageElement).src = TRANSPARENT_PIXEL} src={localBanner || TRANSPARENT_PIXEL} />
-      <img onLoad={evt => onPallette(colorthief?.getPalette(evt.target as HTMLImageElement, 5))} class="article__image-hidden" onError={evt => (evt.target as HTMLImageElement).src = TRANSPARENT_PIXEL} src={hexBanner || TRANSPARENT_PIXEL} />
+      <img onLoad={evt => onPalette(colorthief?.getPalette(evt.target as HTMLImageElement, 5))} class="article__image-hidden" onError={evt => (evt.target as HTMLImageElement).src = TRANSPARENT_PIXEL} src={hexBanner || TRANSPARENT_PIXEL} />
     </div>
     <button class="onboarding__step-prev" onClick={() => onPrevious()}>Back</button>
     <button class="onboarding__step-next" onClick={() => onNext()}>{src ? 'Next' : 'Skip'}</button>
@@ -197,7 +197,7 @@ function rgbToHex(r: number, g: number, b: number) {
   return `#${  componentToHex(r)  }${componentToHex(g)  }${componentToHex(b)}`;
 }
 
-function StepFour({ primary, secondary, active, onChange, onPrevious, onSubmit, pallette }: IStepProps & { primary: string; secondary: string | null; onChange: (primary: string, cta: string | null) => void; onSubmit: (primary: string, cta: string) => void, pallette: [number, number, number][] }) {
+function StepFour({ primary, secondary, active, onChange, onPrevious, onSubmit, palette }: IStepProps & { primary: string; secondary: string | null; onChange: (primary: string, cta: string | null) => void; onSubmit: (primary: string, cta: string) => Promise<void>, palette: [number, number, number][] }) {
   const [ defaultCta, setDefalutCta ] = useState<null | string>(null);
   const [ loading, setLoading ] = useState<boolean>(false);
   const [ loadingMessageIdx, setLoadingMessageIdx ] = useState(0);
@@ -209,20 +209,20 @@ function StepFour({ primary, secondary, active, onChange, onPrevious, onSubmit, 
   const content = <section class="onboarding__content">
     <h1 class="onboarding__title">Customize your color palette.</h1>
       {
-        pallette?.length 
+        palette?.length
         ? <h2 class="onboarding__subtitle">We've selected some color scheme options for you based on your logo. Feel free to customize them!</h2>
         : <h2 class="onboarding__subtitle">Customize your site's colors – go back and add a logo to get color recommendations!</h2>
       }
 
-      <ul class="onboarding__pallette-suggestions">
-        <li class="onboarding__pallette-label">Primary:</li>
-        {pallette?.map((color, idx) => <li key={idx} class="onboarding__pallette-square" style={`background-color: ${rgbToHex(color[0], color[1], color[2])};`} onClick={() => onChange(rgbToHex(color[0], color[1], color[2]), secondary)} />)}
+      <ul class="onboarding__palette-suggestions">
+        <li class="onboarding__palette-label">Primary:</li>
+        {palette?.map((color, idx) => <li key={idx} class="onboarding__palette-square" style={`background-color: ${rgbToHex(color[0], color[1], color[2])};`} onClick={() => onChange(rgbToHex(color[0], color[1], color[2]), secondary)} />)}
       </ul>
-      <Pallette color={primary} cta={secondary} onChange={(hex) => onChange(hex, secondary)} onChangeCta={cta => onChange(primary, cta)} onDefaultCta={setDefalutCta} />
-      <ul class="onboarding__pallette-suggestions">
-        <li class="onboarding__pallette-label">Secondary:</li>
-        {pallette?.map((color, idx) => <li key={idx} class="onboarding__pallette-square" style={`background-color: ${rgbToHex(color[0], color[1], color[2])};`} onClick={() => onChange(primary, rgbToHex(color[0], color[1], color[2]))} />)}
-        <li><button class="onboarding__pallette-auto" style={{ backgroundColor: defaultCta, color: defaultCta }} onClick={() => onChange(primary, null)}>Auto</button></li>
+      <Palette color={primary} cta={secondary} onChange={(hex) => onChange(hex, secondary)} onChangeCta={cta => onChange(primary, cta)} onDefaultCta={setDefalutCta} />
+      <ul class="onboarding__palette-suggestions">
+        <li class="onboarding__palette-label">Secondary:</li>
+        {palette?.map((color, idx) => <li key={idx} class="onboarding__palette-square" style={`background-color: ${rgbToHex(color[0], color[1], color[2])};`} onClick={() => onChange(primary, rgbToHex(color[0], color[1], color[2]))} />)}
+        <li><button class="onboarding__palette-auto" style={{ backgroundColor: defaultCta, color: defaultCta }} onClick={() => onChange(primary, null)}>Auto</button></li>
       </ul>
       <button class="onboarding__step-prev" onClick={() => onPrevious()} />
   </section>;
@@ -236,16 +236,18 @@ function StepFour({ primary, secondary, active, onChange, onPrevious, onSubmit, 
         inline
       />
     </section> : content}
-    <RocketButton onClick={() => { 
-      setLoading(true); 
-      setTimeout(() => {
-        onSubmit(primary, secondary || defaultCta || primary);
-      }, 5000);
+    <RocketButton onClick={() => {
+      if (loading) { return; }
+      setLoading(true);
       const interval = setInterval(() => {
         const el = document.getElementById('loading-message');
         if (!el) { clearInterval(interval); }
         setLoadingMessageIdx((parseInt(el?.getAttribute('data-idx') || '0') + 1) % loadingMessages.length);
       }, 2000);
+      setTimeout(() => {
+        onSubmit(primary, secondary || defaultCta || primary);
+        clearInterval(interval);
+      }, 3000);
     }} initialText="Launch New Site" finalText="New Site is Deploying" />
   </section>;
 }
@@ -300,7 +302,7 @@ export default function Onboarding({ app, user, children, onComplete, onCancel, 
   const [ logo, setLogo ] = useState('');
   const [ hex, setHex ] = useState('#3781E2');
   const [ cta, setCta ] = useState<string | null>(null);
-  const [ pallette, setPallette ] = useState<[number, number, number][]>([]);
+  const [ palette, setPalette ] = useState<[number, number, number][]>([]);
   const [ subdomainValidation, setSubdomainValidation ] = useState<null | true | number | string>(null);
   const [ loginVisible, setLoginVisible ] = useState(false);
 
@@ -348,8 +350,8 @@ export default function Onboarding({ app, user, children, onComplete, onCancel, 
     <LoginPanel app={app} onClose={() => setLoginVisible(false)} visible={!auth?.currentUser || !auth?.currentUser?.emailVerified || loginVisible} />
     <StepOne dismissable={dismissable} subdomain={subdomain} status={subdomainValidation} onChange={setSubdomain} onCancel={() => onCancel()} active={step === 'one'} onNext={() => setStep('two')} onPrevious={() => setStep('one')}  />
     <StepTwo theme={theme} onChange={setTheme} active={step === 'two'} onNext={() => setStep('three')} onPrevious={() => setStep('one')} />
-    <StepThree src={logo} onPallette={setPallette} onChange={setLogo} active={step === 'three'} onNext={() => setStep('four')} onPrevious={() => setStep('two')} uploadFile={uploadFile.bind(null, app)} />
-    <StepFour pallette={pallette} primary={hex} secondary={cta} onChange={(hex: string, cta: string | null) => { setHex(hex); setCta(cta); }} onSubmit={async(primary: string, cta: string) => {
+    <StepThree src={logo} onPalette={setPalette} onChange={setLogo} active={step === 'three'} onNext={() => setStep('four')} onPrevious={() => setStep('two')} uploadFile={uploadFile.bind(null, app)} />
+    <StepFour palette={palette} primary={hex} secondary={cta} onChange={(hex: string, cta: string | null) => { setHex(hex); setCta(cta); }} onSubmit={async(primary: string, cta: string) => {
       await onSubmit(app, user, {
         realm: `${subdomain}.universe.app`,
         theme,

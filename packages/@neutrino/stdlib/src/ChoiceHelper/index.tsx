@@ -173,7 +173,8 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
   }
 
   private tags(_name: string, values = this.default) {
-    const [ localCustom, setCustom ] = useState<string>('');
+    const s = useState<string>('');
+    const [ localCustom, setCustom ] = s;
     values = Array.isArray(values) ? values : (typeof values === 'string' ? [values] : []);
     values = values.filter(value => Boolean(value?.trim()));
 

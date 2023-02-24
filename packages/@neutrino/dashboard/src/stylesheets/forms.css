@@ -46,6 +46,7 @@
   resize: none;
   background: white;
   box-shadow: var(--elevation-2);
+  margin-bottom: 0;
 }
 
 .form textarea {
@@ -103,6 +104,7 @@
   flex-grow: 1;
   position: relative;
   z-index: 1;
+  overflow: hidden;
 }
 
 .form .field.submit,
@@ -211,6 +213,7 @@
   height: 3.2rem;
   padding: 0 0.8rem;
   border-radius: 0.4rem;
+  width: 100%;
 }
 
 .form .field__choice {
@@ -459,6 +462,16 @@
 
 .image-directive__empty-preview img {
   display: none;
+}
+
+.image-directive__progress {
+  position: absolute;
+  bottom: 0.8rem;
+  left: 0.8rem;
+  right: 0.8rem;
+  z-index: 3;
+  pointer-events: none;
+  width: calc(100% - 1.6rem);
 }
 
 .form div.previewable .preview img:first-of-type {

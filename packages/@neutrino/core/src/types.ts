@@ -5,10 +5,16 @@ import pluralize from 'pluralize';
 
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 10);
 
+export interface IWebsiteTheme {
+  name: string;
+  version: string;
+}
+
 export interface IWebsiteMeta {
   name: string;
   domain: string;
   media: string;
+  theme: IWebsiteTheme;
 }
 
 export enum PageType {

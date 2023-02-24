@@ -7,7 +7,7 @@ module.exports = defineConfig({
   root: './src',
   base: 'https://website.universe.app',
   envDir: path.join(__dirname),
-  envPrefix: [ 'API_URL', 'SITE_DATA_URL' ],
+  envPrefix: [ 'API_URL', 'THEME_URL' ],
   server: {
     https: true,
   },

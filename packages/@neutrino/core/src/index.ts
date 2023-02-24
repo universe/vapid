@@ -11,6 +11,16 @@ export interface VapidSettings<T extends { type: string } = { type: string }> {
   port?: number;
 }
 
+export type UploadResult = { status: 'pending'; progress: number; } 
+  | { status: 'paused'; progress: number; } 
+  | { status: 'success'; url: string; } 
+  | { status: 'error'; message: string; };
+
+export type UploadFileFunction = {
+  (file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
+  (file: File, name?: string): AsyncIterableIterator<UploadResult>;
+}
+
 export abstract class IProvider<DatabaseConfig extends { type: string } = { type: string }> {
   config: VapidSettings<DatabaseConfig>;
   constructor(config: VapidSettings<DatabaseConfig>) { this.config = config; }
@@ -39,5 +49,8 @@ export abstract class IProvider<DatabaseConfig extends { type: string } = { type
   abstract deleteRecord(recordId: string): Promise<void>;
 
   abstract mediaUrl(name?: string): Promise<string>;
-  abstract saveFile(name: string, file: Uint8Array): Promise<string | null>;
+
+  abstract saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
+  abstract saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
+  abstract saveFile(file: File | string, type?: string, name?: string): AsyncIterableIterator<UploadResult>;
 }

@@ -1,6 +1,7 @@
-import { IProvider, IRecord, ITemplate, PageType, Template } from '@neutrino/core';
+import { IProvider, IRecord, ITemplate, PageType, Template,UploadResult } from '@neutrino/core';
 import { IWebsiteMeta } from '@neutrino/runtime'; 
 import { md5 } from '@universe/util';
+import file2md5 from 'file2md5';
 import { deleteApp, FirebaseApp, FirebaseOptions,initializeApp } from 'firebase/app';
 import { Auth, connectAuthEmulator, getAuth, signInWithCustomToken, signInWithEmailAndPassword, User } from 'firebase/auth';
 import { 
@@ -19,7 +20,7 @@ import {
   setDoc, 
   where,
 } from 'firebase/firestore';
-import { connectStorageEmulator,FirebaseStorage, getStorage, ref, uploadBytesResumable } from "firebase/storage";
+import { connectStorageEmulator,FirebaseStorage, getStorage, ref, uploadBytesResumable, uploadString } from "firebase/storage";
 import mime from 'mime';
 import pino from 'pino';
 
@@ -57,6 +58,14 @@ function normalizeDocument(doc: DocumentSnapshot<DocumentData> | undefined | nul
 function normalizeTemplate(doc: DocumentSnapshot<DocumentData> | undefined | null): ITemplate | null {
   if (!doc) { return null; }
   return doc.data() as unknown as ITemplate || null;
+}
+
+type Deferred<T> = { promise: Promise<T>; resolve: (value: T) => void; reject: (err: Error) => void };
+
+function createDeferred<T>(): Deferred<T> {
+  const d: Partial<Deferred<T>> = {};
+  d.promise = new Promise((s, f) => { d.resolve = s; d.reject = f; });
+  return d as Deferred<T>;
 }
 
 export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> {
@@ -294,37 +303,46 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     return `https://${this.config.domain}/${name || ''}`.replace(/\/$/, '');
   }
 
-  async saveFile(name: string, file: Uint8Array) {
+  saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
+  saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
+  async * saveFile(file: File | string, type?: string, name?: string): AsyncIterableIterator<UploadResult> {
+    yield { status: 'pending', progress: 0 };
     const storage = this.getStorage();
-    const ext = name.split('.').pop();
-    const hash = md5(file.toString());
-    const fileRef = ref(storage, `${this.config?.database?.storage?.root || DEFAULT_STORAGE_ROOT}/${hash}`);
-    const uploadTask = uploadBytesResumable(fileRef, file, { contentType: mime.getType(ext || '') || 'application/octet-stream' });
+    const hash = file instanceof File ? await file2md5(file) : md5(file.toString());
+    const filePath = `${this.config?.database?.storage?.root || DEFAULT_STORAGE_ROOT}/${hash}`;
+    const fileRef = ref(storage, filePath);
+    name = name || type;
+    const ext = name?.split('.')?.pop() || '';
+    const contentType = type || mime.getType(ext) || 'application/octet-stream';
 
-    // Listen for state changes, errors, and completion of the upload.
-    return await new Promise<string | null>((resolve, reject) => {
-      uploadTask.on('state_changed',
-        (snapshot) => {
-          // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log(`Upload is ${  progress  }% done`);
-          switch (snapshot.state) {
-            case 'paused':
-              console.log('Upload is paused');
-              break;
-            case 'running':
-              console.log('Upload is running');
-              break;
-          }
-        }, 
-        (error) => {
-          console.error(error);
-          // A full list of error codes is available at
-          // https://firebase.google.com/docs/storage/web/handle-errors
-          reject(error.code);
-        },
-        () => resolve(`${this.config?.database?.storage?.root || DEFAULT_STORAGE_ROOT}/${hash}`),
-      );
-    });
+    if (typeof file === 'string') {
+      await uploadString(fileRef, file, 'data_url', {
+        contentType,
+      });
+      yield { status: 'success', url: await this.mediaUrl(filePath) };
+      return;
+    }
+
+    let deferred = createDeferred<UploadResult>();
+    const uploadTask = uploadBytesResumable(fileRef, file, { contentType });
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        const prevDeferred = deferred;
+        deferred = createDeferred<UploadResult>();
+        if (snapshot.state === 'paused') prevDeferred.resolve({ status: 'paused', progress });
+        if (snapshot.state === 'running') prevDeferred.resolve({ status: 'pending', progress });
+      },
+      (error) => deferred.resolve({ status: 'error', message: error.message }),
+      () => deferred.resolve({ status: 'success', url: filePath }),
+    );
+
+    while (true) {
+      const res = await deferred.promise;
+      yield res;
+      if (res.status !== 'pending' && res.status !== 'paused') return;
+    }
   }
 }

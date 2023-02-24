@@ -1,4 +1,4 @@
-import { IMedia, IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, stampRecord } from '@neutrino/core';
+import { IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, stampRecord,UploadResult } from '@neutrino/core';
 import FirebaseProvider from '@neutrino/datastore/dist/src/providers/FireBaseProvider.js';
 import { IWebsite, renderRecord } from '@neutrino/runtime';
 import createDocument from '@simple-dom/document';
@@ -26,7 +26,7 @@ const DEFAULT_WELL_KNOWN_PAGES: Record<keyof typeof WELL_KNOWN_PAGES, string> = 
   404: '<html><body>Page not Found <a href="/">Take Me Home</a></body></html>',
 };
 
-export default class APIAdapter extends DataAdapter {
+export default class FirestoreAdapter extends DataAdapter {
   private provider: FirebaseProvider;
   private domain: string;
   private app: FirebaseApp;
@@ -66,7 +66,7 @@ export default class APIAdapter extends DataAdapter {
 
   private async getTemplateById(id?: string | null): Promise<ITemplate | null> {
     if (!id) { return null; }
-    const siteData = await this.getSiteData();
+    const siteData = await this.getTheme();
     return siteData.hbs.templates[id] || null;
   }
 
@@ -131,17 +131,42 @@ export default class APIAdapter extends DataAdapter {
     }
   }
 
-  private siteData: IWebsite | null = null;
-  async getSiteData(): Promise<IWebsite> {
-    if (this.siteData) { return this.siteData; }
-    const data: IWebsite = await (await fetch(import.meta.env.SITE_DATA_URL)).json();
+  private hasLocalTheme: boolean | null = null;
+  private theme: IWebsite | null = null;
+  async getTheme(): Promise<IWebsite> {
+    if (this.theme) { return this.theme; }
 
     const meta = await this.provider.getMetadata();
+    const name = meta?.theme?.name || 'neutrino';
+    const version = meta?.theme?.version || 'latest';
+
+    if (this.hasLocalTheme === null) {
+      try {
+        const data: IWebsite = await (await fetch(`http://localhost:1776/api/data/themes/${name}/${name}@${version}.json`)).json();
+        this.hasLocalTheme = Object.hasOwnProperty.call(data, 'meta') && Object.hasOwnProperty.call(data, 'hbs');
+      }
+      catch {
+        this.hasLocalTheme = false;
+      }
+    }
+
+    const THEME_URL = this.hasLocalTheme ? 'http://localhost:1776/api/data' : import.meta.env.THEME_URL;
+    const data: IWebsite = await (await fetch(`${THEME_URL}/${name}/${name}@${version}.json`)).json();
     meta.domain = meta.domain || this.domain;
     meta.media = meta.media || `https://${this.domain}`;
     data.meta = meta;
-    console.log('META', meta);
-    return this.siteData = data;
+    return this.theme = data;
+  }
+
+  async deployTheme(): Promise<IWebsite> {
+    if (!this.theme) { throw new Error('Missing Theme.'); }
+    const blob = new Blob([JSON.stringify(this.theme)], { type: "application/json" });
+    const slug = `themes/${'neutrino'}/${'neutrino'}@${'latest'}.json`;
+    const storage = getStorage(this.app, `gs://${'website.universe.app'}`);
+    const fileRef = ref(storage, slug);
+    const uploadTask = uploadBytesResumable(fileRef, blob, { contentType: "application/json", cacheControl: 'public,max-age=0' });
+    await new Promise<void>((resolve, reject) => uploadTask.on('state_changed', console.log, reject, resolve));
+    return this.theme;
   }
 
   async getAllRecords(): Promise<Record<string, IRecord>> {
@@ -174,7 +199,7 @@ export default class APIAdapter extends DataAdapter {
         });
       foundRecord.parentId = update.parentId;
       foundRecord && newRecords.splice(update.to, 0, foundRecord);
-      const siteData = await this.getSiteData();
+      const siteData = await this.getTheme();
       const originalOrder = newRecords.map(record => record.order);
       for (let i=0; i < newRecords.length; i++) {
         if (originalOrder[i] === i) { continue; }
@@ -193,13 +218,10 @@ export default class APIAdapter extends DataAdapter {
     await this.saveRecord('DELETE', record);
   }
 
-  async saveFile(id: string, b64Image: string | Blob, type = 'image/png'): Promise<IMedia | null> {
-    const blob = typeof b64Image === 'string' ? await fetch(b64Image).then(res => res.blob()) : b64Image;
-    const filename = [ id, '.', type.match(/^image\/(\w+)$/i)?.[1] ].join('');
-    const data = new Uint8Array(await blob.arrayBuffer());
-    const src = await this.provider.saveFile(filename, data);
-    if (!src) { throw new Error('Failed to upload file.'); }
-    return { file: { src } };
+  saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
+  saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
+  saveFile(file: File | string, type?: string, name?: string): AsyncIterableIterator<UploadResult> { 
+    return this.provider.saveFile(file as string, type as string, name as string);
   }
 
   async deploy(website: IWebsite, records: Record<string, IRecord>) {

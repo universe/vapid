@@ -143,17 +143,16 @@ function Content(params: RouteParts) {
     if ('WebSocket' in window) {
       try {
         // const ws = new WebSocket(`ws${location.protocol === 'https:' ? 's' : ''}://${(location.host || 'localhost').split(':')[0]}:35729/livereload`);
-        const ws = new WebSocket(`ws://${(location.host || 'localhost').split(':')[0]}:35729/livereload`);
+        const ws = new WebSocket(`ws://localhost:35729/livereload`);
         ws.onmessage = async(evt) => {
           const { command, data } = JSON.parse(evt.data) as { command: string; data: IWebsite; };
-          console.log(command, data);
-          const siteData = await adapter.getSiteData();
+          console.log(`[WebSocket ${command}]`, data);
           switch (command) {
-            case 'update': setSiteData({ ...siteData, hbs: data.hbs });
+            case 'update': setSiteData({ ...(await adapter.getTheme()), hbs: data.hbs });
           }
         };
       }
- catch { 1; }
+      catch { 1; }
     }
   }, [adapter]);
 
@@ -173,7 +172,7 @@ function Content(params: RouteParts) {
     (async() => {
       if (!adapter) { return; }
       BaseHelper.registerFileHandler(adapter.saveFile.bind(adapter));
-      setSiteData(await adapter.getSiteData());
+      setSiteData(await adapter.getTheme());
       setRecords(await adapter.getAllRecords());
     })();
   }, [adapter]);
@@ -223,6 +222,9 @@ function Content(params: RouteParts) {
 
         <nav class="vapid-nav">
           <div class="item">
+            <button id="add-page" class="sidebar__add-page" onClick={() => { adapter?.deployTheme('neutrino', 'latest'); }}>
+              Save Template
+            </button>
             <button id="add-page" class="sidebar__add-page" onClick={() => { setPageTemplatesOpen(true); }}>
               Add a Page
             </button>
@@ -275,8 +277,11 @@ function Content(params: RouteParts) {
             route(`/${template.type}/${template.name}/${(parent || record)?.slug || ''}`);
           }}
           onChange={record => {
+            record.slug = record.slug || 'index';
             const slugId = permalinks[DBRecord.permalink(record)];
-            if ((slugId && slugId !== record.id) || record.slug === 'new') { record.slug = `__error__/${record.slug}`; }
+            if ((slugId && slugId !== record.id) || /[^A-Za-z0-9-_.~]/.test(record.slug) || record.slug === 'new') {
+              record.slug = `__error__/${record.slug}`;
+            }
             setLocalRecord(JSON.parse(JSON.stringify(record)));
           }}
           onSave={(recordUpdates: IRecord | IRecord[], navigate?: boolean) => {
@@ -355,7 +360,7 @@ export function Dashboard({ adapter, children, root }: { adapter: DataAdapter | 
     <article class="vapid-preview" id="preview-container">
       <div id="preview-device" class="device">
         <div class="device-frame">
-          <iframe src="about:blank" id="vapid-preview" class="vapid-preview__iframe" sandbox="allow-same-origin allow-scripts" />
+          <iframe src="about:blank" id="vapid-preview" class="vapid-preview__iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-modals allow-forms" />
         </div>
         <div class="device-stripe" />
         <div class="device-header" />
@@ -363,7 +368,7 @@ export function Dashboard({ adapter, children, root }: { adapter: DataAdapter | 
         <div class="device-btns" />
         <div class="device-power" />
       </div>
-      <iframe src="about:blank" id="vapid-preview-scratch" class="vapid-preview__scratch-iframe" sandbox="allow-same-origin allow-scripts" />
+      <iframe src="about:blank" id="vapid-preview-scratch" class="vapid-preview__scratch-iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-modals allow-forms" />
     </article>
   </>;
 }

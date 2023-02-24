@@ -58,8 +58,8 @@ export default class CollateHelper extends CollectionHelper<CollectionHelperValu
 
     if (!prop) { throw new Error('You must provide a key to the `{{collate}}` helper.'); }
 
-    for (const record of collection || []) {
-      if (record['@record'].deletedAt) { continue; }
+    for (const record of (collection || []).filter(Boolean)) {
+      if (!record || record['@record']?.deletedAt) { continue; }
       if (!config || record['@record']?.parent?.id !== config.collectionId) { continue; }
       if (filter && !filter(record)) { continue; }
 

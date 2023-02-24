@@ -24,6 +24,9 @@ function getRecord(records: IRecord[], template: string): IRecord | null {
 
 export default function Browser({ url, theme, img, hex, cta }: { url: string; theme: string; img: string; hex: string; cta: string | null; }) {
   const [ siteData, setSiteData ]  = useState<IWebsite | null>(null);
+
+  // Manual override of media server for demo.
+  siteData && (siteData.meta.media = 'https://website.universe.app');
   const [ renderThrottle, setRenderThrottle ]  = useState<NodeJS.Timeout | null>(null);
   const designRecord = getRecord(records as IRecord[], 'design-settings');
 
@@ -38,14 +41,13 @@ export default function Browser({ url, theme, img, hex, cta }: { url: string; th
 
   useEffect(() => {
     (async() => {
-      const data: IWebsite = await (await fetch(import.meta.env.SITE_DATA_URL)).json();
+      const data: IWebsite = await (await fetch(`${import.meta.env.THEME_URL}/neutrino/neutrino@latest.json`)).json();
       setSiteData(data);
     })();
   }, [ hex, cta, img, theme ]);
 
   useLayoutEffect(() => {
     if (renderThrottle) { clearTimeout(renderThrottle); }
-    console.log('clear');
     setRenderThrottle(setTimeout(() => {
       const template = getTemplate(PageType.PAGE, 'index', Object.values(siteData?.hbs?.templates || {})) || null;
       const record = getRecord(records as IRecord[], 'index-page');

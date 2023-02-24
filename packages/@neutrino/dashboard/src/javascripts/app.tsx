@@ -1,10 +1,12 @@
 import './app.css';
+import 'preact/debug';
+import 'preact/devtools';
 
-import type { SubDomain } from '@universe/admin';
+import type { SubDomain } from '@universe/campaign';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged,User } from 'firebase/auth';
 import { render } from 'preact';
-import { useEffect,useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { route } from 'preact-router';
 
 import Adapter from './adapters/firestore.js';
