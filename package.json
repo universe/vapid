@@ -88,7 +88,7 @@
     "sanitize-html": "^1.18.2",
     "sass": "^1.14.3",
     "sass-loader": "^7.1.0",
-    "sequelize": "^5.21.2",
+    "sequelize": "^6.29.0",
     "sqlite3": "^4.1.0",
     "strftime": "^0.10.0",
     "style-loader": "^0.20.3",
