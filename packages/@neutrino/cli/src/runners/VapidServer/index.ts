@@ -27,7 +27,7 @@ import Watcher from './watcher.js';
 
 // const __dirname = new URL('./index', import.meta.url).pathname;
 
-const logger = pino();
+const logger = pino({ transport: { target: 'pino-pretty', options: { colorize: true } } });
 const app = fastify({ logger: false });
 
 /**
@@ -190,10 +190,15 @@ export default class VapidServer extends Vapid {
           logger.info(`Processing image ${fileName} ${ACCEPTED_IMAGE_FORMATS.has(ext)} ${part}`);
           if (!fileName || !ACCEPTED_IMAGE_FORMATS.has(ext)) { part.file.resume(); continue; }
 
-          const hashName = await this.database.saveFile(fileName, part.file as any);
-          if (!hashName) { throw new Error(`Failed to safe image.`);}
+          let resUrl: string | null = null;
+          for await (const res of this.database.saveFile(part.file as unknown as File, fileName)) {
+            if (res.status === 'success') {
+              resUrl = res.url;
+            }
+          }
+          if (!resUrl) { throw new Error(`Failed to safe image.`);}
 
-          const data = await (await fetch(await this.database.mediaUrl(hashName))).buffer();
+          const data = await (await fetch(resUrl)).buffer();
 
           const size = imageSize(data) || { width: 1, height: 1, type: 'gif' };
           const blurhashRes = await new Promise((resolve, reject) => sharp(data)
@@ -206,7 +211,7 @@ export default class VapidServer extends Vapid {
             }));
             logger.info('Processing image', 3);
           response.data[part.fieldname] = response.data[part.fieldname] || {
-            src: hashName,
+            src: resUrl,
             width: size.width || 1,
             height: size.height || 1,
             type: size.type || 'gif',

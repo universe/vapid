@@ -1,13 +1,16 @@
 import { IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, stampRecord,UploadResult } from '@neutrino/core';
 import FirebaseProvider from '@neutrino/datastore/dist/src/providers/FireBaseProvider.js';
 import { IWebsite, renderRecord } from '@neutrino/runtime';
-import createDocument from '@simple-dom/document';
-import Serializer from '@simple-dom/serializer';
+import _createDocument from '@simple-dom/document';
+import _Serializer from '@simple-dom/serializer';
 import type { FirebaseApp } from 'firebase/app';
 import { User } from 'firebase/auth';
 import { getStorage, ref, uploadBytesResumable } from 'firebase/storage';
 
-import { DataAdapter, SortableUpdate } from "./types";
+import { DataAdapter, SortableUpdate } from "./types.js";
+
+const createDocument = _createDocument as unknown as typeof _createDocument.default;
+const Serializer = _Serializer as unknown as typeof _Serializer.default;
 
 function sortRecords(a: IRecord, b: IRecord) {
   const ap = a.order ?? Infinity;

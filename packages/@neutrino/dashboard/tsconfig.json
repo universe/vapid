@@ -4,7 +4,16 @@
   "compilerOptions": {
     "outDir": "dist",
     "composite": true,
-    "isolatedModules": false
+    "isolatedModules": false,
+    "target": "ES2020",
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "module": "nodenext",
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "resolveJsonModule": true,
+    "lib": [ "ES2020", "DOM" ]
   },
   "references": [
     { "path": "../core" },

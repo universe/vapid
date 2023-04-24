@@ -1,7 +1,7 @@
 import type { IRecord,UploadResult } from '@neutrino/core';
 import type { IWebsite } from '@neutrino/runtime';
 
-import { DataAdapter, SortableUpdate } from "./types";
+import { DataAdapter, SortableUpdate } from "./types.js";
 
 export default class APIAdapter extends DataAdapter {
   private API_URL = import.meta.env.API_URL;

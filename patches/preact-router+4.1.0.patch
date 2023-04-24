@@ -1,0 +1,45 @@
+diff --git a/node_modules/preact-router/.DS_Store b/node_modules/preact-router/.DS_Store
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/preact-router/index.d.ts b/node_modules/preact-router/index.d.ts
+index 5c909e5..f93996f 100644
+--- a/node_modules/preact-router/index.d.ts
++++ b/node_modules/preact-router/index.d.ts
+@@ -93,4 +93,4 @@ declare module 'preact' {
+ 	export interface Attributes extends RoutableProps {}
+ }
+ 
+-export default Router;
++export = Router;
+diff --git a/node_modules/preact-router/match/index.d.ts b/node_modules/preact-router/match/index.d.ts
+index 13e617a..fa01850 100644
+--- a/node_modules/preact-router/match/index.d.ts
++++ b/node_modules/preact-router/match/index.d.ts
+@@ -13,4 +13,4 @@ export interface LinkProps extends preact.JSX.HTMLAttributes {
+ 
+ export function Link(props: LinkProps): preact.VNode;
+ 
+-export default Match;
++export = Match;
+diff --git a/node_modules/preact-router/package.json b/node_modules/preact-router/package.json
+index 2033051..2d19076 100644
+--- a/node_modules/preact-router/package.json
++++ b/node_modules/preact-router/package.json
+@@ -12,13 +12,15 @@
+ 		".": {
+ 			"module": "./dist/preact-router.mjs",
+ 			"import": "./dist/preact-router.mjs",
+-			"require": "./dist/preact-router.js"
++			"require": "./dist/preact-router.js",
++			"types": "./index.d.ts"
+ 		},
+ 		"./package.json": "./package.json",
+ 		"./match": {
+ 			"module": "./match/index.mjs",
+ 			"import": "./match/index.mjs",
+-			"require": "./match/index.js"
++			"require": "./match/index.js",
++			"types": "./match/index.d.ts"
+ 		},
+ 		"./match/package.json": "./match/package.json"
+ 	},

@@ -6,7 +6,8 @@
     "test": "wsrun -s test",
     "lint": "eslint '**/*.ts' '**/*.tsx'",
     "lint:fix": "eslint '**/*.ts' '**/*.tsx' --fix",
-    "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
+    "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
+    "postinstall": "patch-package"
   },
   "husky": {
     "hooks": {
@@ -47,10 +48,11 @@
     "firebase-tools": "^11.1.0",
     "husky": "^3.0.9",
     "mocha": "^5.2.0",
+    "patch-package": "6.5.1",
     "recursive-readdir": "^2.2.2",
     "ts-node": "^10.0.0",
     "type-fest": "^2.1.0",
-    "typescript": "^4.5.2",
+    "typescript": "4.9.5",
     "watch": "^1.0.2",
     "wsrun": "^5.2.4"
   }

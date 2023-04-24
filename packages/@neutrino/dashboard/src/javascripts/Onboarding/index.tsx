@@ -3,23 +3,27 @@ import './index.css';
 import './imageUpload.css';
 
 import { Palette } from '@neutrino/stdlib/src/ColorHelper/index.js';
-import LogInForm from '@universe/aether/esm/src/components/LogInForm';
-import Spinner from '@universe/aether/esm/src/components/Spinner';
+import LogInForm from '@universe/aether/components/LogInForm';
+import Spinner from '@universe/aether/components/Spinner';
 import type { SubDomain } from '@universe/campaign';
-import ColorThief from 'colorthief';
-import file2md5 from 'file2md5';
+import _ColorThief from 'colorthief';
+import _file2md5 from 'file2md5';
 import type { FirebaseApp } from "firebase/app";
 import { getAuth, User } from 'firebase/auth';
 import { doc,getFirestore, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, uploadString } from "firebase/storage";
 import { ComponentChildren } from 'preact';
 import { useEffect,useState } from 'preact/hooks';
-import ReactTextTransition, { presets } from "react-text-transition";
+import _ReactTextTransition, { presets } from "react-text-transition";
 
 import RocketButton from '../RocketButton/index.js';
 import Browser from './Browser/index.js';
 import loadingMessages from './loadingMessages.js';
 import defaultRecords from './stamp.js';
+
+const ColorThief = _ColorThief as unknown as typeof _ColorThief.default;
+const file2md5 = _file2md5 as unknown as typeof _file2md5.default;
+const ReactTextTransition = _ReactTextTransition as unknown as typeof _ReactTextTransition.default;
 
 const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const REALM = 'website.universe.app';
@@ -338,7 +342,7 @@ export default function Onboarding({ app, user, children, onComplete, onCancel, 
   const auth = app ? getAuth(app) : null;
 
   return <section class={`onboarding onboarding--${hidden ? 'hidden' : 'visible'}`}>
-    <img class="onboarding__logo" src="https://universe.app/images/ViaMrlzrslISXuQ7SuKcIw" />
+    <img class="onboarding__logo" src="https://cdn.universe.app/images/logos/wordmark-simple.svg" />
     {children || null}
     <button 
       class="universe__profile-image" 

@@ -1,8 +1,9 @@
 import '@universe/wysiwyg/styles/editor.css';
 
-import { DirectiveProps, SafeString,ValueHelper } from '@neutrino/core';
+import { DirectiveProps, SafeString, ValueHelper } from '@neutrino/core';
+import { options,Quill } from '@universe/wysiwyg';
 // import { Helper } from '@neutrino/core';
-import type { Quill } from '@universe/wysiwyg';
+// import type { Quill } from '@universe/wysiwyg';
 import { useEffect, useRef } from 'preact/hooks';
 import sanitizeHtml from 'sanitize-html';
 
@@ -32,7 +33,6 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
 
     useEffect(() => {
       (async() => {
-        const { Quill, options } = await import('@universe/wysiwyg');
         if (!editor.current) { return; }
         directive.prev = value;
         editor.current.innerHTML = '';

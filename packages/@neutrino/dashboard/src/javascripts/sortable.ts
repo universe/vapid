@@ -1,7 +1,7 @@
 import { NAVIGATION_GROUP_ID } from '@neutrino/core';
 import sortable from 'html5sortable';
 
-import { DataAdapter } from './adapters/types';
+import { DataAdapter } from './adapters/types.js';
 
 interface SortableUpdate {
   id: string;

@@ -13,4 +13,6 @@ export interface Options {
   containerSerializer: any;
   customDragImage: any;
 }
-export default function sortable(el: HTMLElement, opts: Partial<Options> | 'destroy' | 'disable' | 'enable' | 'serialize');
+
+declare function sortable(el: HTMLElement, opts: Partial<Options> | 'destroy' | 'disable' | 'enable' | 'serialize');
+export = sortable;

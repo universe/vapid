@@ -2,7 +2,7 @@ import './dashboard.css';
 
 import { BaseHelper, IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, Record as DBRecord, sortRecords, sortTemplatesAlphabetical, stampRecord, Template } from '@neutrino/core';
 import type { IWebsite } from '@neutrino/runtime';
-import Spinner from '@universe/aether/esm/src/components/Spinner';
+import Spinner from '@universe/aether/components/Spinner';
 import { toTitleCase } from '@universe/util';
 import { ComponentChildren,Fragment } from 'preact';
 import { createPortal } from 'preact/compat';
@@ -10,7 +10,7 @@ import { useEffect, useState } from 'preact/hooks';
 import Router, { route } from 'preact-router';
 import { Toaster } from 'react-hot-toast';
 
-import { DataAdapter } from './adapters/types';
+import { DataAdapter } from './adapters/types.js';
 import Editor from './Editor/index.js';
 import Preview from './Preview/index.js';
 import RocketButton from './RocketButton/index.js';
@@ -131,6 +131,7 @@ function Content(params: RouteParts) {
   const [ pageTemplatesOpen, setPageTemplatesOpen ] = useState(false);
   const [ previewLayout, setPreviewLayout ] = useState<'full' | 'desktop' | 'mobile'>('desktop');
   const [ localRecord, setLocalRecord ] = useState<IRecord | null>(null);
+  const [ isLocalTheme, setLocalTheme ] = useState<boolean>(false);
   const [ siteData, setSiteData ] = useState<IWebsite | null>(null);
   const [ records, setRecords ] = useState<Record<string, IRecord>>({});
 
@@ -144,6 +145,7 @@ function Content(params: RouteParts) {
       try {
         // const ws = new WebSocket(`ws${location.protocol === 'https:' ? 's' : ''}://${(location.host || 'localhost').split(':')[0]}:35729/livereload`);
         const ws = new WebSocket(`ws://localhost:35729/livereload`);
+        setLocalTheme(true);
         ws.onmessage = async(evt) => {
           const { command, data } = JSON.parse(evt.data) as { command: string; data: IWebsite; };
           console.log(`[WebSocket ${command}]`, data);
@@ -222,9 +224,9 @@ function Content(params: RouteParts) {
 
         <nav class="vapid-nav">
           <div class="item">
-            <button id="add-page" class="sidebar__add-page" onClick={() => { adapter?.deployTheme('neutrino', 'latest'); }}>
+            {isLocalTheme ? <button id="add-page" class="sidebar__add-page" onClick={() => { adapter?.deployTheme('neutrino', 'latest'); }}>
               Save Template
-            </button>
+            </button> : null}
             <button id="add-page" class="sidebar__add-page" onClick={() => { setPageTemplatesOpen(true); }}>
               Add a Page
             </button>

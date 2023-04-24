@@ -3,7 +3,7 @@ import { CollectionHelper, NeutrinoHelperOptions, NeutrinoValue, SafeString } fr
 import { InsertPosition, Namespace, NodeType, SimpleDocument, SimpleDocumentFragment, SimpleElement, SimpleNode,SimpleText  } from '@simple-dom/interface';
 import { uuid } from '@universe/util';
 
-import { HelperResolver } from './helpers';
+import { HelperResolver } from './helpers.js';
 import { GlimmerTemplate, IPageContext, IParsedTemplate, RendererComponentResolver } from './types.js';
 
 type SimpleParent = SimpleElement | SimpleDocument | SimpleDocumentFragment;

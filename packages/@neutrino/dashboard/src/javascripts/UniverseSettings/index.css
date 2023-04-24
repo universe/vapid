@@ -18,6 +18,10 @@
   transition: opacity .18s ease-in-out, visibility .18s ease-in-out;
 }
 
+.universe-settings .domains-page {
+  height: 100%;
+}
+
 .universe-settings--visible {
   opacity: 1;
   visibility: visible;
@@ -149,7 +153,7 @@
 
 .universe-settings__section {
   width: 100%;
-  max-width: 52rem;
+  max-width: 82rem;
   height: 100%;
   display: flex;
   justify-content: center;
@@ -165,6 +169,10 @@
   visibility: hidden;
   pointer-events: none;
   transition: opacity .18s ease-in-out, visibility .18s ease-in-out;
+}
+
+.login-form {
+  margin-top: -12.8rem;
 }
 
 .universe-settings__section--active {

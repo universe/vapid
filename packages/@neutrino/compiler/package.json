@@ -55,7 +55,7 @@
     "mini-css-extract-plugin": "^0.4.0",
     "node-fetch": "^2.0.0",
     "normalize-url": "6",
-    "pino": "^6.11.3",
+    "pino": "^8.11.0",
     "pluralize": "^8.0.0",
     "postcss": "^8.3.5",
     "postcss-import": "^14.0.2",
@@ -80,6 +80,6 @@
     "@types/sharp": "^0.29.5",
     "firebase-tools": "11",
     "nock": "^13.2.2",
-    "pino-pretty": "^7.3.0"
+    "pino-pretty": "^9.4.0"
   }
 }

@@ -1,9 +1,10 @@
 import "./index.css";
 
-import type { IMultiverseDocument } from '@universe/admin';
-import BillingPage from "@universe/aether/esm/src/components/Billing/index.js";
-import LogInForm from "@universe/aether/esm/src/components/LogInForm";
-import type { SubDomain } from '@universe/campaign';
+import BillingPage from "@universe/aether/components/Billing";
+import DomainsPage from "@universe/aether/components/DomainsPage";
+import LogInForm from "@universe/aether/components/LogInForm";
+import TeamPage from "@universe/aether/components/TeamPage";
+import type { IMultiverseDocument, SubDomain } from '@universe/campaign';
 import { FirebaseApp } from 'firebase/app';
 import { User } from 'firebase/auth';
 import { doc, getFirestore, onSnapshot } from 'firebase/firestore';
@@ -17,17 +18,27 @@ interface UniverseSettingsProps {
   onClose: () => void;
 }
 
+async function postHeaders(user: User) {
+  return { Authorization: `Bearer ${await user?.getIdToken()}`, 'Content-Type': 'application/json' };
+}
+
 export default function UniverseSettings({ app, user, realm, hidden, onClose }: UniverseSettingsProps) {
   const [ multiverse, setMultiverse ] = useState<IMultiverseDocument | null>(null);
+  const [ authorization, setAuthorization ] = useState<string | null>(null);
   const [ active, setActive ] = useState<'account' | 'team' | 'billing' | 'domains' | 'languages'>('account');
+  console.log(multiverse);
   useEffect(() => {
     if (!app || !user || !realm) { return; }
-    const firestore = getFirestore(app);
-    return onSnapshot(doc(firestore, 'multiverse', realm), async(doc) => {
-      const data = await doc.data() as IMultiverseDocument;
-      data && Object.keys(data).length && setMultiverse(multiverse);
-    });
-  }, [ app, user ]);
+    setTimeout(async() => {
+      setAuthorization(await user?.getIdToken());
+      const firestore = getFirestore(app);
+      return onSnapshot(doc(firestore, 'multiverse', realm), async(doc) => {
+        const data = await doc.data() as IMultiverseDocument;
+        data?.billing && (data.billing.invoices = (data.billing.invoices || {}));
+        data && Object.keys(data).length && setMultiverse(data);
+      });
+    }, 5000);
+  }, [ app, user, realm ]);
 
   return <section class={`universe-settings universe-settings--${hidden ? 'hidden' : 'visible'}`}>
     <nav class="universe-settings__nav">
@@ -44,14 +55,6 @@ export default function UniverseSettings({ app, user, realm, hidden, onClose }: 
           <button onClick={() => setActive('domains')}class={`universe-settings__menu-link ${active === 'domains' ? 'universe-settings__menu-link--active' : ''}`}>Domains</button>
         </li>
         <li class="universe-settings__menu-item">
-          <button 
-            onClick={() => setActive('languages')}
-            class={`universe-settings__menu-link ${active === 'languages' ? 'universe-settings__menu-link--active' : ''}`}
-          >
-            Languages
-          </button>
-        </li>
-        <li class="universe-settings__menu-item">
           <button onClick={() => setActive('team')}class={`universe-settings__menu-link ${active === 'team' ? 'universe-settings__menu-link--active' : ''}`}>Team</button>
         </li>
         <li class="universe-settings__menu-item">
@@ -63,21 +66,41 @@ export default function UniverseSettings({ app, user, realm, hidden, onClose }: 
       <LogInForm serverUrl={import.meta.env.API_URL} app={app!} onEmailInput={console.log}  />
     </section>
     <section class={`universe-settings__section ${active === 'domains' ? 'universe-settings__section--active' : ''}`}>
-      <h1 class="universe-settings__title">Domain Settings</h1>
+      <DomainsPage apiUrl={import.meta.env.API_URL} realm={realm} campaign={multiverse ?? undefined} authorization={authorization} />
     </section>
     <section class={`universe-settings__section ${active === 'team' ? 'universe-settings__section--active' : ''}`}>
-      <h1 class="universe-settings__title">Team Settings</h1>
+      <TeamPage campaign={multiverse} />
     </section>
     <section class={`universe-settings__section ${active === 'billing' ? 'universe-settings__section--active' : ''}`}>
       <BillingPage 
-        stripeToken="pk_test_jdorWHG5QRbN9xF9wX2HzjRp00dHfdca1k"
-        campaignName="Name" 
-        billing={multiverse?.billing || null} 
-        onPaymentMethod={console.log} 
-        onCardRemove={console.log} 
-        onPrint={console.log} 
-        onAutoPay={console.log} 
+        stripeToken={import.meta.env.STRIPE_TOKEN || ''}
+        campaignName={multiverse?.realm || ''}
+        billing={multiverse?.billing ? { ...multiverse?.billing } : null}
+        onAutoPay={async(autopay: boolean) => {
+          if (!user || !realm || typeof autopay !== 'boolean') { return; }
+          await window.fetch(`${import.meta.env.API_URL}/v1/money/card`, {
+            method: "PUT",
+            headers: await postHeaders(user),
+            body: JSON.stringify({ autopay, realm }),
+          }).then(res => res.json());
+        }}
         onPayment={console.log}
+        onPaymentMethod={async(id: string) => {
+          if (!user) { return; }
+          const data = await window.fetch(`${import.meta.env.API_URL}/v1/money/card`, {
+            method: "POST",
+            headers: await postHeaders(user),
+            body: JSON.stringify({ paymentId: id, realm }),
+          }).then(res => res.json());
+          if (!data.data) { throw new Error('Error saving card.'); }
+        }}
+        onCardRemove={async() => {
+          if (!user) { return; }
+            return window.fetch(`${import.meta.env.API_URL}/v1/money/card`, {
+              method: "DELETE",
+              headers: await postHeaders(user),
+            }).then(res => res.json());
+        }}
       />
     </section>
   </section>;

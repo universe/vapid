@@ -8,6 +8,7 @@ export { default as count } from './CountHelper.js';
 export { default as date } from './DateHelper.js';
 export { default as docs } from './DocsHelper.js';
 export { default as each } from './EachHelper.js';
+export { default as emailform } from './EmailHelper/index.js';
 export { default as eq } from './EqHelper.js';
 export { default as font } from './FontHelper/index.js';
 export { default as html } from './HtmlHelper/index.js';

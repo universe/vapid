@@ -24,7 +24,7 @@ import { connectStorageEmulator,FirebaseStorage, getStorage, ref, uploadBytesRes
 import mime from 'mime';
 import pino from 'pino';
 
-const logger = pino();
+const logger = pino({ transport: { target: 'pino-pretty', options: { colorize: true } } });
 const ENV = globalThis?.process?.env || {};
 const DEFAULT_STORAGE_ROOT = 'uploads';
 
@@ -314,12 +314,12 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     name = name || type;
     const ext = name?.split('.')?.pop() || '';
     const contentType = type || mime.getType(ext) || 'application/octet-stream';
-
+    const url = await this.mediaUrl(filePath);
     if (typeof file === 'string') {
       await uploadString(fileRef, file, 'data_url', {
         contentType,
       });
-      yield { status: 'success', url: await this.mediaUrl(filePath) };
+      yield { status: 'success', url };
       return;
     }
 
@@ -336,7 +336,7 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
         if (snapshot.state === 'running') prevDeferred.resolve({ status: 'pending', progress });
       },
       (error) => deferred.resolve({ status: 'error', message: error.message }),
-      () => deferred.resolve({ status: 'success', url: filePath }),
+      () => deferred.resolve({ status: 'success', url }),
     );
 
     while (true) {

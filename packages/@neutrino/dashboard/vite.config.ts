@@ -3,17 +3,15 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 import * as path from 'path';
 import { defineConfig } from 'vite';
 
-module.exports = defineConfig({
+export default defineConfig({
   root: './src',
-  base: 'https://website.universe.app',
+  base: 'https://website.universe.app/',
   envDir: path.join(__dirname),
-  envPrefix: [ 'API_URL', 'THEME_URL' ],
-  server: {
-    https: true,
-  },
+  envPrefix: [ 'API_URL', 'THEME_URL', 'STRIPE_TOKEN' ],
   resolve: {
     dedupe: [ 'preaact', 'preact/hooks', 'preact/compat' ],
     alias: [
+      { find: /^#aether\/(.*)/, replacement: '@universe/aether/$1' },
       { find: 'react', replacement: 'preact/compat' },
       { find: 'react-dom', replacement: 'preact/compat' },
       { find: 'create-react-class', replacement: 'preact/compat/lib/create-react-class' },

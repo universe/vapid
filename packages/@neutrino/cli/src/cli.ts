@@ -21,7 +21,7 @@ declare global {
   }
 }
 
-const logger = pino();
+const logger = pino({ transport: { target: 'pino-pretty', options: { colorize: true } } });
 // const Generator = require('../dist/generator');
 // const VapidDeployer = require('../dist/runners/VapidDeployer');
 

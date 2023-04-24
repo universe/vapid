@@ -8,7 +8,7 @@ import { toTitleCase } from '@universe/util';
 import { ComponentChildren, createElement,Fragment } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { Router } from 'preact-router';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 import { DataAdapter } from '../adapters/types.js';
 import { DraggableList } from './DraggableList.js';

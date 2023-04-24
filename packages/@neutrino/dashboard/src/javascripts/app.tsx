@@ -36,6 +36,13 @@ function App() {
   const [ universeSettingsHidden, setUniverseSettingsHidden ] = useState(true);
   const [ claims, setClaims ] = useState<Record<string, Record<string, 1 | 0>>>({});
 
+  // function userInitials(name: string) {
+  //   const parts = name.split(' ');
+  //   const firstName = parts[0];
+  //   const lastName = parts.pop() || '';
+  //   return `${firstName[0] || '?'}${lastName[0] || '?'}`;
+  // }
+  //
   // const [ localApp, setLocalApp ] = useState<FirebaseApp | null>(null);
   // const [ creds, setCreds ] = useState<{ realm: string, config: FirebaseOptions, token: string; projectId: string; } | null>(null);
   //
@@ -131,27 +138,20 @@ function App() {
           </ul>
         </figure>
         
-        <button 
+        {/* <button 
           class="universe__profile-image" 
           style={`--user-image: url(${user.photoURL || ''})`} 
           onClick={_ => setShowOnboarding(true)}
         >
           {userInitials(user.displayName || '')}
-        </button>
-        {/* <button 
+        </button> */}
+        <button 
           class="universe__site-settings" 
           onClick={_ => setUniverseSettingsHidden(false)}
-        >Site Settings</button> */}
+        >Site Settings</button>
       </section>
     </Dashboard> : null}
   </>;
-}
-
-function userInitials(name: string) {
-  const parts = name.split(' ');
-  const firstName = parts[0];
-  const lastName = parts.pop() || '';
-  return `${firstName[0] || '?'}${lastName[0] || '?'}`;
 }
 
 render(<App />, document.getElementById('main') as HTMLElement);

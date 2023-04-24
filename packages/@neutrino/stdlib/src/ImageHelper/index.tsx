@@ -360,7 +360,7 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
                 return watch;
             }
         });
-        module.exports = __toCommonJS(runtime_exports);
+        // module.exports = __toCommonJS(runtime_exports);
         // src/decodeBlurHash.ts
         var digit = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~";
         var decode83 = function(str, start, end) {

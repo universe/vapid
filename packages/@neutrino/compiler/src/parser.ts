@@ -5,7 +5,7 @@ import pino from 'pino';
 
 export type ComponentResolver = (name: string) => string | null;
 
-const logger = pino();
+const logger = pino({ transport: { target: 'pino-pretty', options: { colorize: true } } });
 
 const PAGE_META_KEYWORD = 'meta';
 

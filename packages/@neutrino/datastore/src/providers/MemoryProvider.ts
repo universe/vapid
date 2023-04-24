@@ -8,7 +8,7 @@ import pino from 'pino';
 import serve from 'serve-handler';
 import * as tmp from 'tmp';
 
-const logger = pino();
+const logger = pino({ transport: { target: 'pino-pretty', options: { colorize: true } } });
 let MAX_ID = 1;
 const getNextId = () => `${++MAX_ID}`;
 

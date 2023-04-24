@@ -5,7 +5,7 @@ import glob from 'glob';
 import * as path from 'path';
 import pino from 'pino';
 
-const logger = pino();
+const logger = pino({ transport: { target: 'pino-pretty', options: { colorize: true } } });
 
 const PRIVATE_FILE_PREFIXES = new Set([ '_', '.' ]);
 
