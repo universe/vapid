@@ -4,7 +4,7 @@ import { DirectiveProps, SafeString, ValueHelper } from '@neutrino/core';
 import { uuid } from '@universe/util';
 import Color from 'color';
 import colorjs from 'colorjs.io';
-import { createPalleteFromColor } from 'palettey';
+import { createPaletteFromColor } from 'palettey';
 import { useEffect, useState } from 'preact/hooks';
 
 interface ColorHelperOptions {
@@ -160,8 +160,8 @@ function getpaletteText(palette: Ipalette): IpaletteText {
 }
 
 function getpalette(color: string, cta: string | null): Ipalette {
-  const palette = createPalleteFromColor('primary', color.replaceAll('#', ''), { useLightness: true }).primary as unknown as palette;
-  const ctapalette = cta ? createPalleteFromColor('primary', cta.replaceAll('#', ''), { useLightness: true }).primary as unknown as palette : null;
+  const palette = createPaletteFromColor('primary', color.replaceAll('#', ''), { useLightness: true }).primary as unknown as palette;
+  const ctapalette = cta ? createPaletteFromColor('primary', cta.replaceAll('#', ''), { useLightness: true }).primary as unknown as palette : null;
 
   return {
     primary:  palette[500],

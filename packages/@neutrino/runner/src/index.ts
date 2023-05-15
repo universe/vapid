@@ -159,15 +159,7 @@ export class Vapid {
       pages: pageMeta,
       collection,
       navigation,
-      site: {
-        name: this.config.name,
-        domain: this.config.domain,
-        media: await this.database.mediaUrl(),
-        theme: {
-          name: '',
-          version: '',
-        },
-      },
+      site: await this.database.getMetadata(),
     };
   }
 

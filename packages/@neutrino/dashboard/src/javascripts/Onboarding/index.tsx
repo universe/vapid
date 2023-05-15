@@ -96,7 +96,7 @@ function LoginPanel({ app, visible, onClose }: { app: FirebaseApp | null; visibl
   const user = auth?.currentUser;
   const dismissable = !!user;
   return <section class={`onboarding__login ${visible === true ? 'onboarding__login--active' : ''} ${dismissable ? 'onboarding__login--dismissable' : ''}`}>
-    <LogInForm serverUrl={import.meta.env.API_URL} app={app!} onEmailInput={console.log} />
+    <LogInForm app={app!} onEmailInput={console.log} />
     <button onClick={() => onClose()} disabled={!user?.emailVerified} class="onbaording__login-dismiss">{user?.emailVerified ? 'Get Started!' : 'Verify Your Email'}</button>
   </section>;
 }

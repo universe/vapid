@@ -30,6 +30,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
   private records: Map<string, IRecord> = new Map();
   private templates: Map<string, ITemplate> = new Map();
   private staticServer: http.Server | null = null;
+  private env: Record<string, any> = {};
 
   async start() {
     logger.info('Starting Memory Provider');
@@ -82,7 +83,15 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
   }
 
   // TODO: Implement.
-  async getMetadata(): Promise<IWebsiteMeta> { return { name: 'Site', domain: '', media: '', theme: { name: '', version: '' } }; }
+  async getMetadata(): Promise<IWebsiteMeta> {
+    return { 
+      name: 'Site', 
+      domain: '', 
+      media: '', 
+      theme: { name: '', version: '' },
+      env: { ...this.env },
+    }; 
+  }
 
   async getAllTemplates(): Promise<ITemplate[]> {
     return [...this.templates.values()];

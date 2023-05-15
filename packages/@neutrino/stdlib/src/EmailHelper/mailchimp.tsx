@@ -1,20 +1,20 @@
 /* eslint-disable max-len */
-export default function MailchimpButton({ onClick }: { onClick: () => void }) {
+export default function MailchimpButton({ realm, onClick }: { realm: string; onClick: () => void }) {
   return <a
     class="email-form__button email-form__mailchimp"
     target="_blank" 
-    rel="noopener noreferrer"
+    rel="opener noreferrer"
     onClick={(evt) => {
       onClick();
       window.open(
         (evt.currentTarget as HTMLAnchorElement).href,
         'targetWindow',
-        `toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=620,height=700`,
+        `popup=yes,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=620,height=700`,
       );
       evt.preventDefault();
       return false;
     }}
-    href="https://login.mailchimp.com/oauth2/authorize?response_type=code&client_id=757098926896"
+    href={`https://api.universe.app/v1/auth/mailchimp?realm=${realm}`}
   >
     <svg xmlns="http://www.w3.org/2000/svg" class="brandLogo brandLogo--lockup--animated" aria-label="Mailchimp" width="250" height="60" viewBox="0 0 250 60">
       <g class="brandLogo__freddie">

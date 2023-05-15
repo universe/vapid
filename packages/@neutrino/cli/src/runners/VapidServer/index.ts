@@ -184,6 +184,7 @@ export default class VapidServer extends Vapid {
       };
       for await (const part of req.parts()) {
         logger.info('Processing an image');
+        if (part.type !== 'file') { continue; }
         if (part.file) {
           const { name, ext } = path.parse(part.filename);
           const fileName = `${name}${ext}`;
@@ -274,9 +275,10 @@ export default class VapidServer extends Vapid {
         name: this.config.name,
         domain: this.config.domain,
         media: await this.database.mediaUrl(),
+        env: {},
         theme: {
           name: this.config.name,
-          version: '0.0.1',
+          version: 'latest',
         },
       },
       hbs: await this.compiler.parse(this.paths.www),

@@ -3,7 +3,7 @@ import { compileExpression as compileExpressionOrig, useDotAccessOperatorAndOpti
 import { customAlphabet } from 'nanoid';
 import pluralize from 'pluralize';
 
-const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 10);
+export const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 10);
 
 export interface IWebsiteTheme {
   name: string;
@@ -15,6 +15,7 @@ export interface IWebsiteMeta {
   domain: string;
   media: string;
   theme: IWebsiteTheme;
+  env: Record<string, any>;
 }
 
 export enum PageType {

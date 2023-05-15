@@ -2,7 +2,7 @@ import './app.css';
 import 'preact/debug';
 import 'preact/devtools';
 
-import type { SubDomain } from '@universe/campaign';
+import type { IMultiverseDocument,SubDomain } from '@universe/campaign';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged,User } from 'firebase/auth';
 import { render } from 'preact';
@@ -12,7 +12,7 @@ import { route } from 'preact-router';
 import Adapter from './adapters/firestore.js';
 import { Dashboard } from './dashboard.js';
 import Onboarding from './Onboarding/index.js';
-import UniverseSettings from './UniverseSettings/index.js';
+import UniverseSettings, { UniverseSettingsPageIds } from './UniverseSettings/index.js';
 
 const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const UNIVERSE_APP_CONFIG = {
@@ -33,40 +33,10 @@ function App() {
   const [ realm, setRealm ] = useState<SubDomain | null>(null);
   const [ adapter, setAdapter ] = useState<Adapter | null>(null);
   const [ showOnboarding, setShowOnboarding ] = useState(false);
-  const [ universeSettingsHidden, setUniverseSettingsHidden ] = useState(true);
+  const [ universeSettingsPage, setUniverseSettingsPage ] = useState<UniverseSettingsPageIds>(null);
   const [ claims, setClaims ] = useState<Record<string, Record<string, 1 | 0>>>({});
-
-  // function userInitials(name: string) {
-  //   const parts = name.split(' ');
-  //   const firstName = parts[0];
-  //   const lastName = parts.pop() || '';
-  //   return `${firstName[0] || '?'}${lastName[0] || '?'}`;
-  // }
-  //
-  // const [ localApp, setLocalApp ] = useState<FirebaseApp | null>(null);
-  // const [ creds, setCreds ] = useState<{ realm: string, config: FirebaseOptions, token: string; projectId: string; } | null>(null);
-  //
-  // useEffect(() => {
-  //   if (!realm) { return; }
-  //   (async() => {
-  //     const token = await user?.getIdToken();
-  //     if (!token) { return; }
-  //     const res = await fetch(`${import.meta.env.API_URL}/v1/auth/${realm}`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     setCreds((await res.json()).data);
-  //   })();
-  // }, [user, realm]);
-  //
-  // useEffect(() => {
-  //   (async() => {
-  //     if (!creds) { return; }
-  //     const localApp = initializeApp(creds.config, creds.realm);
-  //     const auth = getAuth(localApp);
-  //     await signInWithCustomToken(auth, creds.token);
-  //     setLocalApp(localApp);
-  //   })();
-  // }, [creds]);
+  const [ accountPickerIsOpen, setAccountPickerIsOpen ] = useState<boolean>(false);
+  const [ multiverse, setMultiverse ] = useState<IMultiverseDocument | null>(null);
   
   useEffect(() => {
     const auth = getAuth(app);
@@ -109,16 +79,30 @@ function App() {
       setShowOnboarding(false);
       setRealm(realm);
     }} onCancel={() => setShowOnboarding(false)} />
-    <UniverseSettings app={app || null} user={user} realm={realm} hidden={universeSettingsHidden} onClose={() => setUniverseSettingsHidden(true)} />
-    {adapter && user ? <Dashboard root="" adapter={adapter}>
+    <UniverseSettings app={app || null} user={user} realm={realm} page={universeSettingsPage} onChange={(page) => setUniverseSettingsPage(page)} onMultiverse={setMultiverse} />
+    {adapter && user ? <Dashboard root="" adapter={adapter} beforeDeploy={() => {
+      if (!multiverse) { return false; }
+      if (!multiverse?.billing?.paymentMethod) { 
+        setUniverseSettingsPage('billing-alert');
+        return false;
+      }
+      return true;
+    }}>
       <section class="universe__nav">
         <figure class="universe__account">
           <img class="universe__account-photo" onError={evt => (evt.target as HTMLImageElement).src = TRANSPARENT_PIXEL} src={`https://${realm}/app/photo`} />
           <h1 class="universe__title">{realm}</h1>
           <ul
-            class="universe__account-picker" 
-            onBlur={evt => setTimeout(() => (evt.target as HTMLElement).scrollTop = 0, 200)} 
-            onMouseLeave={evt => setTimeout(() => (evt.target as HTMLElement).scrollTop = 0, 200)}
+            tabIndex={-1}
+            class={`universe__account-picker universe__account-picker--${accountPickerIsOpen ? 'open' : 'closed'}`} 
+            onClick={(evt) => {
+              setAccountPickerIsOpen(!accountPickerIsOpen);
+              evt.currentTarget?.focus();
+            }}
+            onBlur={evt => {
+              setAccountPickerIsOpen(false);
+              (evt.target as HTMLElement).scrollTop = 0;
+            }} 
           >
             {Object.keys(claims).filter(r => r === realm).map(realm => <li key={realm} class="universe__account-picker-row">
               <img class="universe__account-picker-photo" onError={evt => (evt.target as HTMLImageElement).src = TRANSPARENT_PIXEL} src={`https://${realm}/app/photo`} />
@@ -137,17 +121,9 @@ function App() {
               </li>)}
           </ul>
         </figure>
-        
-        {/* <button 
-          class="universe__profile-image" 
-          style={`--user-image: url(${user.photoURL || ''})`} 
-          onClick={_ => setShowOnboarding(true)}
-        >
-          {userInitials(user.displayName || '')}
-        </button> */}
         <button 
           class="universe__site-settings" 
-          onClick={_ => setUniverseSettingsHidden(false)}
+          onClick={_ => setUniverseSettingsPage('team')}
         >Site Settings</button>
       </section>
     </Dashboard> : null}

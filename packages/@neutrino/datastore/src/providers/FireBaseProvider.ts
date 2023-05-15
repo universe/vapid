@@ -191,8 +191,14 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
 
   async getMetadata(): Promise<IWebsiteMeta> {
     const db = this.getDatabase();
-    const data = await getDoc(doc(db, this.getFirebasePrefix()));
-    return (data.data() || { name: this.config.name, domain: this.config.domain, media: this.config.domain }) as IWebsiteMeta;
+    const data = (await getDoc(doc(db, this.getFirebasePrefix())))?.data() || {} as Partial<IWebsiteMeta>;
+    return {
+      name: data.name || this.config.name, 
+      domain: data.domain || this.config.domain, 
+      media: `https://${data.domain || this.config.domain}`,
+      theme: { name: 'neutrino', version: 'latest' },
+      env: { realm: 'demo.universe.app' },
+    };
   }
 
   async getAllRecords(): Promise<IRecord[]> {

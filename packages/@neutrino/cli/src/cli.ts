@@ -34,7 +34,7 @@ function withVapid(command: (vapid: VapidServer) => void) {
       updateNotifier({ pkg }).notify({ isGlobal: true });
       await command(vapid);
     }
- catch (err) {
+    catch (err) {
       // TODO: Deployer throws err.message, handle better
       const message = err.response && err.response.body ? err.response.body.message : err.message;
       logger.error(message);
@@ -51,14 +51,14 @@ function withVapid(command: (vapid: VapidServer) => void) {
 program
   .command('new <target>')
   .description('create a new website')
-  .action((target) => {
+  .action((_target) => {
     // Generator.copyTo(target);
 
     logger.info('Site created.');
-    logger.extra([
-      'To start the server now, run:',
-      `  vapid start ${target}`,
-    ]);
+    // logger.extra([
+    //   'To start the server now, run:',
+    //   `  vapid start ${target}`,
+    // ]);
   });
 
 /**

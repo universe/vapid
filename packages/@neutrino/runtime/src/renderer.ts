@@ -1,7 +1,6 @@
 import type { ASTv1 } from '@glimmer/syntax';
-import { CollectionHelper, NeutrinoHelperOptions, NeutrinoValue, SafeString } from '@neutrino/core';
+import { CollectionHelper, nanoid,NeutrinoHelperOptions, NeutrinoValue, SafeString } from '@neutrino/core';
 import { InsertPosition, Namespace, NodeType, SimpleDocument, SimpleDocumentFragment, SimpleElement, SimpleNode,SimpleText  } from '@simple-dom/interface';
-import { uuid } from '@universe/util';
 
 import { HelperResolver } from './helpers.js';
 import { GlimmerTemplate, IPageContext, IParsedTemplate, RendererComponentResolver } from './types.js';
@@ -181,7 +180,7 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
             const props = subData.props = subData.props || {} as NeutrinoValue;
             props && (props[key] = value);
           }
-          subData['component'] = { id: uuid() as string } as unknown as NeutrinoValue;
+          subData['component'] = { id: nanoid() as string } as unknown as NeutrinoValue;
           const childEnv = { ...env, root: fragment, program: ast, contents: node.children };
           traverse(childEnv, tmpl, context, subData);
           appendFragment(root, fragment);
@@ -201,12 +200,18 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
               }
             }
           }
+          // TODO: Only inline our css in dev mode. For prod builds, upload stylesheets and reference a URL.
           if (url && tmpl.stylesheets[url]) {
-            el.setAttribute('rel', 'stylesheet');
-            el.setAttribute('href', tmpl.stylesheets[url].path);
-            const style = document.createElementNS(env.namespace, 'style');
-            style.appendChild(document.createTextNode(tmpl.stylesheets[url].content));
-            root.appendChild(style);
+            if (env.isDevelopment) {
+              el.parentNode?.removeChild(el);
+              const style = document.createElementNS(env.namespace, 'style');
+              style.appendChild(document.createTextNode(tmpl.stylesheets[url].content));
+              root?.appendChild(style);
+            }
+            else {
+              el.setAttribute('rel', 'stylesheet');
+              el.setAttribute('href', tmpl.stylesheets[url].path);
+            }            
           }
           else {
             for (const attr of node.attributes) {
@@ -362,7 +367,7 @@ export function render(
   const ast = tmpl.ast;
   const discoveredHelpers: Set<ReturnType<typeof resolveHelper>> = new Set();
   const env: VapidRuntimeEnv = {
-    isDevelopment: false,
+    isDevelopment: data.env.isDev,
     document,
     root: document.createDocumentFragment(),
     namespace: Namespace.HTML,
@@ -376,7 +381,19 @@ export function render(
     },
   };
   traverse(env, tmpl, context, data as unknown as Record<string, NeutrinoValue>);
+  
   let el: SimpleNode | null = env.root.firstChild;
+
+  // Append development styles to the document tree if needed.
+  if (env.isDevelopment) {
+    const style = document.createElementNS(env.namespace, 'style');
+    style.appendChild(document.createTextNode(`
+      [data-neutrino="content"] { display: contents; }
+      [data-neutrino="content"]:empty { height: 0; width: 100%; }
+    `));
+    // Typings are wonky, but this works.
+    (env.root as unknown as HTMLElement)?.firstElementChild?.firstElementChild?.appendChild(style as unknown as HTMLStyleElement);
+  }
 
   for (const field of Object.values(tmpl?.templates?.[`${tmpl.name}-${tmpl.type}`]?.fields || {})) {
     if (!field) { continue; }

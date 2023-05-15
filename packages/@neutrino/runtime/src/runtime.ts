@@ -141,6 +141,7 @@ async function makeRenderRecord(data: IRecordData, templates: Record<string, ITe
         record,
         records: context.pages,
         media: context.site.media,
+        website: context.site,
       },
     ).data(data?.[key] as unknown as never) : null;
   }
@@ -156,6 +157,7 @@ async function makeRenderRecord(data: IRecordData, templates: Record<string, ITe
         record,
         records: context.pages,
         media: context.site.media,
+        website: context.site,
       },
     );
     helperRecord[key] = helperRecord[key] || helper ? await (helper.data as any)() : null;
@@ -209,6 +211,7 @@ export async function renderRecord(
     components: siteData.hbs.components,
     stylesheets: siteData.hbs.stylesheets,
   };
+
   const context = makePageContext(isProduction, record, records, Object.values(siteData.hbs.templates), siteData);
   return render(document as unknown as SimpleDocument, renderTemplate, context, resolveComponent, resolveHelper);
 }

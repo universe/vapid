@@ -25,6 +25,7 @@
   ],
   "dependencies": {
     "@neutrino/core": "1.0.0-beta.0",
+    "@neutrino/runtime": "1.0.0-beta.0",
     "commander": "^2.12.2",
     "firebase": "^9.8.3",
     "mime": "^3.0.0",

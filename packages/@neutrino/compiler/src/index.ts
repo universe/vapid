@@ -22,12 +22,12 @@ import autoprefixer from 'autoprefixer';
 import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import glob from 'glob';
-import { basename, dirname, join,resolve } from 'path';
+import { basename, dirname, join, resolve } from 'path';
 import postcss from 'postcss';
 import postcssImport from 'postcss-import';
 import { Document } from 'simple-dom';
 
-import { ComponentResolver,parse } from './parser.js';
+import { ComponentResolver, parse } from './parser.js';
 
 /**
  * TemplateCompiler class
@@ -93,7 +93,7 @@ import { ComponentResolver,parse } from './parser.js';
           autoprefixer,
         ]).process(readFileSync(from), { from, map: { inline: true } })).css;
         const hash = createHash('md5').update(stylesheet.content).digest('hex');
-        stylesheet.path = `/stylesheets/${basename(path)}.${hash}.css`;
+        stylesheet.path = `/stylesheets/${basename(path, '.css')}.${hash}.css`;
         stylesheets[path] = stylesheet;
       }
 

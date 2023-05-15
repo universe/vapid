@@ -1,4 +1,4 @@
-import { IProvider, IRecord, ITemplate, IWebsiteMeta,PageType, Record, Template,UploadResult } from '@neutrino/core';
+import { IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Record, Template,UploadResult } from '@neutrino/core';
 
 declare global {
   /* eslint-disable-next-line @typescript-eslint/no-namespace */

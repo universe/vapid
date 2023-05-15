@@ -161,10 +161,10 @@ export default class FirestoreAdapter extends DataAdapter {
     return this.theme = data;
   }
 
-  async deployTheme(): Promise<IWebsite> {
+  async deployTheme(name: string, version: string): Promise<IWebsite> {
     if (!this.theme) { throw new Error('Missing Theme.'); }
     const blob = new Blob([JSON.stringify(this.theme)], { type: "application/json" });
-    const slug = `themes/${'neutrino'}/${'neutrino'}@${'latest'}.json`;
+    const slug = `themes/${name}/${name}@${version}.json`;
     const storage = getStorage(this.app, `gs://${'website.universe.app'}`);
     const fileRef = ref(storage, slug);
     const uploadTask = uploadBytesResumable(fileRef, blob, { contentType: "application/json", cacheControl: 'public,max-age=0' });
@@ -230,6 +230,13 @@ export default class FirestoreAdapter extends DataAdapter {
   async deploy(website: IWebsite, records: Record<string, IRecord>) {
     const storage = getStorage(this.app, `gs://${website.meta.domain}`);
     const discoveredDefaults = new Set(Object.keys(WELL_KNOWN_PAGES));
+
+    for (const stylesheet of Object.values(website.hbs.stylesheets)) {
+      const fileRef = ref(storage, stylesheet.path);
+      const blob = new Blob([stylesheet.content], { type : 'text/css' });
+      const uploadTask = uploadBytesResumable(fileRef, blob, { contentType: 'text/css', cacheControl: 'public,max-age=0' });
+      uploadTask.on('state_changed', console.log, console.error, console.log);
+    }
 
     // For every record that isn't a settings page, render the page and upload.
     for (const record of Object.values(records)) {

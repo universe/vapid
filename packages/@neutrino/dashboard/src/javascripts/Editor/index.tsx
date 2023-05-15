@@ -3,7 +3,7 @@ import './Editor.css';
 // import '../../../../core/directives/choice/index.css';
 // import '../../../../core/directives/markdown/index.css';
 import { BaseHelper, DirectiveField, DirectiveMeta,IField, IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, sortRecords } from '@neutrino/core';
-import { IPageContext, IWebsite, makePageContext, resolveHelper,Template } from '@neutrino/runtime';
+import { IPageContext, IWebsite, makePageContext, resolveHelper, Template } from '@neutrino/runtime';
 import { toTitleCase } from '@universe/util';
 import { ComponentChildren, createElement,Fragment } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
@@ -72,14 +72,38 @@ function CollectionList({ domain, template, page, collection, site, onChange }: 
           {Template.tableColumns(template).map(column => {
             const field = template?.fields?.[column];
             if (!field || field.type !== 'image') { return null; }
-            const directive = findDirective('content', domain, column, field, { templateId: record.templateId, record: null, records: [], media: site.meta.media });
+            const directive = findDirective(
+              'content', 
+              domain, 
+              column, 
+              field, 
+              { 
+                templateId: record.templateId, 
+                record: null, 
+                records: [], 
+                media: site.meta.media, 
+                website: site.meta,
+              },
+            );
             return directive?.preview(record?.content?.[column] as unknown as any) || null;
           }).filter(Boolean).slice(0, 1)}
         </div>
         {Template.tableColumns(template).map(column => {
           const field = template?.fields?.[column];
           if (!field || field.type === 'image') { return null; }
-          const directive = findDirective('content', domain, column, field, { templateId: record.templateId, record: null, records: [], media: site.meta.media });
+          const directive = findDirective(
+            'content', 
+            domain, 
+            column, 
+            field,
+            { 
+              templateId: record.templateId, 
+              record: null, 
+              records: [], 
+              media: site.meta.media, 
+              website: site.meta,
+            },
+          );
           const rendered = directive?.preview(record?.content?.[column] as unknown as any) || null;
           return rendered ? <div key={`${field.templateId}-${field.key}`} class={`collection__preview-value collection__preview-value--${field.type}`}>{rendered}</div> : null;
         })}
@@ -105,7 +129,13 @@ function renderFields(
   const out: ComponentChildren[] = [];
   for (const field of fields.sort((f1, f2) => ((f1.priority ?? Infinity) > (f2.priority ?? Infinity) ? 1 : -1))) {
     if (!field) { continue; }
-    const directive = findDirective(type, domain, field.key, field, { templateId: record.templateId, record: context.page, records: context.pages, media: context.site.media });
+    const directive = findDirective(type, domain, field.key, field, { 
+      templateId: record.templateId, 
+      record: context.page, 
+      records: context.pages, 
+      media: context.site.media, 
+      website: context.site,
+    });
     directive?.onChange(onChange as any);
 
     let value = null;
@@ -236,7 +266,6 @@ export default function Editor({ adapter, isNewRecord, template, record, records
 
   if (!template) { return <div>404</div>; }
   const context = record ? makePageContext(false, record, records, templates, siteData) : null;
-
   /* eslint-disable max-len */
   const pageFields =  template && record && context ? renderFields(domain, 'page', Template.pageFields(template), record || parent, context, onUpdate.bind(window, 'page')) : null;
   const metaFields =  template && record && context ? renderFields(domain, 'metadata', Template.metaFields(template), record || parent, context, onUpdate.bind(window, 'metadata')) : null;

@@ -1,4 +1,4 @@
-export default function UniverseButton({ onClick }: { onClick: () => void }) {
+export default function UniverseButton({ onClick }: { realm: string; onClick: () => void }) {
   return <button
     class="email-form__button email-form__universe"
     onClick={onClick}

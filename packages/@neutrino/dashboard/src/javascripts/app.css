@@ -122,11 +122,11 @@ input[type='text']:focus, input[type='tel']:focus, input[type='email']:focus, in
 }
 
 .universe__site-settings {
-  width: 2.8rem;
+  width: 5.2rem;
   height: 5rem;
-  max-width: 2.8rem;
+  max-width: 5.2rem;
   max-height: 5rem;
-  min-width: 2.8rem;
+  min-width: 5.2rem;
   min-height: 5rem;
   transition: transform .18s ease-in-out;
   font-size: 0;
@@ -192,16 +192,12 @@ input[type='text']:focus, input[type='tel']:focus, input[type='email']:focus, in
   box-shadow: var(--elevation-6);
   border-radius: 0.8rem;
   transition: height .18s ease-in-out, opacity .18s ease-in-out;
-  transition-delay: 0s, 0.18s;
   gap: 0.8rem;
 }
 
-.universe__account-picker:focus,
-.universe__account-picker:focus-within,
-.universe__account-picker:hover  {
+.universe__account-picker--open {
   height: 50vh;
   opacity: 1;
-  transition-delay: 0.680s, 0.5s;
 }
 
 .universe__account-picker-row {

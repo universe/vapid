@@ -17,12 +17,14 @@ interface EmailOptions {
 
 interface EmailValue {
   provider: 'universe' | 'mailchimp' | 'ngpvan' | 'constant-contact' | null;
+  listId: string | null;
 }
 
 export default class EmailHelper extends ValueHelper<EmailValue, EmailOptions> {
 
   default: EmailValue = {
     provider: null,
+    listId: null,
   }
 
   /**
@@ -37,8 +39,11 @@ export default class EmailHelper extends ValueHelper<EmailValue, EmailOptions> {
     return '';
   }
 
-  async data(_value: EmailValue) {
-    return 'FORM HERE';
+  async data(value: EmailValue) {
+    return {
+      provider: value?.provider || '',
+      listId: value?.listId || '',
+    };
   }
 
   /**
@@ -49,12 +54,12 @@ export default class EmailHelper extends ValueHelper<EmailValue, EmailOptions> {
     return <section name={name} class={`email-form email-form--${value?.provider || 'none'}`}>
       <button class="email-form__status" onClick={() => {
         if (!window.confirm('Are you sure you want to remove your email integration?')) { return; }
-        directive.update({ provider: null });
+        directive.update({ provider: null, listId: null });
       }}>Disconnect</button>
-      <UniverseButton onClick={() => directive.update({ provider: 'universe' })} />
-      <MailchimpButton onClick={() => directive.update({ provider: 'mailchimp' })} />
-      <NgpvanButton onClick={() => directive.update({ provider: 'ngpvan' })} />
-      <ConstantContactButton onClick={() => directive.update({ provider: 'constant-contact' })} />
+      <UniverseButton realm={directive.meta.website.env.realm} onClick={() => directive.update({ provider: 'universe', listId: null })} />
+      <MailchimpButton realm={directive.meta.website.env.realm} onClick={() => directive.update({ provider: 'mailchimp', listId: null })} />
+      <NgpvanButton onClick={() => directive.update({ provider: 'ngpvan', listId: null })} />
+      <ConstantContactButton onClick={() => directive.update({ provider: 'constant-contact', listId: null })} />
     </section>;
   }
 }

@@ -31,7 +31,7 @@ export default function highlight() {
       z-index: 999999999999;
     }
     .editor-marker::after {
-      content: "Press Enter to Edit ↵";
+      /* content: "Press Enter to Edit ↵"; */
       font-weight: bold;
       background: rgb(var(--color));
       color: white;
@@ -106,7 +106,7 @@ export default function highlight() {
     scrollPosition = newScrollPosition;
     marker.setAttribute('style', `
       animation: pulse 2s infinite;
-      opacity: 1;
+      opacity: ${bounds.x === 0 && bounds.y === 0 ? 0 : 1};
       transition: ${animate ? 'all .24s ease-in-out' : 'opacity .24s ease-in-out'};
       transform: translate(${bounds.x - PAD}px, ${bounds.y - PAD}px);
       width: ${(bounds.xMax - bounds.xMin) + PAD + PAD}px;

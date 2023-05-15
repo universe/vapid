@@ -9,6 +9,16 @@ body.dashboard > div {
   display: flex;
 }
 
+.vapid-outlet {
+  height: 6.8rem;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  background: var(--blue-6);
+  display: flex;
+  border-bottom: 1px solid var(--slate-4);
+}
+
 .vapid-nav {
   width: 20rem;
   width: var(--sidebar-width);
@@ -75,16 +85,6 @@ body.dashboard > div {
 
 .vapid-nav .button.vapid-nav__settings--active::before {
   color: white;
-}
-
-.vapid-nav__outlet {
-  height: 6.8rem;
-  position: sticky;
-  top: 0;
-  z-index: 9999;
-  background: var(--blue-6);
-  display: flex;
-  border-bottom: 1px solid var(--slate-4);
 }
 
 .vapid-nav__heading {

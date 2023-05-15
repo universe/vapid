@@ -143,7 +143,6 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
     directiveRef.current = directive;
     value.current = JSON.parse(JSON.stringify(update));
     const src = this.getRealUrl(value.current.src);
-    value.current.src && console.log('IMG', src, value.current.src);
     const hasSrc = src !== TRANSPARENT_PIXEL;
     const [ progress, setProgress ] = useState(0);
     const [ tmpImg, setTmpImg ] = useState<string | null>(null);

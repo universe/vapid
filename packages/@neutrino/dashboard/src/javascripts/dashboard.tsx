@@ -22,8 +22,6 @@ function focusFieldPreview(evt: Event): void {
   (document.getElementById('vapid-preview') as HTMLIFrameElement | undefined)?.contentWindow?.postMessage({ target: el?.dataset.field || null }, "*");
 }
 
-document.addEventListener('mouseover', focusFieldPreview);
-document.addEventListener('mouseout', focusFieldPreview);
 document.addEventListener('focusin', focusFieldPreview);
 document.addEventListener('focusout', focusFieldPreview);
 
@@ -69,6 +67,15 @@ interface RouteParts {
   default?: boolean;
   adapter?: DataAdapter | null;
   children?: ComponentChildren;
+  beforeDeploy?: () => Promise<boolean> | boolean;
+  afterDeploy?: () => Promise<void> | void;
+}
+
+interface IDashboardProps { 
+  adapter: DataAdapter | null; 
+  children?: ComponentChildren; root: string;
+  beforeDeploy?: () => Promise<boolean> | boolean;
+  afterDeploy?: () => Promise<void> | void;
 }
 
 function getTemplate(type: PageType | null = null, name: string | null = '', templates: ITemplate[] = []) {
@@ -145,7 +152,7 @@ function Content(params: RouteParts) {
       try {
         // const ws = new WebSocket(`ws${location.protocol === 'https:' ? 's' : ''}://${(location.host || 'localhost').split(':')[0]}:35729/livereload`);
         const ws = new WebSocket(`ws://localhost:35729/livereload`);
-        setLocalTheme(true);
+        ws.onopen = () => setLocalTheme(true);
         ws.onmessage = async(evt) => {
           const { command, data } = JSON.parse(evt.data) as { command: string; data: IWebsite; };
           console.log(`[WebSocket ${command}]`, data);
@@ -174,6 +181,7 @@ function Content(params: RouteParts) {
     (async() => {
       if (!adapter) { return; }
       BaseHelper.registerFileHandler(adapter.saveFile.bind(adapter));
+      console.log('assdfdf', await adapter.getTheme());
       setSiteData(await adapter.getTheme());
       setRecords(await adapter.getAllRecords());
     })();
@@ -218,10 +226,9 @@ function Content(params: RouteParts) {
   return <Fragment>
     <menu class="vapid-menu" id="vapid-menu">
       <section class="sidebar vapid-nav">
-        <header class="vapid-nav__outlet">
+        <header class="vapid-outlet">
           {children || <h2 class="heading">{siteData.meta.name}</h2>}
         </header>
-
         <nav class="vapid-nav">
           <div class="item">
             {isLocalTheme ? <button id="add-page" class="sidebar__add-page" onClick={() => { adapter?.deployTheme('neutrino', 'latest'); }}>
@@ -264,10 +271,15 @@ function Content(params: RouteParts) {
         </nav>
 
         <section class="vapid-nav__controls">
-          <RocketButton onClick={(reset: () => void) => {
-            adapter?.deploy(siteData, records);
-            setTimeout(() => reset(), 6000);
-          }} />
+          <RocketButton 
+            onClick={async(reset: () => void) => {
+              const res = await params.beforeDeploy?.();
+              if (!res) { reset(); return; }
+              await adapter?.deploy(siteData, records);
+              params.afterDeploy?.();
+              setTimeout(() => reset(), 6000);
+            }}
+          />
         </section>
       </section>
 
@@ -323,10 +335,19 @@ function Content(params: RouteParts) {
         <h2 class="page-templates__header">Select a Page Template</h2>
         <button class="page-templates__close" onClick={() => setPageTemplatesOpen(false)}>Cancel</button>
         <ul class="page-templates__list">
-          {templates.map((template) => {
-            if (template.type !== PageType.PAGE || !siteData.hbs.templates[Template.id(template)]) { return null; }
+          {templates.sort((a, b) => {
+            if (a.name === 'index') return -1; 
+            if (b.name === 'index') return 1; 
+            return a.name > b.name ? 1 : -1;
+          }).map((template) => {
+            if (template.name === 'collection' || template.type !== PageType.PAGE || !siteData.hbs.templates[Template.id(template)]) { return null; }
             return <li key={template.name} class="page-templates__template">
-              <a href={`/page/${template.name}/new`} onClick={() => { setPageTemplatesOpen(false); scrollToEdit(); }}>{toTitleCase(template.name)}</a>
+              <a 
+                href={`/page/${template.name}/new`} 
+                onClick={() => { setPageTemplatesOpen(false); scrollToEdit(); }}
+              >
+                {template.name === 'index' ? 'Home Page' : toTitleCase(template.name)}
+              </a>
             </li>;
           })}
         </ul>
@@ -353,11 +374,18 @@ function Content(params: RouteParts) {
   </Fragment>;
 }
 
-export function Dashboard({ adapter, children, root }: { adapter: DataAdapter | null; children?: ComponentChildren; root: string; }) {
+export function Dashboard({ adapter, children, root, beforeDeploy, afterDeploy }: IDashboardProps) {
   if (!adapter) { return null; }
   return <>
     <Router>
-      <Content path={`${root || ''}/:templateType?/:templateName?/:pageId?/:collectionId?`} adapter={adapter}>{children}</Content>
+      <Content 
+        path={`${root || ''}/:templateType?/:templateName?/:pageId?/:collectionId?`} 
+        adapter={adapter}
+        beforeDeploy={beforeDeploy}
+        afterDeploy={afterDeploy}
+      >
+        {children}
+      </Content>
     </Router>
     <article class="vapid-preview" id="preview-container">
       <div id="preview-device" class="device">
