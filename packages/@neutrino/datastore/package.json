@@ -27,7 +27,7 @@
     "@neutrino/core": "1.0.0-beta.0",
     "@neutrino/runtime": "1.0.0-beta.0",
     "commander": "^2.12.2",
-    "firebase": "^9.8.3",
+    "firebase": "^10.1.0",
     "mime": "^3.0.0",
     "pino": "^8.11.0",
     "pino-pretty": "^9.4.0",
@@ -36,6 +36,7 @@
     "update-notifier": "^5.1.0"
   },
   "devDependencies": {
+    "@universe/aether": "0.15.2",
     "@jest/globals": "^28.1.1",
     "@types/update-notifier": "^5.1.0",
     "nock": "^13.2.7"

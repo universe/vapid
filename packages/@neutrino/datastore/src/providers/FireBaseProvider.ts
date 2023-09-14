@@ -141,6 +141,11 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     if (dbConfig.username && dbConfig.password) {
       await this.signIn(dbConfig.username, dbConfig.password);
     }
+
+    const db = this.getDatabase();
+    if (!(await getDoc(doc(db, this.getFirebasePrefix())))?.exists()) {
+      throw new Error(`Website "${this.config.domain}" does not exist.`);
+    }
   }
 
   currentUser(): User | null {

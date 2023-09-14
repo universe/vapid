@@ -1,6 +1,6 @@
 @font-face {
   font-family: "fontawesome";
-  src: url("https://cdn.universe.app/aether/1.0.0/fonts/fontawesome/fa-solid-900-all.woff2");
+  src: url("https://dashboard.universe.app/2.0.0/assets/fa-solid-900-a4ce2350.woff2");
 }
 
 @font-face {
@@ -31,6 +31,7 @@ body {
   --serif-stack: "ArcherPro", serif, "fontawesome";
   --serif: var(--serif-stack);
   --font-stack: var(--font-stack);
+  --bold-blue-3: #4094F7;
 }
 
 input[type='text'], input[type='tel'], input[type='email'], input[type='password'] {
@@ -155,6 +156,7 @@ input[type='text']:focus, input[type='tel']:focus, input[type='email']:focus, in
   z-index: 1;
   position: relative;
   object-fit: cover;
+  box-shadow: 0 0 0 1px var(--slate-4);
 }
 
 .universe__profile-image::before {
@@ -238,10 +240,17 @@ input[type='text']:focus, input[type='tel']:focus, input[type='email']:focus, in
   z-index: 1;
   position: relative;
   object-fit: cover;
-  font-size: 2.8rem;
+  font-size: 2.4rem;
+  font-family: 'fontawesome';
   display: flex;
   justify-content: center;
   align-items: center;
   line-height: 0;
   color: var(--slate-2);
+  box-shadow: 0 0 0 1px var(--slate-4);
+}
+
+/* A fix for missing fonts in @universe/aether... fixed in the latest version */
+.domains__default-label::after, .domains__default-label::after, .domains__new::before {
+  font-family: 'fontawesome';
 }

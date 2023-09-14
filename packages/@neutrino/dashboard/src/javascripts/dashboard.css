@@ -7,6 +7,11 @@
   position: relative;
 }
 
+/* A fix for missing fonts in @universe/aether... fixed in the latest version */
+.domains__default-label::before, .domains__default-label::after, .domains__new::before {
+  font-family: 'fontawesome' !important;
+}
+
 .vapid-menu {
   width: var(--sidebar-width);
   height: 100%;

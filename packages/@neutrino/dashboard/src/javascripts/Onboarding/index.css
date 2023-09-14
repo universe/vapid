@@ -22,6 +22,10 @@
   transition: opacity .18s ease-in-out, visibility .18s ease-in-out;
 }
 
+.onboarding--hidden * {
+  pointer-events: none !important;
+}
+
 .onboarding .palette {
   width: 100%;
   margin: 0;
@@ -56,7 +60,7 @@
   visibility: hidden;
 }
 
-.onbaording__login-dismiss {
+.onboarding__login-dismiss {
   background: #4094F7;
   width: 48rem;
   font-weight: bold;
@@ -74,12 +78,12 @@
   cursor: pointer;
 }
 
-.onboarding__login--dismissable .onbaording__login-dismiss {
+.onboarding__login--dismissable .onboarding__login-dismiss {
   opacity: 1;
   pointer-events: all;
 }
 
-.onboarding__login--dismissable .onbaording__login-dismiss[disabled] {
+.onboarding__login--dismissable .onboarding__login-dismiss[disabled] {
   opacity: 0.33;
   cursor: not-allowed;
 }
@@ -181,6 +185,8 @@
   margin: 0 0.2rem 0 0;
   padding: 0 1.8rem;
   height: 4.8rem;
+  max-width: 38rem;
+  overflow: hidden;
 }
 
 .onboarding .onboarding__subdomain-input {

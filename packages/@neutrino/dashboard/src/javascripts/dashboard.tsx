@@ -181,7 +181,6 @@ function Content(params: RouteParts) {
     (async() => {
       if (!adapter) { return; }
       BaseHelper.registerFileHandler(adapter.saveFile.bind(adapter));
-      console.log('assdfdf', await adapter.getTheme());
       setSiteData(await adapter.getTheme());
       setRecords(await adapter.getAllRecords());
     })();
@@ -375,6 +374,24 @@ function Content(params: RouteParts) {
 }
 
 export function Dashboard({ adapter, children, root, beforeDeploy, afterDeploy }: IDashboardProps) {
+  const [ loading, setLoading ] = useState(true);
+  const [ error, setError ] = useState(false);
+  useEffect(() => {
+    setLoading(true);
+    (async() => {
+      try {
+        await adapter?.init();
+        await new Promise(res => setTimeout(res, 8000));
+        setLoading(false);
+        setError(false);
+      }
+ catch (err) {
+        setLoading(false);
+        setError(true);
+      }
+    })();
+  }, [adapter]);
+
   if (!adapter) { return null; }
   return <>
     <Router>
@@ -387,7 +404,8 @@ export function Dashboard({ adapter, children, root, beforeDeploy, afterDeploy }
         {children}
       </Content>
     </Router>
-    <article class="vapid-preview" id="preview-container">
+    <article class={`vapid-preview vapid-preview--${loading ? 'loading' : 'loaded'} vapid-preview--${error ? 'error' : 'success'}`} id="preview-container">
+      <Spinner size="large" className="vapid-preview__loading" />
       <div id="preview-device" class="device">
         <div class="device-frame">
           <iframe src="about:blank" id="vapid-preview" class="vapid-preview__iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-modals allow-forms" />

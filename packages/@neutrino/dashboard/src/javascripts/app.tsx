@@ -2,9 +2,10 @@ import './app.css';
 import 'preact/debug';
 import 'preact/devtools';
 
-import type { IMultiverseDocument,SubDomain } from '@universe/campaign';
+import type { IMultiverseDocument, SubDomain } from '@universe/campaign';
+import { Planck } from '@universe/planck';
 import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged,User } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { route } from 'preact-router';
@@ -26,11 +27,15 @@ const UNIVERSE_APP_CONFIG = {
   storageBucket: "the-universe-app.appspot.com",
 };
 
-const app = initializeApp(UNIVERSE_APP_CONFIG);
+const app = initializeApp(UNIVERSE_APP_CONFIG, 'vapid');
+const planck = new Planck(getAuth(app));
+console.log(planck);
 
 function App() {
+  const [ dbReconnect, setDbReconnect ] = useState(0);
   const [ user, setUser ] = useState<User | null>(null);
   const [ realm, setRealm ] = useState<SubDomain | null>(null);
+  const [ editRealm, setEditRealm ] = useState<SubDomain | null>(null);
   const [ adapter, setAdapter ] = useState<Adapter | null>(null);
   const [ showOnboarding, setShowOnboarding ] = useState(false);
   const [ universeSettingsPage, setUniverseSettingsPage ] = useState<UniverseSettingsPageIds>(null);
@@ -48,7 +53,10 @@ function App() {
 
   useEffect(() => {
     (async() => {
-      if (!user) { return; }
+      if (!user) { 
+        setUniverseSettingsPage(null);
+        return;
+      }
       await user?.getIdToken(true);
       const claims = ((await user?.getIdTokenResult())?.claims?.realms || {}) as Record<string, Record<string, 1 | 0>>;
       setClaims(claims);
@@ -62,23 +70,41 @@ function App() {
   useEffect(() => {
     (async() => {
       if (!realm) { return; }
+
       localStorage.setItem('realm', realm);
       const adapter = new Adapter(app, realm.replace('.universe.app', '.campaign.win'), `websites/${realm}`);
-      await adapter?.init();
       setAdapter(adapter);
+
+      try {
+        await adapter?.init();
+      }
+      catch (err) {
+        console.log('Error initializing adapter:', err);
+        setShowOnboarding(true);
+        setEditRealm(realm);
+      }
       route('/page/index/index');
     })();
-  }, [realm]);
+  }, [ realm, dbReconnect ]);
 
   const hasSites = !!Object.keys(claims).length;
-  const onboarding = !user || !hasSites || showOnboarding;
+  const onboarding = !realm || !user || !hasSites || showOnboarding;
   return <>
-    <Onboarding hidden={!onboarding} dismissable={!!(user && hasSites)} app={app || null} user={user} onComplete={async(realm: SubDomain) => {
-      await user?.getIdToken(true);
-      setClaims(((await user?.getIdTokenResult())?.claims?.realms || {}) as Record<string, Record<string, 1 | 0>>);
-      setShowOnboarding(false);
-      setRealm(realm);
-    }} onCancel={() => setShowOnboarding(false)} />
+    <Onboarding 
+      hidden={!onboarding} 
+      dismissable={!!(user && hasSites)}
+      app={app || null}
+      user={user}
+      realm={editRealm}
+      onComplete={async(realm: SubDomain) => {
+        await user?.getIdToken(true);
+        setClaims(((await user?.getIdTokenResult())?.claims?.realms || {}) as Record<string, Record<string, 1 | 0>>);
+        setShowOnboarding(false);
+        setRealm(realm);
+        setDbReconnect(dbReconnect + 1);
+      }}
+      onCancel={() => setShowOnboarding(false)} 
+    />
     <UniverseSettings app={app || null} user={user} realm={realm} page={universeSettingsPage} onChange={(page) => setUniverseSettingsPage(page)} onMultiverse={setMultiverse} />
     {adapter && user ? <Dashboard root="" adapter={adapter} beforeDeploy={() => {
       if (!multiverse) { return false; }
@@ -91,13 +117,14 @@ function App() {
       <section class="universe__nav">
         <figure class="universe__account">
           <img class="universe__account-photo" onError={evt => (evt.target as HTMLImageElement).src = TRANSPARENT_PIXEL} src={`https://${realm}/app/photo`} />
-          <h1 class="universe__title">{realm}</h1>
+          <h1 class="universe__title">{realm?.replace('.universe.app', '.campaign.win') || ''}</h1>
           <ul
             tabIndex={-1}
             class={`universe__account-picker universe__account-picker--${accountPickerIsOpen ? 'open' : 'closed'}`} 
             onClick={(evt) => {
               setAccountPickerIsOpen(!accountPickerIsOpen);
               evt.currentTarget?.focus();
+              evt.currentTarget.scrollTop = 0;
             }}
             onBlur={evt => {
               setAccountPickerIsOpen(false);
@@ -106,18 +133,21 @@ function App() {
           >
             {Object.keys(claims).filter(r => r === realm).map(realm => <li key={realm} class="universe__account-picker-row">
               <img class="universe__account-picker-photo" onError={evt => (evt.target as HTMLImageElement).src = TRANSPARENT_PIXEL} src={`https://${realm}/app/photo`} />
-              <h2 class="universe__account-picker-name">{realm}</h2>
+              <h2 class="universe__account-picker-name">{realm?.replace('.universe.app', '.campaign.win') || ''}</h2>
             </li>)}
-            <li class="universe__account-picker-row" onClick={() => setShowOnboarding(true)}>
+            <li class="universe__account-picker-row" onClick={() => { 
+              setEditRealm(null);
+              accountPickerIsOpen && setShowOnboarding(true);
+            }}>
               <div class="universe__account-picker-photo">+</div>
               <h2 class="universe__account-picker-name">New Website</h2>
             </li>
             {Object.keys(claims)
               .sort()
               .filter(r => r !== realm)
-              .map(realm => <li key={realm} onClick={() => { setRealm(realm as SubDomain);}} class="universe__account-picker-row">
+              .map(realm => <li key={realm} onClick={() => { accountPickerIsOpen && setRealm(realm as SubDomain); }} class="universe__account-picker-row">
                 <img class="universe__account-picker-photo" onError={evt => (evt.target as HTMLImageElement).src = TRANSPARENT_PIXEL} src={`https://${realm}/app/photo`} />
-                <h2 class="universe__account-picker-name">{realm}</h2>
+                <h2 class="universe__account-picker-name">{realm?.replace('.universe.app', '.campaign.win') || ''}</h2>
               </li>)}
           </ul>
         </figure>

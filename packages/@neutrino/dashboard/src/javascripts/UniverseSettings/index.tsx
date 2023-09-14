@@ -1,15 +1,17 @@
 import "./index.css";
 
 import BillingPage from "@universe/aether/components/Billing";
-import DomainsPage from "@universe/aether/components/DomainsPage";
+import DomainsPage from "@universe/aether/components/Domains";
 import LogInForm from "@universe/aether/components/LogInForm";
 import SubNavLink from "@universe/aether/components/SubNavLink";
 import TeamPage from "@universe/aether/components/TeamPage";
 import { getInvoiceId,IMultiverseDocument, Invoice, SubDomain } from '@universe/campaign';
 import { FirebaseApp } from 'firebase/app';
 import { User } from 'firebase/auth';
-import { doc, getFirestore, onSnapshot } from 'firebase/firestore';
+import { doc, initializeFirestore, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from "preact/hooks";
+
+const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 export type UniverseSettingsPageIds = 'account' | 'team' | 'billing' | 'domains' | 'languages' | 'billing-alert' | null;
 export interface UniverseSettingsProps { 
@@ -27,14 +29,12 @@ async function postHeaders(user: User) {
 
 export default function UniverseSettings({ app, user, realm, page, onChange, onMultiverse }: UniverseSettingsProps) {
   const [ multiverse, setMultiverse ] = useState<IMultiverseDocument | null>(null);
-  const [ authorization, setAuthorization ] = useState<string | null>(null);
 
   useEffect(() => {
     if (!app || !user || !realm) { return; }
     const unsub: (() => void) | null = null;
     setTimeout(async() => {
-      setAuthorization(await user?.getIdToken());
-      const firestore = getFirestore(app);
+      const firestore = initializeFirestore(app, { ignoreUndefinedProperties: true });
       return onSnapshot(doc(firestore, 'multiverse', realm), async(doc) => {
         let data: IMultiverseDocument | null = await doc.data() as IMultiverseDocument;
         if (!data || !Object.keys(data).length) { data = null; }
@@ -62,13 +62,13 @@ export default function UniverseSettings({ app, user, realm, page, onChange, onM
     return unsub || undefined;
   }, [ app, user, realm ]);
 
-  return <section class={`universe-settings universe-settings--${page ? 'visible' : 'hidden'}`}>
+  return <section class={`universe-settings universe-settings--${(page && user) ? 'visible' : 'hidden'}`}>
     <nav class="universe-settings__nav">
       <button class="universe-settings__account" onClick={() => onChange(null)}>
-        <img class="universe-settings__account-image" src={`https://${realm}/app/photo`} />
+        <img class="universe-settings__account-image" src={`https://${realm}/app/photo`} onError={evt => (evt.target as HTMLImageElement).src = TRANSPARENT_PIXEL} />
         <h1 class="universe-settings__account-realm">{realm}</h1>
       </button>
-      <LogInForm app={app!} onEmailInput={console.log}  />
+      <LogInForm app={app!} />
       <ul class="universe-settings__menu">
         {/* <SubNavLink onClick={() => onChange('account')} isActive={page === 'account'}>Account</SubNavLink> */}
         <SubNavLink onClick={() => onChange('team')} isActive={page === 'team'}>Team</SubNavLink>
@@ -83,13 +83,17 @@ export default function UniverseSettings({ app, user, realm, page, onChange, onM
     </section>
     <section class={`universe-settings__section ${page === 'account' ? 'universe-settings__section--active' : ''}`} />
     <section class={`universe-settings__section ${page === 'domains' ? 'universe-settings__section--active' : ''}`}>
-      <DomainsPage apiUrl={import.meta.env.API_URL} realm={realm} campaign={multiverse ?? undefined} authorization={authorization} />
+      {multiverse ? <DomainsPage realm={realm} app={app} default={realm?.replace('.universe.app', '.campaign.win')} /> : null}
     </section>
     <section class={`universe-settings__section ${page === 'team' ? 'universe-settings__section--active' : ''}`}>
       <TeamPage campaign={multiverse} />
     </section>
     <section class={`universe-settings__section ${page === 'billing' ? 'universe-settings__section--active' : ''}`}>
-      <BillingPage 
+      {multiverse ? <BillingPage
+        isActive={true}
+        onInvoiceId={console.log}
+        onBill={console.log}
+        onPricing={console.log}
         stripeToken={import.meta.env.STRIPE_TOKEN || ''}
         campaignName={multiverse?.realm || ''}
         billing={multiverse?.billing ? { ...multiverse?.billing } : null}
@@ -119,7 +123,7 @@ export default function UniverseSettings({ app, user, realm, page, onChange, onM
             body: JSON.stringify({ realm }),
           }).then(res => res.json());
         }}
-      />
+      /> : null}
     </section>
     <button class="universe-settings__skrim" onClick={() => onChange(null)}>Close</button>
   </section>;

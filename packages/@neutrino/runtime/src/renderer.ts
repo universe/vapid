@@ -101,12 +101,16 @@ function resolveValue(
         for (const pair of node.hash.pairs) {
           hash[pair.key] = resolveValue(pair.value, ctx, data, resolveHelper);
         }
+
+        // If this helper expects a collection, ensure that the second argument is the generated collection ID!
+        // This is needed when we create a new collection and the value doesn't actually exist yet.
         if (helper.prototype instanceof CollectionHelper) {
           params[1] = params[1] || {} as NeutrinoValue;
           if (`${(node.params[0] as ASTv1.PathExpression)?.parts?.[1]}-page` === ctx.this['@record'].templateId) {
             params[1] = {  collectionId: ctx.this['@record'].id } as unknown as NeutrinoValue;
           }
         }
+
         /* eslint-disable-next-line */
         /* @ts-ignore */
         return (helper && helper.prototype.render(params, hash, options || {})) ?? null;

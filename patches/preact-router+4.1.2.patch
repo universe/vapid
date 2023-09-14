@@ -1,0 +1,31 @@
+diff --git a/node_modules/preact-router/.DS_Store b/node_modules/preact-router/.DS_Store
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/preact-router/index.d.ts b/node_modules/preact-router/index.d.ts
+index d93ff2a..f3fb088 100644
+--- a/node_modules/preact-router/index.d.ts
++++ b/node_modules/preact-router/index.d.ts
+@@ -22,6 +22,7 @@ export interface CustomHistory {
+ export interface RoutableProps {
+ 	path?: string;
+ 	default?: boolean | preact.JSX.SignalLike<boolean | undefined>;
++	activeClassName?: string;
+ }
+ 
+ export interface RouterOnChangeArgs<
+@@ -90,4 +91,4 @@ declare module 'preact' {
+ 	export interface Attributes extends RoutableProps {}
+ }
+ 
+-export default Router;
++export = Router;
+diff --git a/node_modules/preact-router/match/index.d.ts b/node_modules/preact-router/match/index.d.ts
+index d2627ae..0904fde 100644
+--- a/node_modules/preact-router/match/index.d.ts
++++ b/node_modules/preact-router/match/index.d.ts
+@@ -13,4 +13,4 @@ export interface LinkProps extends preact.JSX.HTMLAttributes<HTMLAnchorElement>
+ 
+ export function Link(props: LinkProps): preact.VNode;
+ 
+-export default Match;
++export = Match;

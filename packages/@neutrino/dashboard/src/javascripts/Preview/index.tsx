@@ -20,7 +20,7 @@ interface PreviewProps {
 }
 let prevRender: IRecord | null = null;
 export default function Preview({ siteData, record, records }: PreviewProps) {
-  
+  // console.log(record);
   // If first render and we haven't found an AST match (e.g. loading a settings page), render the home page instead.
   useEffect(() => {
     const siteUpdate = JSON.parse(JSON.stringify(siteData)) as IWebsite;

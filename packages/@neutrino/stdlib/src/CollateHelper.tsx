@@ -64,7 +64,7 @@ export default class CollateHelper extends CollectionHelper<CollectionHelperValu
       if (filter && !filter(record)) { continue; }
 
       let value = typeof record[prop] === 'function' ? record[prop]() : record[prop];
-      if (!Array.isArray(value)) { value = value ? [value] : []; }
+      if (!Array.isArray(value)) { value = (value ? [value] : []).filter(Boolean); }
       if (!value.length && hash.default) {
         values.add(undefined);
       }

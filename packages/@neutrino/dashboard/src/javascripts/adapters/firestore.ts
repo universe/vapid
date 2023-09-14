@@ -3,6 +3,7 @@ import FirebaseProvider from '@neutrino/datastore/dist/src/providers/FireBasePro
 import { IWebsite, renderRecord } from '@neutrino/runtime';
 import _createDocument from '@simple-dom/document';
 import _Serializer from '@simple-dom/serializer';
+import { Deferred } from '@universe/util';
 import type { FirebaseApp } from 'firebase/app';
 import { User } from 'firebase/auth';
 import { getStorage, ref, uploadBytesResumable } from 'firebase/storage';
@@ -51,8 +52,18 @@ export default class FirestoreAdapter extends DataAdapter {
     });
   }
 
+  #initPromise: Deferred | null = null;
   async init(): Promise<void> {
-    await this.provider.start();
+    if (this.#initPromise) { return this.#initPromise; }
+    this.#initPromise = new Deferred();
+    try {
+      await this.provider.start();
+      this.#initPromise.resolve();
+    }
+ catch (err) {
+      this.#initPromise.reject(err);
+    }
+    return this.#initPromise;
   }
 
   getDomain(): string {
@@ -231,6 +242,7 @@ export default class FirestoreAdapter extends DataAdapter {
     const storage = getStorage(this.app, `gs://${website.meta.domain}`);
     const discoveredDefaults = new Set(Object.keys(WELL_KNOWN_PAGES));
 
+    // Deploy Stylesheets
     for (const stylesheet of Object.values(website.hbs.stylesheets)) {
       const fileRef = ref(storage, stylesheet.path);
       const blob = new Blob([stylesheet.content], { type : 'text/css' });

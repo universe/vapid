@@ -308,6 +308,7 @@
   height: 2.4rem;
   border-radius: 0.4rem;
   margin-right: 0.8rem;
+  box-shadow: 0 0 0 1px var(--slate-4);
 }
 
 .universe-settings__account-realm {
@@ -331,13 +332,13 @@
   justify-content: center;
   align-items: center;
   font-size: 3.2rem;
-  margin: -8.2rem 0 0.8rem;
+  margin: -8.2rem 0 1.8rem;
 }
 .universe-settings__billing-alert-title::before {
   content: "\f890";
   font-family: 'fontawesome';
   font-size: 8.2rem;
-  color: var(--orange);
+  color: var(--gold-4);
   margin-bottom: 0.8rem;
 }
 

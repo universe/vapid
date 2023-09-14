@@ -10,7 +10,7 @@ import _ColorThief from 'colorthief';
 import _file2md5 from 'file2md5';
 import type { FirebaseApp } from "firebase/app";
 import { getAuth, User } from 'firebase/auth';
-import { doc,getFirestore, setDoc } from 'firebase/firestore';
+import { doc, initializeFirestore, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, uploadString } from "firebase/storage";
 import { ComponentChildren } from 'preact';
 import { useEffect,useState } from 'preact/hooks';
@@ -95,9 +95,10 @@ function LoginPanel({ app, visible, onClose }: { app: FirebaseApp | null; visibl
   const auth = app ? getAuth(app) : null;
   const user = auth?.currentUser;
   const dismissable = !!user;
+  console.log(app, auth);
   return <section class={`onboarding__login ${visible === true ? 'onboarding__login--active' : ''} ${dismissable ? 'onboarding__login--dismissable' : ''}`}>
-    <LogInForm app={app!} onEmailInput={console.log} />
-    <button onClick={() => onClose()} disabled={!user?.emailVerified} class="onbaording__login-dismiss">{user?.emailVerified ? 'Get Started!' : 'Verify Your Email'}</button>
+    <LogInForm app={app!} />
+    <button onClick={() => onClose()} disabled={!user?.emailVerified} class="onboarding__login-dismiss">{user?.emailVerified ? 'Get Started!' : 'Verify Your Email'}</button>
   </section>;
 }
 
@@ -258,19 +259,24 @@ function StepFour({ primary, secondary, active, onChange, onPrevious, onSubmit, 
 
 async function onSubmit(app: FirebaseApp | null, user: User | null, { realm, theme, logo, primary, cta }: OnboardingRequest): Promise<void> {
   if (!app || !user) { return; }
-  const firestore = getFirestore(app);
-  try {
-    const res = await (await window.fetch(`${import.meta.env.API_URL}/v1/account/${realm}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${await user?.getIdToken()}`, 'Content-Type': 'application/json' },
-    })).json();
-    if (res.status !== 'success') { throw new Error(`Error creating new subdomain: ${res.message}`); }
-  }
- catch (err) {
-    console.error(err);
-    return;
+  const firestore = initializeFirestore(app, { ignoreUndefinedProperties: true });
+  const claims = ((await user?.getIdTokenResult())?.claims?.realms || {}) as Record<string, Record<string, 1 | 0>>;
+  if (!claims[realm]) {
+    try {
+      const res = await (await window.fetch(`${import.meta.env.API_URL}/v1/account/${realm}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${await user?.getIdToken()}`, 'Content-Type': 'application/json' },
+      })).json();
+      if (res.status !== 'success') { throw new Error(`Error creating new subdomain: ${res.message}`); }
+    }
+    catch (err) {
+      console.error(err);
+      return;
+    }
   }
   await user?.getIdToken(true);
+
+  await setDoc(doc(firestore, `websites/${realm}`), { domain: realm.replace('.universe.app', '.campaign.win') });
   for (const record of defaultRecords) {
     if (record.templateId === 'design-settings') {
       record.content.color = { hex: primary, cta };
@@ -299,7 +305,18 @@ function userInitials(name: string) {
   return `${firstName[0] || '?'}${lastName[0] || '?'}`;
 }
 
-export default function Onboarding({ app, user, children, onComplete, onCancel, hidden, dismissable }: { app: FirebaseApp | null; user: User | null, dismissable: boolean; children?: ComponentChildren, hidden?: boolean; onCancel: () => void; onComplete: (realm: SubDomain) => void; }) {
+interface OnboardingProps {
+  realm: SubDomain | null;
+  app: FirebaseApp | null;
+  user: User | null;
+  dismissable: boolean;
+  children?: ComponentChildren;
+  hidden?: boolean;
+  onCancel: () => void;
+  onComplete: (realm: SubDomain) => void;
+}
+
+export default function Onboarding({ realm, app, user, children, onComplete, onCancel, hidden, dismissable }: OnboardingProps) {
   const [ step, setStep ] = useState('one');
   const [ subdomain, setSubdomain ] = useState('');
   const [ theme, setTheme ] = useState('impact');
@@ -311,6 +328,16 @@ export default function Onboarding({ app, user, children, onComplete, onCancel, 
   const [ loginVisible, setLoginVisible ] = useState(false);
 
   useEffect(() => {
+    setStep('one');
+    setSubdomain((realm || '').replace(/\.universe\.app$/, '').replace(/\.universe\.test$/, ''));
+    if (realm && step === 'one') { setStep('two'); }
+  }, [realm]);
+
+  useEffect(() => {
+    setStep('one');
+  }, [hidden]);
+
+  useEffect(() => {
     if (!user || !subdomain || subdomain === 'website') {
       setSubdomainValidation(null);
       return; 
@@ -319,11 +346,17 @@ export default function Onboarding({ app, user, children, onComplete, onCancel, 
       clearTimeout(subdomainValidation);
     }
     setSubdomainValidation(setTimeout(async() => {
+
+      const claims = ((await user?.getIdTokenResult())?.claims?.realms || {}) as Record<string, Record<string, 1 | 0>>;
+      if (claims[`${subdomain}.universe.app`]) {
+        setSubdomainValidation(true);
+        return;
+      }
+
       const res = await (await window.fetch(`${import.meta.env.API_URL}/v1/account/${subdomain}.universe.app`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${await user?.getIdToken()}`, 'Content-Type': 'application/json' },
       })).json();
-      console.log(res);
       if (res.status === 'success') {
         setSubdomainValidation('Domain name is already taken.');
       }

@@ -179,7 +179,7 @@ export default function Editor({ adapter, isNewRecord, template, record, records
   const parentTemplate = parent ? templateFor(parent, templates) : template;
   const childrenTemplate = parent ? template : siteData.hbs.templates[`${template?.name}-${PageType.COLLECTION}`];
   const domain = adapter?.getDomain() || '';
-
+  const isPage = siteData.hbs.pages[`${template?.name}-${template?.type}`];
   const collectionList: IRecord[] = [];
   for (const dat of Object.values(records)) {
     if (dat.parentId && (dat.parentId === record?.id || dat.parentId === parent?.id)) { collectionList.push(dat); }
@@ -288,7 +288,7 @@ export default function Editor({ adapter, isNewRecord, template, record, records
         }
       }}>Cancel</button>
       <h1 class="heading">{isNewRecord ? 'New' : ''} {toTitleCase(template.name || '')} {childrenTemplate ? '' : toTitleCase(template.type || '')}</h1>
-      {(template?.type !== PageType.SETTINGS) ? <ul class="basic fixed menu">
+      {(isPage || !isNewRecord) ? <ul class="basic fixed menu">
         <li>
           <button 
             class={`small button vapid-nav__settings ${metaOpen ? 'vapid-nav__settings--active' : ''}`} 
@@ -362,8 +362,8 @@ export default function Editor({ adapter, isNewRecord, template, record, records
     >
       <section
         id="meta-container"
-        class={`metadata ${isNewRecord || metaOpen ? 'open' : ''}`}
-        style={{ height: `${metaOpen}px` }}
+        class={`metadata ${(isNewRecord || metaOpen) ? 'open' : ''}`}
+        style={{ height: `${(isNewRecord && !isPage) ? 0 : metaOpen}px` }}
       >
         {pageFields}
         {metaFields}

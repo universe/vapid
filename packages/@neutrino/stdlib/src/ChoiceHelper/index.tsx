@@ -65,7 +65,7 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
     // For all other choice input types, if no value is provided, use the default.
     else if (value === undefined || value?.length === 0) { value = this.default; }
     const out = Array.from(value).filter(Boolean);
-    out.toString = () => Array.isArray(value) ? value.join(',') : '';
+    out.toString = () => Array.isArray(value) ? value.filter(Boolean).join(',') : '';
     return out;
   }
 
