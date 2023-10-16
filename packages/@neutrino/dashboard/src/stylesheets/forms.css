@@ -246,6 +246,7 @@
 
 .form .field__choice .checkbox.checkbox--single label {
   color: transparent;
+  margin-bottom: 0;
 }
 
 .form .field__checkbox > label {

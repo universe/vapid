@@ -1,7 +1,7 @@
 import { appendFragment, Helper, NeutrinoHelperOptions,RECORD_META } from '@neutrino/core';
 
 export default class EachHelper extends Helper {
-  render([data]: any[], _hash={}, options: NeutrinoHelperOptions) {
+  render([data]: unknown[], _hash={}, options: NeutrinoHelperOptions) {
     const items = (Array.isArray(data) ? data : [data]).filter(Boolean);
 
     if (!options.fragment) { throw new Error('The {{each}} helper must be used as a block helper.'); }

@@ -25,7 +25,7 @@ const Embed = Quill.import('blots/embed');
 class Linebreak extends Break {
   length() { return 1; }
   value() { return '\n'; }
-  insertInto(parent: any, ref: any) {
+  insertInto(parent: unknown, ref: unknown) {
     Embed.prototype.insertInto.call(this, parent, ref);
   }
 }

@@ -280,19 +280,19 @@ function getpaletteCSS(palette: Ipalette, paletteText: IpaletteText) {
   `;
 }
 
-export interface IpaletteProps {
+export interface IPaletteProps {
   hidden?: boolean; 
   color: string;
   cta: string | null;
-  onChange?: (color: string) => any;
-  onChangeCta?: (color: string | null) => any;
-  onDefaultCta?: (color: string) => any;
+  onChange?: (color: string) => unknown;
+  onChangeCta?: (color: string | null) => unknown;
+  onDefaultCta?: (color: string) => unknown;
 }
 
 const NEXT_CHANGE: Map<string, string> = new Map();
 const CHANGE_THROTTLES: Map<string, number> = new Map();
 
-export const Palette = ({ hidden, color, cta, onChange, onChangeCta, onDefaultCta }: IpaletteProps) => {
+export const Palette = ({ hidden, color, cta, onChange, onChangeCta, onDefaultCta }: IPaletteProps) => {
   const [id] = useState(uuid());
   useEffect(() => {
     const palette = getpalette(color, cta);
@@ -356,7 +356,7 @@ export const Palette = ({ hidden, color, cta, onChange, onChangeCta, onDefaultCt
         <li class="palette__cta palette__cta--2">2</li>
         <li class="palette__cta palette__cta--3">3</li>
         <li class="palette__cta palette__cta--4">4</li>
-        <li class="palette__cta palette__cta--5">
+        <li class={`palette__cta palette__cta--5 palette__cta--${cta ? 'custom' : 'default'}`}>
           5
           <input class="palette__input" type="color" value={cta || ''} onInput={(evt) => {
             NEXT_CHANGE.set(id, (evt.target as HTMLInputElement).value);

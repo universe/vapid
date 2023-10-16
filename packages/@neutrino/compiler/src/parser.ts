@@ -15,7 +15,7 @@ function isComponent(tag: string) {
 
 /* eslint-enable no-param-reassign */
 function parseHash(pairs: (ASTv1.HashPair | ASTv1.AttrNode)[]): Record<string, any> {
-  const out = {};
+  const out: Record<string, string> = {};
   for (const pair of pairs || []) {
     const key = (pair as ASTv1.HashPair).key || (pair as ASTv1.AttrNode).name;
     out[key] = (pair.value as ASTv1.PathExpression).original || (pair.value as ASTv1.TextNode).chars;
@@ -116,7 +116,8 @@ function ensureBranch(data: Record<string, ITemplate>, node: ASTv1.BlockStatemen
   branch.options = { ...branch.options, ...newBranch.options };
   for (const field of Object.values(newBranch.fields)) {
     if (!field) { continue; }
-    const prev = branch[field.key];
+    // TODO: ... is this right?
+    const prev = branch?.[field.key as keyof ITemplate] as unknown as IField;
     if (field === prev) { continue; }
 
     branch.fields[field.key] = {

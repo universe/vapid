@@ -1,9 +1,7 @@
 import '@universe/wysiwyg/styles/editor.css';
 
 import { DirectiveProps, SafeString, ValueHelper } from '@neutrino/core';
-import { options,Quill } from '@universe/wysiwyg';
-// import { Helper } from '@neutrino/core';
-// import type { Quill } from '@universe/wysiwyg';
+import { options, Quill } from '@universe/wysiwyg';
 import { useEffect, useRef } from 'preact/hooks';
 import sanitizeHtml from 'sanitize-html';
 
@@ -28,7 +26,7 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
    * @return rendered input
    */
   input({ value = this.default, directive }: DirectiveProps<string, this>) {
-    const editor = useRef<HTMLDivElement | null | undefined>(undefined);
+    const editor = useRef<HTMLDivElement | null>(null);
     const menu = useRef<HTMLUListElement | null>(null);
 
     useEffect(() => {
@@ -93,7 +91,7 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
 
     /* eslint-disable max-len */
     return <div onClick={evt => { evt.stopImmediatePropagation(); evt.preventDefault(); }}>
-      <div className="wysiwyg wysiwyg--minor-third" ref={editor as any} />
+      <div className="wysiwyg wysiwyg--minor-third" ref={editor || null} />
     </div>;
     /* eslint-enable max-len */
   }

@@ -1,4 +1,4 @@
-import { IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Template, UploadResult } from '@neutrino/core';
+import { INDEX_PAGE_ID, IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Template, UploadResult } from '@neutrino/core';
 import { uuid } from '@universe/util';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -84,13 +84,13 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
 
   // TODO: Implement.
   async getMetadata(): Promise<IWebsiteMeta> {
-    return { 
-      name: 'Site', 
-      domain: '', 
-      media: '', 
+    return {
+      name: 'Site',
+      domain: '',
+      media: '',
       theme: { name: '', version: '' },
       env: { ...this.env },
-    }; 
+    };
   }
 
   async getAllTemplates(): Promise<ITemplate[]> {
@@ -130,8 +130,9 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
   }
 
   async getRecordBySlug(slug: string, parentId?: string | null): Promise<IRecord | null> {
+    slug = slug || INDEX_PAGE_ID;
     for (const [ _, record ] of this.records) {
-      if ((record.slug === slug || (slug === '' && record.slug === 'index')) && (parentId === undefined || record.parentId === parentId)) {
+      if (record.slug === slug && (parentId === undefined || record.parentId === parentId)) {
         return record;
       }
     }
@@ -219,7 +220,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
 
   saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
   saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
-  async * saveFile(file: File | string, _type?: string, name?: string): AsyncIterableIterator<UploadResult> { 
+  async * saveFile(file: File | string, _type?: string, name?: string): AsyncIterableIterator<UploadResult> {
     yield { status: 'pending', progress: 0 };
     const filename = (file instanceof File ? file.name : name) || uuid();
     const ext = path.extname(filename);

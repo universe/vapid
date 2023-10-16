@@ -1,4 +1,4 @@
-import { DirectiveProps, SerializedRecord,ValueHelper } from '@neutrino/core';
+import { DirectiveProps, INDEX_PAGE_ID, SerializedRecord, ValueHelper } from '@neutrino/core';
 
 interface UrlHelperOptions {
   prefix: string;
@@ -41,7 +41,7 @@ export default class UrlHelper extends ValueHelper<string, UrlHelperOptions> {
     parentPrefix = directive.options.prefix || parentPrefix;
     if (parentPrefix && !parentPrefix.endsWith('/')) { parentPrefix += '/'; }
 
-    const val = value === 'index' ? '' : value;
+    const val = value === INDEX_PAGE_ID ? '' : value;
     const attrs = { ...directive.options };
     attrs.placeholder = directive.options.placeholder || directive.default;
 

@@ -6,6 +6,7 @@ export interface CountHelperOptions {
 
 export default class CountHelper extends CollectionHelper<null, CountHelperOptions> {
   default = null;
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   render([ records, config ]: [any | any[], { collectionId: string }], hash: CountHelperOptions = {}): number {
     const filter = hash.filter ? compileExpression(hash.filter) : null;
     let count = 0;

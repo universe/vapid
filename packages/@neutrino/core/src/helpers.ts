@@ -92,7 +92,7 @@ export type UploadFileFunction = {
  * These are the crux of Vapid, allowing templates to specify input attributes and render content.
  */
 /* eslint-disable @typescript-eslint/ban-types */
-export abstract class BaseHelper<DirectiveType, Options = object> {
+export abstract class BaseHelper<DirectiveType, Options extends object = object> {
   abstract default: DirectiveType;
   #onChange: DirectiveCallback<DirectiveType>;
   key: string;
@@ -125,11 +125,11 @@ export abstract class BaseHelper<DirectiveType, Options = object> {
   constructor(key: string, field: DirectiveField, meta: DirectiveMeta) {
     this.key = key;
     this.meta = { ...this.meta, ...meta };
-    const options = field?.options || {};
+    const options: Partial<DirectiveOptions> = field?.options as unknown as DirectiveOptions || {};
     this.#onChange = ((_name: string, _value: DirectiveType) => void 0);
     // Separate options and attributes, discarding ones that aren't explicity specified
     for (const [ key, value ] of Object.entries(options)) {
-      this.options[key] = coerceType(value);
+      (this.options as {[key: string]: unknown})[key] = coerceType(value);
     }
     this.input = this.input.bind(this);
   }
@@ -164,18 +164,18 @@ export abstract class BaseHelper<DirectiveType, Options = object> {
 }
 
 /* eslint-disable @typescript-eslint/ban-types */
-export abstract class Helper<Options = object> extends BaseHelper<null, Options> {
+export abstract class Helper<Options extends object = object> extends BaseHelper<null, Options> {
   readonly type = HelperType.HELPER;
   default = null;
 }
 
 /* eslint-disable @typescript-eslint/ban-types */
-export abstract class ValueHelper<DirectiveType, Options = object> extends BaseHelper<DirectiveType, Options> {
+export abstract class ValueHelper<DirectiveType, Options extends object = object> extends BaseHelper<DirectiveType, Options> {
   readonly type = HelperType.VALUE;
 }
 
 /* eslint-disable @typescript-eslint/ban-types */
-export abstract class CollectionHelper<DirectiveType, Options = object> extends BaseHelper<DirectiveType, Options> {
+export abstract class CollectionHelper<DirectiveType, Options extends object = object> extends BaseHelper<DirectiveType, Options> {
   readonly type = HelperType.COLLECTION;
 }
 

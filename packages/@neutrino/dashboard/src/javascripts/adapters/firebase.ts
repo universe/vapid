@@ -20,7 +20,7 @@ function sortRecords(a: IRecord, b: IRecord) {
   return ap > bp ? 1 : -1;
 }
 
-const WELL_KNOWN_PAGES = {
+const WELL_KNOWN_PAGES: Record<string, string> = {
   index: 'index.html',
   404: '404.html',
 };
@@ -30,7 +30,7 @@ const DEFAULT_WELL_KNOWN_PAGES: Record<keyof typeof WELL_KNOWN_PAGES, string> = 
   404: '<html><body>Page not Found <a href="/">Take Me Home</a></body></html>',
 };
 
-export default class FirestoreAdapter extends DataAdapter {
+export default class FirebaseAdapter extends DataAdapter {
   private provider: FirebaseProvider;
   private domain: string;
   private app: FirebaseApp;
@@ -154,6 +154,7 @@ export default class FirestoreAdapter extends DataAdapter {
     const name = meta?.theme?.name || 'neutrino';
     const version = meta?.theme?.version || 'latest';
 
+    // Test if the local theme server has a theme of this name and version.
     if (this.hasLocalTheme === null) {
       try {
         const data: IWebsite = await (await fetch(`http://localhost:1776/api/data/themes/${name}/${name}@${version}.json`)).json();
@@ -202,7 +203,7 @@ export default class FirestoreAdapter extends DataAdapter {
       const foundRecord = await db.getRecordById(update.id);
       if (!foundRecord) { throw new Error('Record not found.'); }
 
-      const records = update.parentId ? (await db.getChildren(update.parentId)).sort(sortRecords) : await db.getRecordsByType(PageType.PAGE);
+      const records: IRecord[] = update.parentId ? (await db.getChildren(update.parentId)).sort(sortRecords) : await db.getRecordsByType(PageType.PAGE);
       const newRecords: IRecord[] = records
         .filter(record => (record.id !== update.id && !record.deletedAt))
         .sort((a, b) => {
@@ -252,7 +253,7 @@ export default class FirestoreAdapter extends DataAdapter {
 
     // For every record that isn't a settings page, render the page and upload.
     for (const record of Object.values(records)) {
-      if (record.templateId.endsWith('-settings')) { continue; }
+      if (record.templateId.endsWith('-settings') || record.deletedAt) { continue; }
       const document = createDocument();
       const parent: IRecord | null = record.parentId ? records[record.parentId] : null;
       const slug = `${[ parent?.slug, record.slug ].filter(Boolean).join('/')}`;

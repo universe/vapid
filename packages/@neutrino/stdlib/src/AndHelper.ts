@@ -1,7 +1,7 @@
 import { Helper, SafeString } from '@neutrino/core';
 
 export default class AndHelper extends Helper {
-  render(params: any[]) {
+  render(params: unknown[]) {
     for (let condition of params) {
       if (`${condition}`.startsWith('data:')) { condition = false; }
       if (condition instanceof SafeString) { condition = condition.toString(); }

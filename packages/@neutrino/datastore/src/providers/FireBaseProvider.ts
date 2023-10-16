@@ -322,9 +322,10 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     const hash = file instanceof File ? await file2md5(file) : md5(file.toString());
     const filePath = `${this.config?.database?.storage?.root || DEFAULT_STORAGE_ROOT}/${hash}`;
     const fileRef = ref(storage, filePath);
+    const mimeType = name ? type : (file as File).type;
     name = name || type;
     const ext = name?.split('.')?.pop() || '';
-    const contentType = type || mime.getType(ext) || 'application/octet-stream';
+    const contentType = mimeType || mime.getType(ext) || 'application/octet-stream';
     const url = await this.mediaUrl(filePath);
     if (typeof file === 'string') {
       await uploadString(fileRef, file, 'data_url', {

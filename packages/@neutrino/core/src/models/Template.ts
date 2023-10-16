@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import pluralize from 'pluralize';
 
-import { IField, ITemplate, PageType, templateId } from '../types.js';
+import { IField, INDEX_PAGE_ID, ITemplate, PageType, templateId } from '../types.js';
 
 export class Template implements ITemplate {
   name: string;
@@ -37,7 +37,7 @@ export class Template implements ITemplate {
    * @return {string}
    */
   label() {
-    if (this.type === 'page' && this.name === 'index') { return 'Home'; }
+    if (this.type === 'page' && this.name === INDEX_PAGE_ID) { return 'Home'; }
     return this.options.label as string || toTitleCase(this.name);
   }
 

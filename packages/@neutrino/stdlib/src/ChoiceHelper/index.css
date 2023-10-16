@@ -294,6 +294,7 @@
 .ui.radio.checkbox .box,
 .ui.radio.checkbox label {
   padding-left: 1.85714em;
+  margin: 0;
 }
 
 /* Box */

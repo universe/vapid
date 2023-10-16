@@ -1,4 +1,3 @@
-@import "./animations.css";
 @import "./base.css";
 @import "./layout.css";
 @import "./forms.css";
@@ -10,13 +9,9 @@
 @import "./wysiwyg.css";
 @import "./main.css";
 @import "./pages.css";
-@import "./footer.css";
-@import "./devices.css";
 
 @import "./error.css";
 
-/* Semantic UI (w/ some overrides) */
-@import "./semantic/label.css";
 
 body {
   --slate-0: #0a0b0c;

@@ -4,6 +4,13 @@
   "compilerOptions": {
     "outDir": "dist",
     "composite": true,
+    "paths": {
+      "react": ["../../../node_modules/preact/compat"],
+      "react-dom": ["../../../node_modules/preact/compat"],
+      "react-class": ["../../../node_modules/preact/compat"],
+      "create-react-class": ["../../../node_modules/preact/compat/lib/create-react-class"],
+      "react-dom-factories": ["../../../node_modules/preact/compat/lib/react-dom-factories"]
+    }
   },
   "references": [
     { "path": "../core" }

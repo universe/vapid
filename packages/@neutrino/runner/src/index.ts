@@ -1,11 +1,10 @@
 import { TemplateCompiler } from '@neutrino/compiler';
-import { IRecord, IRecordData, NAVIGATION_GROUP_ID, PageType, Record as DBRecord, RECORD_META, SerializedRecord,sortRecords, Template, VapidSettings } from '@neutrino/core';
+import { VapidSettings } from '@neutrino/core';
 import Database, { DatabaseConfig, FireBaseProvider, FireBaseProviderConfig, MemoryProvider, MemoryProviderConfig } from '@neutrino/datastore';
-import { IPageContext,IParsedTemplate, resolveHelper } from '@neutrino/runtime';
+import { resolveHelper } from '@neutrino/runtime';
 import dotenv from 'dotenv';
 import { mkdirSync,readFileSync } from 'fs';
-import { join,resolve } from 'path';
-import * as path from 'path';
+import { join, resolve } from 'path';
 
 declare global {
   /* eslint-disable-next-line @typescript-eslint/no-namespace */
@@ -21,7 +20,7 @@ const DEFAULT_CONFIG = (vapid: Vapid): VapidSettings<MemoryProviderConfig> => {
     name: 'Vapid',
     port: 3000,
     domain: '',
-    database: { type: 'memory', path: path.join(vapid.paths.data, 'data.json') },
+    database: { type: 'memory', path: join(vapid.paths.data, 'data.json') },
   };
 };
 
@@ -35,26 +34,12 @@ interface VapidProjectPaths {
   modules: string;
 }
 
-async function makeRecordData(page: IRecord, fieldKey: 'content' | 'metadata', db: Database): Promise<IRecordData> {
-  const children = await db.getChildren(page.id) || null;
-  const parent = page.parentId ? await db.getRecordById(page.parentId) : null;
-  const out: IRecordData = {
-    [RECORD_META]: DBRecord.getMetadata(DBRecord.permalink(page, parent), page, children, parent),
-  } as IRecordData;
-
-  for (const key of Object.keys(page[fieldKey])) {
-    out[key] = page[fieldKey][key];
-  }
-
-  return out;
-}
-
 /**
  * This is the main class that powers Vapid projects.
  * It fetches projected environment variables, configuration options,
  * project paths and data storage information. Project runners, like
- * `VapidBuilder` or `VapidServer`, may extend this base class to easily
- * access project configuration and structure data.
+ * `VapidServer`, may extend this base class to easily access project 
+ * configuration and structure data.
  */
 export class Vapid {
   env: 'production' | 'development' | 'test' = process.env.NODE_ENV || 'development';
@@ -109,80 +94,8 @@ export class Vapid {
     };
     this.compiler = new TemplateCompiler(componentLookup, resolveHelper);
   }
-
-  private async getPageContext(record: DBRecord, tmpl: IParsedTemplate): Promise<IPageContext> {
-    // Fetch all renderable pages.
-    const pages = await this.database.getRecordsByType(PageType.PAGE);
-
-    // Generate our navigation menu.
-    const navigation: SerializedRecord[] = [];
-    const pageMeta: SerializedRecord[] = [];
-    const currentUrl = record.permalink();
-    for (const page of pages.sort(sortRecords)) {
-      const children = await this.database.getChildren(page.id) || null;
-      const parent = page.parentId ? await this.database.getRecordById(page.parentId) : null;
-      const meta = DBRecord.getMetadata(currentUrl, page, children, parent);
-      pageMeta.push(meta);
-      if (page.parentId !== NAVIGATION_GROUP_ID) { continue; }
-      navigation.push(meta);
-    }
-
-    // Create our page context data.
-    const content = { this: await makeRecordData(record, 'content', this.database) };
-    const collection: Record<string, IRecordData[]> = {};
-
-    /* eslint-disable no-await-in-loop */
-    for (const model of Object.values(tmpl.templates)) {
-      if (model.type === 'page') { continue; }
-      // Fetch all templates where the type and model name match.
-      const template = await this.database.getTemplateByName(model.name, model.type);
-      const records = template ? await this.database.getRecordsByTemplateId(Template.id(template)) : [];
-
-      if (model.type === PageType.COLLECTION) {
-        const collectionList: IRecordData[] = content[model.name] = [];
-        for (const record of records) {
-          collectionList.push(await makeRecordData(record, 'content', this.database));
-        }
-        collection[model.name] = collectionList;
-      }
-      else {
-        // TODO: Create stub record if none exist yet.
-        content[model.name] = records[0] ? await makeRecordData(records[0], 'content', this.database) : {};
-      }
-    }
-
-    return {
-      env: { isProd: true, isDev: false },
-      content,
-      meta: await makeRecordData(record, 'metadata', this.database),
-      page: content.this[RECORD_META],
-      pages: pageMeta,
-      collection,
-      navigation,
-      site: await this.database.getMetadata(),
-    };
-  }
-
-  /**
-   *
-   * Renders content into site template
-   *
-   * @param {string} uriPath
-   * @return {string} rendered HTML
-   *
-   * @todo Use Promise.all when fetching content
-   */
-   async renderPermalink(vapid: Vapid, uriPath: string) {
-    const record = await vapid.database.getRecordFromPath(uriPath.slice(1));
-    const template = record?.template;
-    if (!record || !template) { throw new Error('Record not found'); }
-    const tree = this.compiler.parse(vapid.paths.www);
-    const tmpl = tree[template.id] || null;
-    if (!tmpl) { throw new Error(`Template "${template.id}" not found`); }
-    const pageData = await this.getPageContext(record, tmpl);
-    return await this.compiler.render(tmpl, pageData);
-  }
 }
 
 export default Vapid;
-export type { VapidSettings };
+
+export * from '@neutrino/core';

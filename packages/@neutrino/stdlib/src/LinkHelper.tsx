@@ -1,28 +1,45 @@
-import { DirectiveProps,NeutrinoHelperOptions, ValueHelper } from '@neutrino/core';
+import { DirectiveProps, NeutrinoHelperOptions, ValueHelper } from '@neutrino/core';
+import normalizeUrl from 'normalize-url';
 import { JSX } from 'preact';
-import type { Metadata } from 'unfurl.js/dist/types';
+import { useId } from 'preact/hooks';
+
+interface ILinkMetadata {
+  title: string;
+  description: string;
+  images: string[];
+  favicon: string;
+  duration: number;
+  domain: string;
+  url: string;
+}
 
 interface ILinkValue {
   url: string | null;
-  name: string | null;
   recordId: string | null;
-  description: string | null;
+  name: string | null;
+  domain: string | null;
   title: string | null;
+  description: string | null;
   favicon: string | null;
+  image: string | null;
   keywords: string[] | null;
 }
 
 const cache = new Map();
 
+const timeouts: Record<string, NodeJS.Timeout> = {};
+
 export default class LinkHelper extends ValueHelper<ILinkValue> {
 
   default = {
     url: null,
-    name: null,
     recordId: null,
-    description: null,
+    name: null,
+    domain: null,
     title: null,
+    description: null,
     favicon: null,
+    image: null,
     keywords: null,
   };
 
@@ -34,7 +51,8 @@ export default class LinkHelper extends ValueHelper<ILinkValue> {
    * @param {string} [value=this.options.default]
    * @return rendered input
    */
-   input({ name, value = this.default, directive }: DirectiveProps<ILinkValue, this>) {
+  input({ name, value = this.default, directive }: DirectiveProps<ILinkValue, this>) {
+    const id = useId();
     value = JSON.parse(JSON.stringify(value));
     let namePlaceholder = value?.url || '';
     let selectedPage = null;
@@ -69,14 +87,53 @@ export default class LinkHelper extends ValueHelper<ILinkValue> {
         {options}
       </select>
       <span>or</span>
-      <input type="url" name={`${name}[url]`} value={value?.url || ''} placeholder="Enter a URL" onChange={async(evt) => {
-        let unfurled: Metadata | null = null;
+      <input type="url" name={`${name}[url]`} value={value?.url || ''} placeholder="Enter a URL" onChange={async (evt) => {
+        let unfurled: Partial<ILinkMetadata> | null = null;
         const url = (evt.target as HTMLInputElement).value || null;
 
         try {
-          const host = url ? new URL(url).host : null;
-          unfurled = host ? (cache.get(host) || await (await window.fetch(`/api/unfurl/${host}`)).json()) : null;
-          if (unfurled) { cache.set(host, unfurled); }
+          // Clean up our URL and ensure it starts with https.
+          const extract = normalizeUrl(url?.trim() || '');
+
+          // This line will throw if it is an invalid URL.
+          const urlObj = extract ? new URL(extract) : null;
+          const host = `${urlObj?.origin || ''}${urlObj?.pathname || ''}`;
+
+          if (cache.has(host)) {
+            unfurled = cache.get(host);
+          }
+          else {
+            // Throttle calls to run on 1s of inactivity so we don't overwhelm our link extract API.
+            if (timeouts[id]) { clearTimeout(timeouts[id]); }
+            timeouts[id] = setTimeout(() => {
+              delete timeouts[id];
+              // TODO: Self-host unfurl.js for link metadata?
+              window.fetch(`https://jsonlink.io/api/extract?url=${encodeURIComponent(host)}`).then((res) => {
+                return res.json();
+              }).then((unfurled: ILinkMetadata | { error: string }) => {
+                if ('error' in unfurled) { return; }
+                cache.set(host, unfurled);
+
+                // If the current value of our input does not equal the value at the time of 
+                // invocation, then the input has changed since we called our link extract API.
+                const current = (evt.target as HTMLInputElement).value || null;
+                if (current !== url) { return; }
+
+                // Update our directive with the latest and greatest.
+                directive.update({
+                  url,
+                  recordId: null,
+                  domain: unfurled?.domain || null,
+                  name: value?.name || null,
+                  title: unfurled?.title || null,
+                  description: unfurled?.description || null,
+                  favicon: unfurled?.favicon || null,
+                  image: unfurled?.images?.[0] || null,
+                  keywords: [],
+                });
+              });
+            }, 1000);
+          }
         }
         catch (err) { console.error(`Error requesting website metadata for ${url}`, err); }
 
@@ -84,10 +141,12 @@ export default class LinkHelper extends ValueHelper<ILinkValue> {
           url,
           recordId: null,
           name: value?.name || null,
+          domain: unfurled?.domain || null,
           description: unfurled?.description || null,
           title: unfurled?.title || null,
+          image: unfurled?.images?.[0] || null,
           favicon: unfurled?.favicon || null,
-          keywords: unfurled?.keywords || [],
+          keywords: [],
         });
       }} />
     </fieldset>;
@@ -118,7 +177,7 @@ export default class LinkHelper extends ValueHelper<ILinkValue> {
     };
   }
 
-  render([link]: [ILinkValue], _hash={}, options: NeutrinoHelperOptions) {
+  render([link]: [ILinkValue], _hash = {}, options: NeutrinoHelperOptions) {
     if (!link || !link.url || !link.name) { return options.inverse ? options.inverse() : ''; }
     return (link ? options.block?.([link]) : `${link}`) || '';
   }

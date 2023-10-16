@@ -30,7 +30,7 @@ const ITEM_HEIGHT = 80 + 8;
 
 // WHEN dragging, this function will be fed with all arguments.
 // OTHERWISE, only the list order is relevant.
-interface AnimationTargets { down: boolean; y: number; scale: number; zIndex: string; immediate: any; }
+interface AnimationTargets { down: boolean; y: number; scale: number; zIndex: string; immediate: (boolean | ((string: string) => boolean)); }
 function fn (immediate: boolean, order: number[]): (idx: number) => AnimationTargets;
 function fn (immediate: boolean, order: number[], down: boolean, originalIndex: number, curIndex: number, y: number): (idx: number) => AnimationTargets;
 function fn(immediate: boolean, order: number[], down?: boolean, originalIndex?: number, curIndex?: number, y?: number): (idx: number) => AnimationTargets {
@@ -40,15 +40,17 @@ function fn(immediate: boolean, order: number[], down?: boolean, originalIndex?:
       : { down: false, y: order.indexOf(index) * ITEM_HEIGHT, scale: 1, zIndex: '0', immediate };
 }
 
-export function DraggableList({ items, onChange }: { items: any[]; onChange?: (order: number[]) => void }) {
+export function DraggableList({ items, onChange }: { items: (JSX.Element | null)[]; onChange?: (order: number[]) => void }) {
   const order = useRef<number[]>(items.map((_: unknown, index: number) => index));
   const [ springs, setSprings ] = useSprings(items.length, fn(false, order.current));
   const [ delta, setDelta ] = useState(0);
 
+  const itemsCache = items.map(item => item?.key).join(',');
   useEffect(() => {
     order.current = items.map((_: unknown, index: number) => index);
     setSprings(fn(true, order.current));
-  }, [items.map(item => item.key).join(',')]);
+  /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [itemsCache]);
 
   const bind = useGesture(({ args: [ originalIndex, onChange ], down, delta: [ , y ] }) => {
     const curIndex = order.current.indexOf(originalIndex);
@@ -71,7 +73,7 @@ export function DraggableList({ items, onChange }: { items: any[]; onChange?: (o
       {springs.map(({ down, zIndex, y, scale }, i) => {
         return <animated.div
           {...bind(i, onChange)}
-          key={items[i].key}
+          key={items[i]?.key || i}
           className={down.goal ? 'collection__row--grab' : ''}
           style={{
             width: 'calc(100% - 0.8rem)',

@@ -42,6 +42,14 @@
   transform: translate3d(0, 0, 0);
 }
 
+.vapid-menu--embedded .vapid-nav__back {
+  display: none;
+}
+
+.vapid-menu--embedded .vapid-nav__heading {
+  padding-left: 1.8rem;
+}
+
 .preview-controls {
   position: fixed;
   bottom: 0;
@@ -135,7 +143,7 @@
 .preview-controls__list li:first-of-type { margin-right: auto; }
 .preview-controls__list li:last-of-type { margin-left: auto; }
 
-.preview-container--full-screen {
+.vapid-preview--full-screen {
   width: 100vw;
   height: 100vh;
   top: 0;

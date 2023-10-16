@@ -1,5 +1,4 @@
-export type { HelperResolver } from './helpers.js';
-export { resolveHelper } from './helpers.js';
+export { type HelperResolver, type UnknownHelper, resolveHelper } from './helpers.js';
 export {
   makePageContext,
   parsedTemplateToAst,
@@ -18,4 +17,4 @@ export type {
   RendererComponentResolver,
   RuntimeHelper,
 } from './types.js';
-export { Record,Template } from '@neutrino/core';
+export { Record, Template } from '@neutrino/core';

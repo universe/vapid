@@ -151,7 +151,7 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
       if (!img.current) { return; }
       const picker = new FocusPicker(img.current, {
         onChange: (focus: FocusState) => {
-          const prev = value.current.focus;
+          const prev = value.current.focus || {};
           if (prev.blurhash === undefined) { prev.blurhash = null; }
           if (focus.blurhash === undefined) { focus.blurhash = null; }
           if (jsonStringify(prev) === jsonStringify(focus)) { return; }
@@ -160,7 +160,7 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
       });
       hasSrc ? picker.enable() : picker.disable();
       return () => picker.disable();
-    }, [ img.current, hasSrc ]);
+    }, [ img, hasSrc ]);
 
     return <div class="previewable">
       {(progress !== 0 && progress !== 100) ? <progress class="image-directive__progress" min="0" max="100" value={progress}> {progress}% </progress> : null}

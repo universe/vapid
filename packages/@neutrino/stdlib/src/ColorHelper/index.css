@@ -98,7 +98,6 @@
   border-width: 3px;
   box-shadow: var(--elevation-2);
   position: relative;
-  top: -1.5px;
 }
 
 .palette__color--5::before, .palette__cta--5::before {
@@ -107,13 +106,17 @@
   font-size: 1.8rem;
 }
 
+.palette__cta--custom.palette__cta--5 {
+  border-radius: 0.4rem 0.4rem 0 0;
+}
+
 .palette__clear-cta {
   position: absolute;
   position: absolute;
   top: 100%;
-  left: -3px;
+  left: -1px;
   height: 1.8rem;
-  right: -3px;
+  right: -1px;
   border: none;
   background: var(--black);
   border-radius: 0 0 4px 4px;

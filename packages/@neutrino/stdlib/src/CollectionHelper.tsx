@@ -52,6 +52,7 @@ export default class CollectionHelper extends BaseCollectionHelper<CollectionHel
     </select>;
   }
 
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   render([ data, config ]: [any[], CollectionHelperValue], hash: CollectionHelperOptions = {}, options: NeutrinoHelperOptions) {
     const items = (Array.isArray(data) ? data : [data]).filter(Boolean);
     const limit = hash.limit || Infinity;

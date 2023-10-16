@@ -68,10 +68,7 @@
     "no-var": [
       "error"
     ],
-    "space-before-function-paren": [
-      "error",
-      "never"
-    ],
+    "space-before-function-paren": "off",
     "no-return-assign": "off",
     "no-unused-expressions": "off",
     "brace-style": [

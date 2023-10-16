@@ -24,7 +24,7 @@ function isComponent(tag: string) {
 
 /* eslint-enable no-param-reassign */
 function parseHash(pairs: (ASTv1.HashPair | ASTv1.AttrNode)[]): Record<string, any> {
-  const out = {};
+  const out: Record<string, string> = {};
   for (const pair of pairs || []) {
     const key = (pair as ASTv1.HashPair).key || (pair as ASTv1.AttrNode).name;
     out[key] = (pair.value as ASTv1.PathExpression).original || (pair.value as ASTv1.TextNode).chars;
@@ -97,7 +97,7 @@ function resolveValue(
         const helper = resolveHelper(type);
         if (!helper) { return resolveValue(node.path, ctx, data, resolveHelper); }
         const params = node.params.map(param => resolveValue(param, ctx, data, resolveHelper));
-        const hash = {};
+        const hash: Record<string, NeutrinoValue> = {};
         for (const pair of node.hash.pairs) {
           hash[pair.key] = resolveValue(pair.value, ctx, data, resolveHelper);
         }
@@ -145,7 +145,7 @@ function traverse(
   env: VapidRuntimeEnv,
   tmpl: IParsedTemplate,
   context: Record<string, NeutrinoValue>,
-  data: Record<string, NeutrinoValue>,
+  data: IRenderPageContext,
 ) {
 const { document, root, program, resolveComponent, resolveHelper } = env;
   if (!program) { return; }
@@ -157,7 +157,11 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
         if (isComponent(node.tag)) {
           const ast = resolveComponent(node.tag);
           const fragment = document.createDocumentFragment();
-          const subData = { ...data };
+          const subData: IRenderPageContext = {
+            ...data,
+            props: {},
+            component: { id: nanoid() },
+          };
           for (const attr of node.attributes) {
             if (!attr.name.startsWith('@')) { continue; }
             const input = attr.value;
@@ -181,10 +185,8 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
               default:
                 value = resolveValue(input, context, data, resolveHelper) ?? missingData(input) ?? '';
             }
-            const props = subData.props = subData.props || {} as NeutrinoValue;
-            props && (props[key] = value);
+            subData.props[key] = value;
           }
-          subData['component'] = { id: nanoid() as string } as unknown as NeutrinoValue;
           const childEnv = { ...env, root: fragment, program: ast, contents: node.children };
           traverse(childEnv, tmpl, context, subData);
           appendFragment(root, fragment);
@@ -352,7 +354,11 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
   }
 }
 
-export type IRenderPageContext = Omit<Omit<IPageContext, 'content'>, 'collection'> & { collection: Record<string, Record<string, NeutrinoValue>[]> };
+export type IRenderPageContext = Omit<Omit<IPageContext, 'content'>, 'collection'> & { 
+  collection: Record<string, Record<string, NeutrinoValue>[]>;
+  props: Record<string, NeutrinoValue>;
+  component: { id: string; };
+};
 
 /**
  * Applies content to the template
@@ -361,13 +367,15 @@ export type IRenderPageContext = Omit<Omit<IPageContext, 'content'>, 'collection
  * @return {string} - HTML that has tags replaced with content
  */
 export function render(
-  document: SimpleDocument, 
+  document: Document | SimpleDocument, 
   tmpl: IParsedTemplate, 
   resolveComponent: RendererComponentResolver, 
   resolveHelper: HelperResolver, 
   data: IRenderPageContext, 
   context = {},
 ) {
+  // For Typescript
+  document = document as SimpleDocument;
   const ast = tmpl.ast;
   const discoveredHelpers: Set<ReturnType<typeof resolveHelper>> = new Set();
   const env: VapidRuntimeEnv = {
@@ -384,7 +392,7 @@ export function render(
       return helper;
     },
   };
-  traverse(env, tmpl, context, data as unknown as Record<string, NeutrinoValue>);
+  traverse(env, tmpl, context, data);
   
   let el: SimpleNode | null = env.root.firstChild;
 

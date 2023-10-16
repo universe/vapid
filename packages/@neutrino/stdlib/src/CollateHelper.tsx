@@ -46,12 +46,13 @@ export default class CollateHelper extends CollectionHelper<CollectionHelperValu
     </select>;
   }
 
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   render([ collection, config ]: [Record<string, any>[], any], hash: CollateHelperOptions, options: NeutrinoHelperOptions) {
     if (!options.fragment) { throw new Error('The {{collate}} helper must be used as a block helper.'); }
 
     const values: Set<string | number | undefined> = new Set();
     const valueCounts: Map<string | number | undefined, number> = new Map();
-    const recordsMap: Map<string | number | undefined, Set<any>> = new Map();
+    const recordsMap: Map<string | number | undefined, Set<unknown>> = new Map();
     const out = options.fragment;
     const prop = hash.key;
     const filter = hash.filter ? compileExpression(hash.filter) : null;

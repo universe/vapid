@@ -1,4 +1,4 @@
-import { IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Record, Template,UploadResult } from '@neutrino/core';
+import { INDEX_PAGE_ID, IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Record, Template, UploadResult } from '@neutrino/core';
 
 declare global {
   /* eslint-disable-next-line @typescript-eslint/no-namespace */
@@ -14,8 +14,8 @@ declare global {
 }
 
 export * from './providers/index.js';
-export type { IProvider, IRecord,ITemplate } from '@neutrino/core';
-export { PageType,Record, Template } from '@neutrino/core';
+export type { IProvider, IRecord, ITemplate } from '@neutrino/core';
+export { PageType, Record, Template } from '@neutrino/core';
 
 /**
  * Helps keep the database data structure in sync with the site templates
@@ -44,7 +44,7 @@ export default class Database<T extends { type: string; } = { type: string; }> e
   deleteTemplate(templateId: string): Promise<void> { return this.provider.deleteTemplate(templateId); }
   deleteRecord(recordId: string): Promise<void> { return this.provider.deleteRecord(recordId); }
   mediaUrl(name?: string): Promise<string> { return this.provider.mediaUrl(name); }
-  
+
   saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
   saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
   /* eslint-disable-next-line require-yield */
@@ -78,21 +78,21 @@ export default class Database<T extends { type: string; } = { type: string; }> e
       deletedAt: null,
     });
 
-    const indexTemplate = await this.provider.getTemplateById('index') || await this.provider.updateTemplate({
+    const indexTemplate = await this.provider.getTemplateById(INDEX_PAGE_ID) || await this.provider.updateTemplate({
       sortable: false,
       type: PageType.PAGE,
-      name: 'index',
+      name: INDEX_PAGE_ID,
       options: {},
       fields: {},
       metadata: {},
     });
 
-    await this.provider.getRecordById('index') || await this.provider.updateRecord({
-      id: 'index',
+    await this.provider.getRecordById(INDEX_PAGE_ID) || await this.provider.updateRecord({
+      id: INDEX_PAGE_ID,
       templateId: Template.id(indexTemplate),
       parentId: null,
       name: null,
-      slug: 'index',
+      slug: INDEX_PAGE_ID,
       content: {},
       metadata: {},
       order: 0,
@@ -112,7 +112,7 @@ export default class Database<T extends { type: string; } = { type: string; }> e
   }
 
   async getIndex(): Promise<Record | null> {
-    const template = await this.getTemplateByName('index', PageType.PAGE);
+    const template = await this.getTemplateByName(INDEX_PAGE_ID, PageType.PAGE);
     if (!template) { return null; }
     const record = (await this.getRecordsByTemplateId(Template.id(template)))[0] || null;
     return record ? this.hydrateRecord(record) : null;
@@ -129,7 +129,7 @@ export default class Database<T extends { type: string; } = { type: string; }> e
 
     // Alias root requests.
     if (permalink.endsWith('/')) { permalink = permalink.slice(0, -1); }
-    if (permalink === '' || permalink === '/') { permalink = 'index'; }
+    if (permalink === '' || permalink === '/') { permalink = INDEX_PAGE_ID; }
 
     // If we have an exact match, opt for that.
     let record = await this.provider.getRecordBySlug(permalink);
@@ -142,7 +142,7 @@ export default class Database<T extends { type: string; } = { type: string; }> e
       const segments = permalink.split('/');
       const pageSlug = segments.shift();
       const collectionSlug = segments.join('/');
-      const page = (pageSlug  ? await this.provider.getRecordBySlug(pageSlug) : null) || null;
+      const page = (pageSlug ? await this.provider.getRecordBySlug(pageSlug) : null) || null;
 
       // Try to get the plain old slug value if it exists.
       record = await this.provider.getRecordBySlug(collectionSlug, page?.id || null);

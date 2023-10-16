@@ -44,10 +44,12 @@ export interface IRenderEnv {
   isProd: boolean;
 }
 
+export type IPageContent = { ['this']: IRecordData } & Record<string, IRecordData | IRecordData[]>;
+
 export interface IPageContext {
   env: IRenderEnv;
   site: IWebsiteMeta;
-  content: { ['this']: IRecordData } & Record<string, IRecordData | IRecordData[]>,
+  content: IPageContent,
   meta: IRecordData;
   page: SerializedRecord | null;
   pages: SerializedRecord[];

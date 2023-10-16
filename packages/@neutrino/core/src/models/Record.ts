@@ -1,7 +1,7 @@
 import { Json, toTitleCase } from "@universe/util";
 import pluralize from 'pluralize';
 
-import { IRecord, ITemplate, NAVIGATION_GROUP_ID,PageType, SerializedRecord } from '../types.js';
+import { INDEX_PAGE_ID, IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, SerializedRecord } from '../types.js';
 import { Template } from './Template.js';
 
 export class Record implements IRecord {
@@ -46,7 +46,7 @@ export class Record implements IRecord {
   }
 
   static getName(record: IRecord, template: ITemplate): string {
-    let defaultName = template.name === 'index' ? 'Home' : template.name;
+    let defaultName = template.name === INDEX_PAGE_ID ? 'Home' : template.name;
     if (template.type === PageType.PAGE) { return record.name || toTitleCase(defaultName); }
     if (template.type === PageType.SETTINGS) { return template.name; }
     if (template.type === PageType.COLLECTION) { defaultName = pluralize.singular(defaultName); }
@@ -62,7 +62,7 @@ export class Record implements IRecord {
    * @return {string}
    */
   static permalink(record: IRecord, parent: IRecord | null = null) {
-    const slug = record.slug === 'index' ? '' : record.slug;
+    const slug = record.slug === INDEX_PAGE_ID ? '' : record.slug;
     return parent ? `/${parent.slug}/${slug}` : `/${slug}`;
   }
   permalink(): string { return Record.permalink(this, this.parent); }
@@ -70,7 +70,7 @@ export class Record implements IRecord {
   static getMetadata(currentUrl: string, record: IRecord, children: IRecord[] = [], parent: IRecord | null = null): SerializedRecord {
     const permalink = Record.permalink(record, parent);
     const parentPermalink = parent ? Record.permalink(parent) : '/';
-    currentUrl = currentUrl === 'index' ? '/' : currentUrl;
+    currentUrl = currentUrl === INDEX_PAGE_ID ? '/' : currentUrl;
     return {
       id: record.id,
       templateId: record.templateId,
@@ -80,8 +80,8 @@ export class Record implements IRecord {
       slug: record.slug,
       permalink,
       isNavigation: Record.isNavigation(record),
-      isActive: currentUrl === permalink || currentUrl.startsWith(`${permalink  }/`),
-      isParentActive: currentUrl.startsWith(`${parentPermalink  }/`),
+      isActive: currentUrl === permalink || currentUrl.startsWith(`${permalink}/`),
+      isParentActive: currentUrl.startsWith(`${parentPermalink}/`),
       hasChildren: !!children.length,
       children: children.filter(r => r.parentId === record.id && !r.deletedAt).map(r => Record.getMetadata(currentUrl, r, [], record)),
       parent: parent ? Record.getMetadata(currentUrl, parent) : null,

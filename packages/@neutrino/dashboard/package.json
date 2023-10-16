@@ -8,17 +8,20 @@
   "source": "src/index.html",
   "homepage": "https://website.universe.app",
   "type": "module",
-  "bin": {
-    "vapid": "./dist/lib/cli.js"
+  "exports": {
+    ".": {
+      "types": "./dist/src/javascripts/dashboard.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
   },
   "scripts": {
-    "typecheck": "tsc --emitDeclarationOnly",
     "clean": "rm -rf dist",
     "lint": "eslint bin lib test",
     "test": "jest | pino-pretty",
     "emulate": "firebase emulators:start",
     "start": "yarn clean && vite --force",
-    "build": "yarn clean && vite build && tsc -p tsconfig.json",
+    "build": "yarn clean && vite build && rm -f tsconfig.tsbuildinfo && tsc --emitDeclarationOnly -p tsconfig.json",
     "deploy": "yarn build && hoist up dist"
   },
   "engines": {
@@ -69,7 +72,6 @@
     "@universe/admin": "^1.10.0",
     "@universe/campaign": "^0.30.0",
     "@vitejs/plugin-basic-ssl": "^0.1.2",
-    "simple-dom": "^1.4.0",
-    "vite": "^4.1.4"
+    "simple-dom": "^1.4.0"
   }
 }

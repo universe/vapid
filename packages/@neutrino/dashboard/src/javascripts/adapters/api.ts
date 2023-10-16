@@ -85,7 +85,6 @@ export default class APIAdapter extends DataAdapter {
   //   const formData = new FormData();
   //   formData.set('file', blob, filename);
   //   // formData.set('_csrf', this.csrf);
-  //   debugger;
   //   const res = await fetch(`${this.API_URL}/api/upload`, {
   //     method: 'POST',
   //     body: formData,

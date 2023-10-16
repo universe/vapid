@@ -4,7 +4,7 @@ import { DirectiveField, DirectiveMeta, DirectiveProps,ValueHelper } from '@neut
 import { toSnakeCase, toTitleCase } from '@universe/util';
 import { JSX } from 'preact';
 import { useState } from 'preact/hooks';
-import ReactTags, { ClassNames,Tag } from 'react-tag-autocomplete';
+import ReactTags, { ClassNames, Tag } from 'react-tag-autocomplete';
 
 /**
  * @private
@@ -197,6 +197,8 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
       suggestions.unshift({ id: toSnakeCase(localCustom), name: toTitleCase(localCustom) });
     }
 
+    // eslint-disable-next-line
+    /* @ts-ignore-next-line */
     return <ReactTags
       classNames={{ root: `react-tags ${!this.options.multiple && tags.length >= 1 ? 'react-tags--done' : ''}` } as ClassNames}
       minQueryLength={0}

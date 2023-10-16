@@ -2,6 +2,7 @@ import {
   IRecord, 
   IRecordData, 
   ITemplate, 
+  nanoid,
   NAVIGATION_GROUP_ID, 
   PageType, Record as DBRecord, 
   RECORD_META, 
@@ -15,7 +16,7 @@ import type { Json } from '@universe/util';
 
 import { HelperResolver, resolveHelper as defaultResolveHelper } from './helpers.js';
 import { IRenderPageContext, render as rawRender } from './renderer.js';
-import { IPageContext, IParsedTemplate, ITemplateAst, IWebsite, RendererComponentResolver, RuntimeHelper } from './types.js';
+import { IPageContent, IPageContext, IParsedTemplate, ITemplateAst, IWebsite, RendererComponentResolver, RuntimeHelper } from './types.js';
 
 export * from './helpers.js';
 export * from './types.js';
@@ -68,7 +69,7 @@ export function makePageContext(isProduction: boolean, page: IRecord, records: R
   const parent = parentFor(page, recordsList);
   const template = templateFor(page, templates);
   if (!template) { throw new Error(`Missing template for "${page.templateId}"`); }
-  const content = { this: makeRecordData(page, template, 'content', children, parent) };
+  const content: IPageContent = { this: makeRecordData(page, template, 'content', children, parent) };
   const collection: Record<string, IRecordData[]> = {};
   const meta = makeRecordData(page, template, 'metadata', children, parent);
 
@@ -166,7 +167,7 @@ async function makeRenderRecord(data: IRecordData, templates: Record<string, ITe
 }
 
 export async function render(
-  document: SimpleDocument,
+  document: Document | SimpleDocument,
   tmpl: IParsedTemplate,
   data: IPageContext,
   resolveComponent?: RendererComponentResolver,
@@ -180,7 +181,13 @@ export async function render(
       await makeRenderRecord(record, tmpl.templates, data);
   }
 
-  const renderData: IRenderPageContext = { ...data, collection: {} };
+  const renderData: IRenderPageContext = { 
+    ...data,
+    collection: {},
+    props: {},
+    component: { id: nanoid() },
+  };
+
   for (const collectionName of Object.keys(data.collection || {})) {
     const list = data.collection[collectionName];
     if (!list) { continue; }
@@ -193,7 +200,7 @@ export async function render(
 
 export async function renderRecord(
   isProduction: boolean,
-  document: SimpleDocument, 
+  document: Document | SimpleDocument, 
   record: IRecord, 
   siteData: IWebsite,
   records: Record<string, IRecord>,
@@ -213,5 +220,5 @@ export async function renderRecord(
   };
 
   const context = makePageContext(isProduction, record, records, Object.values(siteData.hbs.templates), siteData);
-  return render(document as unknown as SimpleDocument, renderTemplate, context, resolveComponent, resolveHelper);
+  return render(document, renderTemplate, context, resolveComponent, resolveHelper);
 }
