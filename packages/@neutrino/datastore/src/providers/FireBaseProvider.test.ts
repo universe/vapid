@@ -20,7 +20,12 @@ const FIREBASE_DEV_CONFIG = {
   measurementId: 'G-Z0KCBCDXJ6',
 };
 
-const provider = new FireBaseProvider({ name: 'Test', domain: 'vapid.test', database: { type: 'firebase', config: FIREBASE_DEV_CONFIG } });
+const provider = new FireBaseProvider({
+  name: 'Test',
+  domain: 'vapid.test',
+  env: {},
+  database: { type: 'firebase', config: FIREBASE_DEV_CONFIG },
+});
 TestSuite('FireBase Provider - User Supplied App Config', provider, provider.purge.bind(provider));
 
 describe('Firebase Provider Project ID Start', () => {
@@ -30,7 +35,12 @@ describe('Firebase Provider Project ID Start', () => {
     delete process.env.FIRESTORE_EMULATOR_HOST;
     // Emulators have incorrect behavior for init.json.
     const scope = nock(`http://${process.env.FIREBASE_HOSTING_EMULATOR}`).get('/__/firebase/init.json').reply(200, FIREBASE_DEV_CONFIG);
-    const provider = new FireBaseProvider({ name: 'Test', domain: 'vapid.test', database: { type: 'firebase', projectId: 'vapid' } });
+    const provider = new FireBaseProvider({
+      name: 'Test',
+      domain: 'vapid.test',
+      env: {},
+      database: { type: 'firebase', projectId: 'vapid' },
+    });
     await provider.start();
     await provider.stop();
     nock.restore();
@@ -38,7 +48,12 @@ describe('Firebase Provider Project ID Start', () => {
     expect(scope.isDone()).toBe(true);
   });
   it('Fails to connect with incorrect projectId', async() => {
-    const provider = new FireBaseProvider({ name: 'Test', domain: 'vapid.test', database: { type: 'firebase', projectId: 'PANIC' } });
+    const provider = new FireBaseProvider({
+      name: 'Test',
+      domain: 'vapid.test',
+      env: {},
+      database: { type: 'firebase', projectId: 'PANIC' },
+    });
     /* eslint-disable-next-line jest/valid-expect */
     expect(provider.start()).rejects;
   });

@@ -50,12 +50,12 @@ export default class Watcher {
    */
   listen(callback = () => {1;}) {
     this.callback = callback;
-    this.server = livereload.createServer();
+    this.server = livereload.createServer({ port: 1777 });
     this.server.watch(this.paths);
     this.server.watcher.on('add', this.handleEvent.bind(this));
     this.server.watcher.on('change', this.handleEvent.bind(this));
     this.server.watcher.on('unlink', this.handleEvent.bind(this));
-    logger.info(`Watching for changes in ${this.paths}`);
+    logger.info(`Watching for changes in ${this.paths} on port "1777".`);
   }
 
   /**

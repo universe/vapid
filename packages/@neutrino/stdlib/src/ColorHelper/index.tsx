@@ -267,16 +267,27 @@ function getpaletteCSS(palette: Ipalette, paletteText: IpaletteText) {
 
     --gray: ${palette.gray};
     --gray-0: ${palette.gray0};
+    --gray-0-rgb: ${Color(palette.gray0).red()}, ${Color(palette.gray0).green()}, ${Color(palette.gray0).blue()};
     --gray-1: ${palette.gray1};
+    --gray-1-rgb: ${Color(palette.gray1).red()}, ${Color(palette.gray1).green()}, ${Color(palette.gray1).blue()};
     --gray-2: ${palette.gray2};
+    --gray-2-rgb: ${Color(palette.gray2).red()}, ${Color(palette.gray2).green()}, ${Color(palette.gray2).blue()};
     --gray-3: ${palette.gray3};
+    --gray-3-rgb: ${Color(palette.gray3).red()}, ${Color(palette.gray3).green()}, ${Color(palette.gray3).blue()};
     --gray-4: ${palette.gray4};
+    --gray-4-rgb: ${Color(palette.gray4).red()}, ${Color(palette.gray4).green()}, ${Color(palette.gray4).blue()};
     --gray-5: ${palette.gray5};
+    --gray-5-rgb: ${Color(palette.gray5).red()}, ${Color(palette.gray5).green()}, ${Color(palette.gray5).blue()};
     --gray-6: ${palette.gray6};
+    --gray-6-rgb: ${Color(palette.gray6).red()}, ${Color(palette.gray6).green()}, ${Color(palette.gray6).blue()};
     --gray-7: ${palette.gray7};
+    --gray-7-rgb: ${Color(palette.gray7).red()}, ${Color(palette.gray7).green()}, ${Color(palette.gray7).blue()};
     --gray-8: ${palette.gray8};
+    --gray-8-rgb: ${Color(palette.gray8).red()}, ${Color(palette.gray8).green()}, ${Color(palette.gray8).blue()};
     --gray-9: ${palette.gray9};
+    --gray-9-rgb: ${Color(palette.gray9).red()}, ${Color(palette.gray9).green()}, ${Color(palette.gray9).blue()};
     --gray-10: ${palette.gray10};
+    --gray-10-rgb: ${Color(palette.gray10).red()}, ${Color(palette.gray10).green()}, ${Color(palette.gray10).blue()};
   `;
 }
 

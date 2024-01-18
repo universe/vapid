@@ -17,4 +17,5 @@ export type {
   RendererComponentResolver,
   RuntimeHelper,
 } from './types.js';
+export { default as update } from './update.js';
 export { Record, Template } from '@neutrino/core';

@@ -35,17 +35,19 @@ export default class FirebaseAdapter extends DataAdapter {
   private domain: string;
   private app: FirebaseApp;
 
-  constructor(app: FirebaseApp, domain: string, scope: string, root = 'uploads') {
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  constructor(app: FirebaseApp, bucket: string, scope: string, env: Record<string, any> = {}, root = 'uploads') {
     super();
     this.app = app;
-    this.domain = domain;
+    this.domain = bucket;
     this.provider = new FirebaseProvider({
       name: 'Neutrino',
-      domain,
+      domain: bucket,
+      env,
       database: {
         type: 'firebase',
         firestore: { scope },
-        storage: { root },
+        storage: { bucket, root },
         projectId: app?.options.projectId,
         app,
       },
@@ -60,7 +62,7 @@ export default class FirebaseAdapter extends DataAdapter {
       await this.provider.start();
       this.#initPromise.resolve();
     }
- catch (err) {
+    catch (err) {
       this.#initPromise.reject(err);
     }
     return this.#initPromise;
@@ -154,10 +156,11 @@ export default class FirebaseAdapter extends DataAdapter {
     const name = meta?.theme?.name || 'neutrino';
     const version = meta?.theme?.version || 'latest';
 
+    let data: IWebsite | null = null;
     // Test if the local theme server has a theme of this name and version.
-    if (this.hasLocalTheme === null) {
+    if (this.hasLocalTheme === true || this.hasLocalTheme === null) {
       try {
-        const data: IWebsite = await (await fetch(`http://localhost:1776/api/data/themes/${name}/${name}@${version}.json`)).json();
+        data = await (await fetch(`http://localhost:1776/api/data/themes/${name}/${name}@${version}.json`)).json();
         this.hasLocalTheme = Object.hasOwnProperty.call(data, 'meta') && Object.hasOwnProperty.call(data, 'hbs');
       }
       catch {
@@ -165,8 +168,12 @@ export default class FirebaseAdapter extends DataAdapter {
       }
     }
 
-    const THEME_URL = this.hasLocalTheme ? 'http://localhost:1776/api/data' : import.meta.env.THEME_URL;
-    const data: IWebsite = await (await fetch(`${THEME_URL}/${name}/${name}@${version}.json`)).json();
+    if (this.hasLocalTheme === false) {
+      data = await (await fetch(`${import.meta.env.THEME_URL}/${name}/${name}@${version}.json`)).json();
+    }
+
+    if (!data) { throw new Error('Error fetching website theme.'); }
+
     meta.domain = meta.domain || this.domain;
     meta.media = meta.media || `https://${this.domain}`;
     data.meta = meta;
@@ -240,7 +247,9 @@ export default class FirebaseAdapter extends DataAdapter {
   }
 
   async deploy(website: IWebsite, records: Record<string, IRecord>) {
-    const storage = getStorage(this.app, `gs://${website.meta.domain}`);
+    const bucket = this.provider.config?.database?.storage?.bucket || website.meta.domain;
+    debugger;
+    const storage = getStorage(this.app, `gs://${bucket}`);
     const discoveredDefaults = new Set(Object.keys(WELL_KNOWN_PAGES));
 
     // Deploy Stylesheets
@@ -258,9 +267,9 @@ export default class FirebaseAdapter extends DataAdapter {
       const parent: IRecord | null = record.parentId ? records[record.parentId] : null;
       const slug = `${[ parent?.slug, record.slug ].filter(Boolean).join('/')}`;
       discoveredDefaults.delete(slug);
-      await renderRecord(true, document, record, website, records);
+      const fragment = await renderRecord(true, document, record, website, records);
       const serializer = new Serializer({});
-      const html = serializer.serialize(document);
+      const html = fragment ? serializer.serialize(fragment) : '';
       const blob = new Blob([html], { type : 'text/html' });
       const fileRef = ref(storage, `${WELL_KNOWN_PAGES[slug] || slug}`);
       const uploadTask = uploadBytesResumable(fileRef, blob, { contentType: 'text/html', cacheControl: 'public,max-age=0' });

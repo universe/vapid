@@ -39,21 +39,26 @@ export default function WebsiteData({ adapter, children }: { adapter: DataAdapte
         await adapter?.init();
         BaseHelper.registerFileHandler(adapter.saveFile.bind(adapter));
       }
- catch (err) {
+      catch (err) {
         console.error(err);
         setLoading("Error Connecting to Database");
         return;
       }
 
+      // Attempt to bind to a livereload port to get site template updates in dev mode.
       try {
         await new Promise<void>((resolve, reject) => {
-          const ws = new WebSocket(`ws://localhost:35729/livereload`);
-          ws.onopen = () => setIsLocal(true);
+          const ws = new WebSocket(`ws://localhost:1777/livereload`);
+          ws.onopen = async () => {
+            setIsLocal(true);
+            setTheme({ ...(await adapter.getTheme()) });
+            resolve();
+          };
           ws.onmessage = async (evt) => {
             const { command, data } = JSON.parse(evt.data) as { command: string; data: IWebsite; };
             console.log(`[WebSocket ${command}]`, data);
             switch (command) {
-              case 'update': setTheme({ ...(await adapter.getTheme()), hbs: data.hbs });
+              case 'update': setTheme({ ...data });
             }
             resolve();
           };
@@ -64,7 +69,7 @@ export default function WebsiteData({ adapter, children }: { adapter: DataAdapte
         try {
           setTheme(await adapter.getTheme());
         }
- catch (err) {
+        catch (err) {
           console.error(err);
           setLoading("Error Loading Site Theme");
           return;
@@ -74,7 +79,7 @@ export default function WebsiteData({ adapter, children }: { adapter: DataAdapte
       try {
         setRecords(await adapter.getAllRecords());
       }
- catch (err) {
+      catch (err) {
         console.error(err);
         setLoading("Error Loading Site Content");
         return;
@@ -82,11 +87,6 @@ export default function WebsiteData({ adapter, children }: { adapter: DataAdapte
 
       setLoading(false);
     })();
-  }, [adapter]);
-
-  // Start watching our web socket in dev mode.
-  useEffect(() => {
-    if (!adapter) { return; }
   }, [adapter]);
 
   return <WebsiteContext.Provider

@@ -11,7 +11,7 @@ import {
   stampRecord, 
   Template,
 } from '@neutrino/core';
-import type { SimpleDocument } from '@simple-dom/interface';
+import type { SimpleDocument, SimpleDocumentFragment } from '@simple-dom/interface';
 import type { Json } from '@universe/util';
 
 import { HelperResolver, resolveHelper as defaultResolveHelper } from './helpers.js';
@@ -206,10 +206,10 @@ export async function renderRecord(
   records: Record<string, IRecord>,
   resolveComponent?: RendererComponentResolver,
   resolveHelper: HelperResolver = defaultResolveHelper,
-) {
-  if (!record) { return; }
+): Promise<SimpleDocumentFragment | null>  {
+  if (!record) { return null; }
   const renderedAst = siteData.hbs.pages[record.templateId];
-  if (!record || !renderedAst) { return; }
+  if (!record || !renderedAst) { return null; }
   const renderTemplate: IParsedTemplate | null = {
     name: renderedAst.name,
     type: renderedAst.type,

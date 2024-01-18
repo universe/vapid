@@ -1,6 +1,6 @@
 import type { ASTv1 } from '@glimmer/syntax';
 import { CollectionHelper, nanoid,NeutrinoHelperOptions, NeutrinoValue, SafeString } from '@neutrino/core';
-import { InsertPosition, Namespace, NodeType, SimpleDocument, SimpleDocumentFragment, SimpleElement, SimpleNode,SimpleText  } from '@simple-dom/interface';
+import { InsertPosition, Namespace, NodeType, SimpleDocument, SimpleDocumentFragment, SimpleElement,SimpleText  } from '@simple-dom/interface';
 
 import { HelperResolver } from './helpers.js';
 import { GlimmerTemplate, IPageContext, IParsedTemplate, RendererComponentResolver } from './types.js';
@@ -141,6 +141,36 @@ function applyDebugAttr(type: DebugContainerType, el: SimpleElement, statement: 
   }
 }
 
+function getAttributeValue(
+  attr: ASTv1.MustacheStatement | ASTv1.TextNode | ASTv1.ConcatStatement,
+  context: Record<string, NeutrinoValue>,
+  data: IRenderPageContext,
+  env: VapidRuntimeEnv,
+  el?: SimpleElement,
+) {
+  switch(attr.type) {
+    case 'TextNode':
+      return attr.chars;
+    case 'ConcatStatement': {
+      let value = '';
+      for (const statement of attr.parts) {
+        switch(statement.type) {
+          case 'TextNode': value += statement.chars; break;
+          case 'MustacheStatement':
+            value += resolveValue(statement, context, data, env.resolveHelper) ?? missingData(statement);
+            if (el && env.isDevelopment) {
+              applyDebugAttr('attribute', el, statement);
+            }
+            break;
+        }
+      }
+      return value;
+    }
+    case 'MustacheStatement':
+      return `${resolveValue(attr, context, data, env.resolveHelper) ?? missingData(attr)}`;
+  }
+}
+
 function traverse(
   env: VapidRuntimeEnv,
   tmpl: IParsedTemplate,
@@ -221,31 +251,8 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
           }
           else {
             for (const attr of node.attributes) {
-              if (attr.name.toLowerCase() === 'viewbox') console.log('ATTR', attr.name);
-              switch(attr.value.type) {
-                case 'TextNode':
-                  el.setAttribute(attr.name, attr.value.chars);
-                  break;
-                case 'ConcatStatement': {
-                  let value = '';
-                  for (const statement of attr.value.parts) {
-                    switch(statement.type) {
-                      case 'TextNode': value += statement.chars; break;
-                      case 'MustacheStatement':
-                        value += resolveValue(statement, context, data, resolveHelper) ?? missingData(statement);
-                        if (env.isDevelopment) {
-                          applyDebugAttr('attribute', el, statement);
-                        }
-                        break;
-                    }
-                  }
-                  el.setAttribute(attr.name, value);
-                  break;
-                }
-                case 'MustacheStatement':
-                  el.setAttribute(attr.name, `${resolveValue(attr.value, context, data, resolveHelper) ?? missingData(attr.value)}`);
-                  break;
-              }
+              const value = getAttributeValue(attr.value, context, data, env, el);
+              el.setAttribute(attr.name, value);
             }
           }
           root.appendChild(el);
@@ -373,9 +380,10 @@ export function render(
   resolveHelper: HelperResolver, 
   data: IRenderPageContext, 
   context = {},
-) {
+): SimpleDocumentFragment {
   // For Typescript
   document = document as SimpleDocument;
+  UNIQUE_ID = 0; // Re-set our incrementing debug ID.
   const ast = tmpl.ast;
   const discoveredHelpers: Set<ReturnType<typeof resolveHelper>> = new Set();
   const env: VapidRuntimeEnv = {
@@ -394,8 +402,6 @@ export function render(
   };
   traverse(env, tmpl, context, data);
   
-  let el: SimpleNode | null = env.root.firstChild;
-
   // Append development styles to the document tree if needed.
   if (env.isDevelopment) {
     const style = document.createElementNS(env.namespace, 'style');
@@ -413,14 +419,15 @@ export function render(
     helper && discoveredHelpers.add(helper);
   }
 
-  do {
-    // Only one element node is allowed to be appended to the document.
-    if (el?.nodeType === 1 as NodeType.ELEMENT_NODE) {
-      for (const el of Array.from(document.childNodes)) { document.removeChild(el); }
-      document.appendChild(el);
-      break;
-    }
-  } while (el = el?.nextSibling || null);
+  // let el: SimpleNode | null = env.root.firstChild;
+  // do {
+  //   // Only one element node is allowed to be appended to the document.
+  //   if (el?.nodeType === 1 as NodeType.ELEMENT_NODE) {
+  //     for (const el of Array.from(document.childNodes)) { document.removeChild(el); }
+  //     document.appendChild(el);
+  //     break;
+  //   }
+  // } while (el = el?.nextSibling || null);
 
   // Inject any helper content to the head.
   for (const helper of discoveredHelpers) {
@@ -436,4 +443,6 @@ export function render(
       document.head.appendChild(document.createTextNode(inject.toString()));
     }
   }
+
+  return env.root as SimpleDocumentFragment;
 }

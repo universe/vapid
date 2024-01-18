@@ -159,3 +159,10 @@
   width: 38rem;
   height: 100vh;
 }
+
+
+.dashboard.dashboard--embedded,
+.dashboard.dashboard--embedded .vapid-editor,
+.dashboard.dashboard--embedded .metadata {
+  background: transparent;
+}

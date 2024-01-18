@@ -23,7 +23,7 @@
     "lint": "eslint bin lib test",
     "test": "jest | pino-pretty",
     "emulate": "firebase emulators:start",
-    "build": "rm -rf dist && tsc",
+    "build": "rm -rf dist && tsc && chmod 777 ./dist/src/entry.js",
     "watch": "watch 'npm run build' './src' --wait=1"
   },
   "engines": {

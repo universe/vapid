@@ -29,6 +29,7 @@ const ENV = globalThis?.process?.env || {};
 const DEFAULT_STORAGE_ROOT = 'uploads';
 
 export interface FireBaseStorageConfig {
+  bucket?: string;
   root?: string;
 }
 
@@ -70,7 +71,6 @@ function createDeferred<T>(): Deferred<T> {
 
 export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> {
   private getFirebasePrefix() {
-    logger.info(this.config.database?.firestore?.scope || `websites/${this.config.domain || 'default'}`);
     return this.config.database?.firestore?.scope || `websites/${this.config.domain || 'default'}`;
   }
   private getTemplatesPath() { return `${this.getFirebasePrefix()}/templates`; }
@@ -197,12 +197,13 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
   async getMetadata(): Promise<IWebsiteMeta> {
     const db = this.getDatabase();
     const data = (await getDoc(doc(db, this.getFirebasePrefix())))?.data() || {} as Partial<IWebsiteMeta>;
+    const realm = this.config.database?.firestore?.scope?.split('/')?.[1] || null;
     return {
-      name: data.name || this.config.name, 
-      domain: data.domain || this.config.domain, 
+      name: data.name || this.config.name,
+      domain: data.domain || this.config.domain,
       media: `https://${data.domain || this.config.domain}`,
       theme: { name: 'neutrino', version: 'latest' },
-      env: { realm: 'demo.universe.app' },
+      env: { ...this.config.env, realm: this.config.env.realm || realm },
     };
   }
 

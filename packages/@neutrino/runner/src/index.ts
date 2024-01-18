@@ -21,6 +21,7 @@ const DEFAULT_CONFIG = (vapid: Vapid): VapidSettings<MemoryProviderConfig> => {
     port: 3000,
     domain: '',
     database: { type: 'memory', path: join(vapid.paths.data, 'data.json') },
+    env: {},
   };
 };
 

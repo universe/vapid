@@ -4,7 +4,7 @@ import './dashboard.css';
 
 import { IRecord } from '@neutrino/core';
 import { ComponentChildren } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import Router from 'preact-router';
 
 import { DataAdapter } from './adapters/types.js';
@@ -23,6 +23,10 @@ interface IDashboardProps {
 
 export function Dashboard({ embedded, adapter, children, root, beforeDeploy, afterDeploy }: IDashboardProps) {
   const [ localRecord, setLocalRecord ] = useState<IRecord | null>(null);
+
+  useEffect(() => {
+    document.body.classList.toggle('dashboard--embedded', embedded);
+  }, [embedded]);
 
   if (!adapter) { return null; }
   return <WebsiteData adapter={adapter}>

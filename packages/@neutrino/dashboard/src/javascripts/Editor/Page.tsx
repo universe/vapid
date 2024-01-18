@@ -144,14 +144,7 @@ export default function Page({ adapter, isNewRecord, template, record, records, 
       method="post"
       encType="multipart/form-data"
       noValidate={true}
-      onSubmit={async evt => {
-        evt.preventDefault();
-        await attemptWithToast(async () => {
-          record ? await adapter?.updateRecord(record) : null;
-          record && onSave(record);
-          setIsDirty(false);
-        }, 'Saving Page...', 'Saved Successfully', 'Error Saving');
-      }}
+      onSubmit={evt => evt.preventDefault()}
     >
       <section
         id="meta-container"
@@ -183,7 +176,13 @@ export default function Page({ adapter, isNewRecord, template, record, records, 
         {/* eslint-enable max-len */}
       </section>
       <nav class="submit field" style="overflow: hidden;">
-        <input class="button floated right" type="submit" value="Save" />
+        <input class="button floated right" type="submit" value="Save" onClick={async() => {
+          await attemptWithToast(async () => {
+            record ? await adapter?.updateRecord(record) : null;
+            record && onSave(record);
+            setIsDirty(false);
+          }, 'Saving Page...', 'Saved Successfully', 'Error Saving');
+        }} />
       </nav>
     </form>
   </Fragment>;

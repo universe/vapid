@@ -1,6 +1,6 @@
 import { IRecord } from '@neutrino/core';
-import { IWebsite, renderRecord } from '@neutrino/runtime';
-import type { SimpleDocument } from '@simple-dom/interface';
+import { IWebsite, renderRecord, update } from '@neutrino/runtime';
+import type { SimpleDocument, SimpleNode } from '@simple-dom/interface';
 import Spinner from '@universe/aether/components/Spinner';
 import { useContext, useEffect } from 'preact/hooks';
 
@@ -28,6 +28,12 @@ function focusFieldPreview(evt: Event): void {
 document.addEventListener('focusin', focusFieldPreview);
 document.addEventListener('focusout', focusFieldPreview);
 
+const SCRATCH_DOC = document.createElement('iframe');
+SCRATCH_DOC.setAttribute('src', 'about:blank');
+SCRATCH_DOC.setAttribute('id', 'vapid-preview-scratch');
+SCRATCH_DOC.setAttribute('class', 'vapid-preview__scratch-iframe');
+SCRATCH_DOC.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-modals allow-forms');
+
 export default function Preview({ record }: PreviewProps) {
 
   const { theme, records, loading } = useContext(WebsiteContext);
@@ -51,22 +57,12 @@ export default function Preview({ record }: PreviewProps) {
 
       // Grab our preview iframe documents.
       const doc = (document.getElementById('vapid-preview') as HTMLIFrameElement).contentDocument;
-      const scratchDoc = (document.getElementById('vapid-preview-scratch') as HTMLIFrameElement).contentDocument;
-      if (!renderedRecord || !doc || !scratchDoc) { return; }
+      if (!renderedRecord || !doc) { return; }
 
       // Render the site into our hidden scratch document.
-      await renderRecord(false, scratchDoc as unknown as SimpleDocument, renderedRecord, siteUpdate, recordsUpdate);
-
-      // Merge our scratch doc with our visible doc. (TODO: This can be better!)
-      doc.body.replaceChildren(...Array.from((scratchDoc.body as HTMLElement).children));
-      const oldList = Array.from(doc.head.children);
-      const newList = Array.from(scratchDoc.head.children);
-      for (let i = 0; i < Math.max(oldList.length, newList.length); i++) {
-        const old: Element | undefined = oldList[i];
-        const updated: Element | undefined = newList[i];
-        if (!old) { doc.head.appendChild(updated); }
-        else if (!updated) { doc.head.removeChild(old); }
-        else if (!old.isEqualNode(updated)) { doc.head.replaceChild(updated, old); }
+      const fragment = await renderRecord(false, doc as unknown as SimpleDocument, renderedRecord, siteUpdate, recordsUpdate) as unknown as DocumentFragment;
+      if (fragment) {
+        update(fragment.children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
       }
 
       // If it's our first render, inject our client side preview app script.
@@ -82,6 +78,5 @@ export default function Preview({ record }: PreviewProps) {
   return <>
     <Spinner size="large" className={`vapid-preview__loading vapid-preview--${typeof loading === 'string' ? 'error' : (loading ? 'loading' : 'success')}`} />
     <iframe src="about:blank" id="vapid-preview" class="vapid-preview__iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-modals allow-forms" />
-    <iframe src="about:blank" id="vapid-preview-scratch" class="vapid-preview__scratch-iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-modals allow-forms" />
   </>;
 }

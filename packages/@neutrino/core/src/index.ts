@@ -9,6 +9,8 @@ export interface VapidSettings<T extends { type: string } = { type: string }> {
   domain: string;
   database: T;
   port?: number;
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  env: Record<string, any>;
 }
 
 export type UploadResult = { status: 'pending'; progress: number; } 

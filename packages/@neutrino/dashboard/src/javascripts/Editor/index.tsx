@@ -51,7 +51,9 @@ export default function Editor(params: RouteParts) {
   const { adapter, theme, records, isLocal, setTheme, setRecords } = useContext(WebsiteContext);
 
   // If loading at root, route to the index page.
-  useEffect(() => { window.location.pathname === '/' && route(`/page/index/index`); }, [window.location.pathname]);
+  useEffect(() => {
+    (window.location.pathname === '/') && route(`/page/index/index`);
+  }, []);
 
   // Make sure our sortables are sorted.
   useEffect(() => {

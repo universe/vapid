@@ -1,7 +1,7 @@
 import '@universe/wysiwyg/styles/editor.css';
 
 import { DirectiveProps, SafeString, ValueHelper } from '@neutrino/core';
-import { options, Quill } from '@universe/wysiwyg';
+import type { Quill } from '@universe/wysiwyg';
 import { useEffect, useRef } from 'preact/hooks';
 import sanitizeHtml from 'sanitize-html';
 
@@ -31,7 +31,9 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
 
     useEffect(() => {
       (async() => {
+        const { options, Quill } = await import('@universe/wysiwyg');
         if (!editor.current) { return; }
+
         directive.prev = value;
         editor.current.innerHTML = '';
         directive.quill = new Quill(editor.current, options, { media: directive.meta.media, onFileUpload: ValueHelper.emitFile });
