@@ -47,6 +47,7 @@
   border: 1px solid transparent;
   cursor: pointer;
   position: relative;
+  min-height: 8rem;
   z-index: 1;
   background: var(--blue-6);
   transition: background-color .18s ease-in-out, box-shadow .18s ease-in-out, border-color .18s ease-in-out;
@@ -89,6 +90,7 @@
   white-space: pre;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-height: 2.4rem;
 }
 
 .collection__preview-value--image {

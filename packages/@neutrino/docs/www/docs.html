@@ -1,0 +1,14 @@
+<Layout>
+  <h1>{{this.title}}</h1>
+  {{count @collection}}
+  {{count @collection.docs}}
+  {{count @collection.foobar}}
+  {{count (this.pages type=@collection.docs)}}
+  {{log @collection}}
+  {{#each @collection as |page|}}
+    <section class="docs__section">
+      <h2>{{page.title}}</h2>
+      {{page.body type="html"}}
+    </section>
+  {{/each}}
+</Layout>

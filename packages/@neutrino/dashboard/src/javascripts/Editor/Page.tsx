@@ -119,7 +119,7 @@ export default function Page({ adapter, isNewRecord, template, record, records, 
         }
       }}>Cancel</button>
       <h1 class="heading">{isNewRecord ? 'New' : ''} {toTitleCase(template.name || '')} {childrenTemplate ? '' : toTitleCase(template.type || '')}</h1>
-      {(isPage || !isNewRecord) ? <ul class="basic fixed menu">
+      {(template.type !== PageType.SETTINGS) ? <ul class="basic fixed menu">
         <li>
           <button
             class={`small button vapid-nav__settings ${metaOpen ? 'vapid-nav__settings--active' : ''}`}
@@ -149,7 +149,7 @@ export default function Page({ adapter, isNewRecord, template, record, records, 
       <section
         id="meta-container"
         class={`metadata ${(isNewRecord || metaOpen) ? 'open' : ''}`}
-        style={{ height: `${(isNewRecord && !isPage) ? 0 : metaOpen}px` }}
+        style={{ height: `${(isNewRecord && template.type === PageType.SETTINGS) ? 0 : metaOpen}px` }}
       >
         {pageFields}
         {metaFields}

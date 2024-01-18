@@ -79,35 +79,31 @@ function parseExpression(node:
   }, (path as ASTv1.PathExpression) ];
 }
 
-function ensureBranch(data: Record<string, ITemplate>, node: ASTv1.BlockStatement, aliases: Record<string, IAlias>) {
-  const [expr] = parseExpression(node);
+function ensureBranch(template: IParsedTemplate, collectionExpr: ParsedExpr) {
+  const data = template.templates;
 
-  // If this is not an expression we care about, move on.
-  if (!expr) { return; }
-
-  // If no template name is passed, throw.
-  /* eslint-disable-next-line max-len */
-  if (!node.params[0]) { throw new Error(`Collection helpers must be passed a collection type as the first paramater. Instead found: {{${expr?.original}}} at ${node.loc.asString()}:${node.loc.startPosition.line}:${node.loc.startPosition.column}"`); }
-
-  const [collectionExpr] = parseExpression(node.params[0]);
-  const [localExpr] = parseExpression(node.params[1]);
-
-  // If the template name provided does not actually live on the data object.
-  /* eslint-disable-next-line max-len */
-  if (!collectionExpr?.isPrivate || collectionExpr?.context !== 'collection') { throw new Error(`Collection helpers must be passed a collection type as the first paramater. Instead found: {{${expr?.original} ${collectionExpr?.original}}} at ${node.loc.asString()}:${node.loc.startPosition.line}:${node.loc.startPosition.column}"`); }
-
-  if (localExpr && localExpr?.context !== 'this') {
-    /* eslint-disable-next-line max-len */
-    throw new Error(`Collection settings must be set on the page's "this" context. Instead found: {{${localExpr.original}}} at ${node.loc.asString()}:${node.loc.startPosition.line}:${node.loc.startPosition.column}`);
+  // We can discover collections names in three different formats:
+  // 1. {{this.key type=@collection.value}}
+  // 2. {{helper @collection.value}}
+  // 3. {{#helper @collection}}
+  // Regardless of how it arrives, discover the name appropriately.
+  // TODO: This is convoluted. Theres probably a way to simplify.
+  let name = '';
+  if (collectionExpr.type?.startsWith('@collection')) {
+    name = collectionExpr.type.split('.')?.[1]?.trim();
   }
-
-  // Record the type of this section appropriately
-  const name = expr.context || expr.key;
+  else if (collectionExpr.context === 'collection') {
+    name = collectionExpr.key;
+  }
+  else if (collectionExpr.key === 'collection' && !collectionExpr.context) {
+    name = template.name;
+  }
+  if (!name) { return; }
   const newBranch: ITemplate = stampTemplate({
     name,
     type: PageType.COLLECTION,
-    options: expr.hash,
-    sortable: !!expr.hash.sortable,
+    options: collectionExpr.hash,
+    sortable: !!collectionExpr.hash.sortable,
     fields: {},
     metadata: {},
   });
@@ -130,18 +126,9 @@ function ensureBranch(data: Record<string, ITemplate>, node: ASTv1.BlockStatemen
     };
   }
 
+  // Ensure that every collection has a parent "page" template, even if it's empty.
   const page: ITemplate = stampTemplate({ name, type: PageType.PAGE });
   data[Template.id(page)] = data[Template.id(page)] || page;
-  if (localExpr?.key) {
-    data[Template.id(stampTemplate(aliases['this']))]['fields'][localExpr?.key || branchId] = {
-      key: localExpr?.key || branchId,
-      type: 'collection',
-      priority: Infinity,
-      label: '',
-      templateId: branchId,
-      options: {},
-    };
-  }
 }
 
 interface IAlias {
@@ -161,22 +148,27 @@ interface IAlias {
  * @params {Object} aliases
  * @return {Object}
  */
-function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv1.PathExpression | ASTv1.Literal, aliases: Record<string, IAlias>) {
-  if (!leaf) { return data; }
+function addToTree(template: IParsedTemplate, leaf: ParsedExpr, path: ASTv1.PathExpression | ASTv1.Literal, aliases: Record<string, IAlias>) {
+  if (!leaf) { return; }
+
+  const data: Record<string, ITemplate> = template.templates;
   const context = (leaf.context === PAGE_META_KEYWORD && leaf.isPrivate) || leaf.path.startsWith('this.') ? 'this' : leaf.context;
   const key = context === 'this' && !(leaf.context === PAGE_META_KEYWORD && leaf.isPrivate) ? leaf.parts[0] : (leaf.parts[1] || leaf.parts[0]);
   const contentLocation = leaf.context === PAGE_META_KEYWORD ? 'metadata' : 'fields';
 
+  // If this leaf node is a collection reference, make sure that colleciton exists!
+  if (leaf.original.startsWith('@collection')) { ensureBranch(template, leaf); }
+
   // If this is a private path, no-op.
-  if (leaf.context !== PAGE_META_KEYWORD && leaf.isPrivate) { return data; }
+  if (leaf.context !== PAGE_META_KEYWORD && leaf.isPrivate) { return; }
 
   // If this is a private section, no-op.
   const isPrivateSection = aliases[context] ? aliases[context].isPrivate : false;
-  if (isPrivateSection) { return data; }
+  if (isPrivateSection) { return; }
 
   // If this is a private key, no-op.
   const isPrivateKey = (!context && aliases[key]) ? aliases[key].isPrivate : false;
-  if (isPrivateKey) { return data; }
+  if (isPrivateKey) { return; }
 
   // Log a warning if we're referencing the default general context without an explicit reference.
   if (!context && !leaf.isPrivate && !aliases[key]) {
@@ -189,9 +181,9 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
   const type = (aliases[context] ? aliases[context].type : PageType.SETTINGS) || PageType.SETTINGS;
 
   // Ensure the model object reference exists.
-  const template: ITemplate = stampTemplate({ name, type });
-  const sectionKey = Template.id(template);
-  data[sectionKey] = data[sectionKey] || template;
+  const tmpl: ITemplate = stampTemplate({ name, type });
+  const sectionKey = Template.id(tmpl);
+  data[sectionKey] = data[sectionKey] || tmpl;
 
   // Ensure the field descriptor exists. Merge settings if already exists.
   const old: IField | null = data[sectionKey][contentLocation][key] || null;
@@ -210,14 +202,31 @@ function addToTree(data: Record<string, ITemplate>, leaf: ParsedExpr, path: ASTv
   }
 
   leaf.hash.type = leaf.hash.type || 'text'; // Text is the default type.
-  data[sectionKey][contentLocation][key] = {
-    key,
-    templateId: null,
-    type: (leaf.hash.type === 'text' ? (old?.type || leaf.hash.type) : (leaf.hash.type || old?.type)) || 'text',
-    priority: Math.min(priority ?? Infinity, old?.priority ?? Infinity),
-    label: leaf.hash.label || old?.label || '',
-    options: { ...(old?.options || {}), ...leaf.hash },
-  };
+  if (leaf.hash.type.startsWith('@collection')) {
+    if (leaf.hash.type === '@collection') {
+      /* eslint-disable-next-line max-len */
+      throw new Error(`Collection references used as a field types must specify a collection name. E.g. {{@collection.name}}. Instead found: {{${leaf.original} type=${leaf.hash.type}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
+    }
+    data[sectionKey][contentLocation][key] = {
+      key,
+      type: 'collection',
+      priority: Math.min(priority ?? Infinity, old?.priority ?? Infinity),
+      label: leaf.hash.label || old?.label || '',
+      templateId: leaf.hash.type.split('.')[1],
+      options: { ...(old?.options || {}), ...leaf.hash, templateId: leaf.hash.type.split('.')[1], type: 'collection' },
+    };
+    ensureBranch(template, leaf);
+  }
+  else {
+    data[sectionKey][contentLocation][key] = {
+      key,
+      templateId: null,
+      type: (leaf.hash.type === 'text' ? (old?.type || leaf.hash.type) : (leaf.hash.type || old?.type)) || 'text',
+      priority: Math.min(priority ?? Infinity, old?.priority ?? Infinity),
+      label: leaf.hash.label || old?.label || '',
+      options: { ...(old?.options || {}), ...leaf.hash },
+    };
+  }
 
   return data;
 }
@@ -297,7 +306,7 @@ function walk(
 
     case 'PathExpression': {
       const [ leaf, path ] = parseExpression(node);
-      leaf && path && addToTree(template.templates, leaf, path, aliases);
+      leaf && path && addToTree(template, leaf, path, aliases);
       break;
     }
 
@@ -314,7 +323,7 @@ function walk(
       }
       else {
         const [ leaf, path ] = parseExpression(node);
-        leaf && path && addToTree(template.templates, leaf, path, aliases);
+        leaf && path && addToTree(template, leaf, path, aliases);
       }
       break;
     }
@@ -325,7 +334,9 @@ function walk(
       const HelperConstructor = helpers(helperName);
       const helper = HelperConstructor ? new HelperConstructor(helperName, node.hash, {} as unknown as DirectiveMeta) : null;
       const [expr] = parseExpression(node.params[0]);
-      const isCollection = expr?.isPrivate && expr.context === 'collection';
+
+      // If the first expression is `@collection.name`, or simply `@collection`, then we're dealing with a collection value!
+      const isCollection = expr?.isPrivate && (expr.context === 'collection' || (expr.key === 'collection' && !expr.context));
 
       // Crawl all its params as potential data values in scope.
       if (node.params.length && !isCollection) {
@@ -339,13 +350,13 @@ function walk(
         const [ leaf, path ] = parseExpression(node);
         if (leaf && path) {
           leaf.hash.type = helperName || leaf.type;
-          addToTree(template.templates, leaf, path, aliases);
+          addToTree(template, leaf, path, aliases);
         }
       }
 
       // If this helper denotes the creation of a new model type, ensure the model.
       if (isCollection) {
-        ensureBranch(template.templates, node, aliases);
+        ensureBranch(template, expr);
       }
 
       // Assign any yielded block params to the aliases object.
@@ -353,17 +364,15 @@ function walk(
       for (let idx = 0; idx < node.program.blockParams.length; idx += 1) {
         const param = node.program.blockParams[idx];
         const path = (node.path as ASTv1.PathExpression);
-        if (path.parts[0] === 'collection') {
-          const [arg] = parseExpression(node.params[0]);
-          
-          const name = arg?.parts[1];
+        if (isCollection) {
+          const name = expr?.parts[1] || template.name;
 
           /* eslint-disable-next-line max-len */
-          if (!name) { throw new Error(`Unexpected value for collection name. Found: {{${arg?.original} priority=${arg?.hash.priority}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);}
+          if (!name) { throw new Error(`Unexpected value for collection name. Found: {{${expr?.original} priority=${expr?.hash.priority}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);}
 
           if (name.startsWith('@') || name.startsWith('_')) {
             /* eslint-disable-next-line max-len */
-            throw new Error(`Unexpected value for collection name. Collection names can not begin with '@' or '_'. Instead found: {{${arg?.original} priority=${arg?.hash.priority}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
+            throw new Error(`Unexpected value for collection name. Collection names can not begin with '@' or '_'. Instead found: {{${expr?.original} priority=${expr?.hash.priority}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
           }
 
           aliases[param] = {

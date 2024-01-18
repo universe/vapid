@@ -69,7 +69,7 @@ export default function Preview({ record }: PreviewProps) {
       if (isFirstRender) {
         const script = doc.createElement('script');
         script.append(`(${highlight.toString()})()`);
-        doc.head.appendChild(script);
+        doc.head?.appendChild(script);
       }
       isFirstRender = false;
     });

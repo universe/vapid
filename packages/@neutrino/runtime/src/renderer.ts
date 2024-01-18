@@ -1,5 +1,5 @@
 import type { ASTv1 } from '@glimmer/syntax';
-import { CollectionHelper, nanoid,NeutrinoHelperOptions, NeutrinoValue, SafeString } from '@neutrino/core';
+import { nanoid, NeutrinoHelperOptions, NeutrinoValue, SafeString } from '@neutrino/core';
 import { InsertPosition, Namespace, NodeType, SimpleDocument, SimpleDocumentFragment, SimpleElement,SimpleText  } from '@simple-dom/interface';
 
 import { HelperResolver } from './helpers.js';
@@ -100,15 +100,6 @@ function resolveValue(
         const hash: Record<string, NeutrinoValue> = {};
         for (const pair of node.hash.pairs) {
           hash[pair.key] = resolveValue(pair.value, ctx, data, resolveHelper);
-        }
-
-        // If this helper expects a collection, ensure that the second argument is the generated collection ID!
-        // This is needed when we create a new collection and the value doesn't actually exist yet.
-        if (helper.prototype instanceof CollectionHelper) {
-          params[1] = params[1] || {} as NeutrinoValue;
-          if (`${(node.params[0] as ASTv1.PathExpression)?.parts?.[1]}-page` === ctx.this['@record'].templateId) {
-            params[1] = {  collectionId: ctx.this['@record'].id } as unknown as NeutrinoValue;
-          }
         }
 
         /* eslint-disable-next-line */

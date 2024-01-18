@@ -131,7 +131,7 @@ export default function Menu({
             if (b.name === INDEX_PAGE_ID) return 1;
             return a.name > b.name ? 1 : -1;
           }).map((template) => {
-            if (template.name === 'collection' || template.type !== PageType.PAGE || !theme.hbs.templates[Template.id(template)]) { return null; }
+            if (template.type !== PageType.PAGE) { return null; }
             return <li key={template.name} class="page-templates__template">
               <a
                 href={`/page/${template.name}/new`}

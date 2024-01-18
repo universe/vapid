@@ -100,6 +100,7 @@ export default function Editor(params: RouteParts) {
   if (!template) return <div class="dashboard__loading">404</div>;
 
   return <Fragment>
+    <link rel="stylesheet" href="https://kit.fontawesome.com/05b8235ba3.css" crossorigin="anonymous" />
     <menu class={`vapid-menu vapid-menu--${embedded ? 'embedded' : 'standalone'}`} id="vapid-menu">
       {!embedded ? <Menu
         adapter={adapter || null}

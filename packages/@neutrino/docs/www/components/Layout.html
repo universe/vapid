@@ -1,0 +1,43 @@
+<html>
+
+<head>
+  <link rel="stylesheet" type="text/css" href="/static/stylesheets/site.css" />
+</head>
+
+<body>
+  <header>
+    <nav>
+      <ul>
+        <li>
+          {{#if design.logo}}
+            <img src={{design.logo type="image"}} />
+          {{else}}
+            LOGO
+          {{/if}}
+        </li>
+
+        <ul class="nav__links">
+          {{~#each @navigation as |page|~}}
+            <li class="nav__item">
+              <a href="{{page.permalink}}" class="nav__link {{if page.isActive 'active'}}">{{page.name}}</a>
+              {{#if page.hasChildren}}
+                <ul class="nav__sub-menu">
+                  {{#each page.children as |record|}}
+                    {{#if record.permalink}}
+                      <li>
+                        <a href="{{record.permalink}}" class="nav__sub-link {{if record.isActive 'active'}}">{{record.name}}</a>
+                      </li>
+                    {{/if}}
+                  {{/each}}
+                </ul>
+              {{/if}}
+            </li>
+          {{/each~}}
+        </ul>
+      </ul>
+    </nav>
+  </header>
+  {{@yield}}
+</body>
+
+</html>

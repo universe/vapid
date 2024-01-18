@@ -131,6 +131,7 @@ export abstract class BaseHelper<DirectiveType, Options extends object = object>
     for (const [ key, value ] of Object.entries(options)) {
       (this.options as {[key: string]: unknown})[key] = coerceType(value);
     }
+    this.options.type = field?.type || options.type || this.options.type;
     this.input = this.input.bind(this);
   }
 

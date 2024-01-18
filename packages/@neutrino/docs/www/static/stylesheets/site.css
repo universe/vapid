@@ -1,0 +1,9 @@
+body {
+  background-color: white;
+}
+
+.docs__section {
+  display: flex;
+  flex-flow: column;
+  gap: 1.8rem;
+}

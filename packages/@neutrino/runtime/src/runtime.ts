@@ -4,6 +4,7 @@ import {
   ITemplate, 
   nanoid,
   NAVIGATION_GROUP_ID, 
+  NeutrinoValue,
   PageType, Record as DBRecord, 
   RECORD_META, 
   SerializedRecord, 
@@ -70,13 +71,14 @@ export function makePageContext(isProduction: boolean, page: IRecord, records: R
   const template = templateFor(page, templates);
   if (!template) { throw new Error(`Missing template for "${page.templateId}"`); }
   const content: IPageContent = { this: makeRecordData(page, template, 'content', children, parent) };
-  const collection: Record<string, IRecordData[]> = {};
+  const collection: Record<string, IRecordData[]> & IRecordData[] = [] as unknown as (Record<string, IRecordData[]> & IRecordData[]);
   const meta = makeRecordData(page, template, 'metadata', children, parent);
 
   // Generate our navigation menu.
   const navigation: SerializedRecord[] = [];
   const pages: SerializedRecord[] = [];
   const currentUrl = DBRecord.permalink(page, parent);
+  const pageId = page.id;
   for (const page of recordsList.sort(sortRecords)) {
     if (page.deletedAt) { continue; }
     const template = templateFor(page, templates);
@@ -91,6 +93,9 @@ export function makePageContext(isProduction: boolean, page: IRecord, records: R
     else if (template.type === PageType.COLLECTION) {
       const collectionList: IRecordData[] = collection[template.name] = collection[template.name] || [];
       collectionList.push(makeRecordData(page, template, 'content', children, parent));
+      if (page.parentId === pageId) {
+        collection.push(makeRecordData(page, template, 'content', children, parent));
+      }
     }
     else if (template.type === PageType.SETTINGS) {
       content[template.name] = makeRecordData(page, template, 'content', children, parent);
@@ -124,17 +129,17 @@ export function parsedTemplateToAst(template: IParsedTemplate): ITemplateAst {
   };
 }
 
-async function makeRenderRecord(data: IRecordData, templates: Record<string, ITemplate>, context: IPageContext): Promise<Record<string, RuntimeHelper>> {
+async function makeRenderRecord(data: IRecordData, templates: Record<string, ITemplate>, context: IPageContext): Promise<Record<string, RuntimeHelper> | null> {
   const record = data[RECORD_META];
-  if (!record) { return {}; }
+  if (!record) { return null; }
   const template = templates[`${record.templateId}`];
   const helperRecord: Record<string, any> = {};
   for (const key of Object.keys(data)) {
     if (key.startsWith('@')) { helperRecord[key] = data[key]; continue; }
     const field = template?.fields?.[key];
     if (!field) { continue; }
-    const helper = await defaultResolveHelper(field.type);
-    helperRecord[key] = helper ? await new helper(
+    const Helper = await defaultResolveHelper(field.type);
+    const helper = Helper ? new Helper(
       key,
       field,
       {
@@ -144,7 +149,12 @@ async function makeRenderRecord(data: IRecordData, templates: Record<string, ITe
         media: context.site.media,
         website: context.site,
       },
-    ).data(data?.[key] as unknown as never) : null;
+    ) : null;
+    helperRecord[key] = helper ? await helper.data(data?.[key] as unknown as never || helper.default) : null;
+    // if ((helper?.options as unknown as any).templateId) {
+    if (helper?.options?.type === 'collection') {
+      helperRecord[key] = await Promise.all(helperRecord[key].map((r: IRecord) => makeRenderRecord(makeRecordData(r, templates[r.templateId], 'content'), templates, context)));
+    }
   }
   for (const [ key, field ] of Object.entries(template.fields)) {
     if (!field || Object.hasOwnProperty.call(helperRecord, key)) { continue; }
@@ -176,14 +186,15 @@ export async function render(
   const context: Record<string, Json | Record<string, RuntimeHelper> | Record<string, RuntimeHelper>[]> = {};
   for (const [ recordName, record ] of Object.entries(data.content)) {
     if (!record) { continue; }
-    context[recordName] = Array.isArray(record) ?
-      await Promise.all(record.map(rec => makeRenderRecord(rec, tmpl.templates, data))) :
+    const out = Array.isArray(record) ?
+      (await Promise.all(record.map(rec => makeRenderRecord(rec, tmpl.templates, data)))).filter(Boolean) as Record<string, RuntimeHelper>[] :
       await makeRenderRecord(record, tmpl.templates, data);
+    out && (context[recordName] = out);
   }
 
   const renderData: IRenderPageContext = { 
     ...data,
-    collection: {},
+    collection: [] as unknown as Record<string, Record<string, NeutrinoValue>[]>,
     props: {},
     component: { id: nanoid() },
   };
@@ -191,7 +202,13 @@ export async function render(
   for (const collectionName of Object.keys(data.collection || {})) {
     const list = data.collection[collectionName];
     if (!list) { continue; }
-    renderData.collection[collectionName] = await Promise.all(list.map(rec => makeRenderRecord(rec, tmpl.templates, data)));
+    if (Array.isArray(list)) {
+      renderData.collection[collectionName] = (await Promise.all(list.map(rec => makeRenderRecord(rec, tmpl.templates, data)))).filter(Boolean) as Record<string, RuntimeHelper>[];
+    }
+    else {
+      const out = await makeRenderRecord(list as unknown as IRecordData, tmpl.templates, data) as unknown as Record<string, RuntimeHelper>[] | null;
+      out && (renderData.collection[parseInt(collectionName, 10)] = out);
+    }
   }
 
   resolveComponent = resolveComponent || ((name: string) => tmpl.components[name]?.ast || null);

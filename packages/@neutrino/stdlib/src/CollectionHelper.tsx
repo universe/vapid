@@ -8,6 +8,7 @@ interface CollectionHelperValue {
 }
 
 interface CollectionHelperOptions {
+  templateId?: null,
   limit?: number;
   min?: number;
   max?: number;
@@ -25,14 +26,19 @@ export default class CollectionHelper extends BaseCollectionHelper<CollectionHel
   };
 
   async data(value: CollectionHelperValue) {
-    return { ...value };
+    for (const record of this.meta.records) {
+      if (record.id === value?.collectionId) {
+        return record.children;
+      }
+    }
+
+    return [];
   }
 
   /**
    * Renders either a text or textarea input
    */
   input({ name, directive, value = this.default }: DirectiveProps<CollectionHelperValue>) {
-    if (directive.meta.templateId === `${directive.key}-page`) { return null; }
     return <select
       {...this.options}
       name={name}
@@ -47,7 +53,7 @@ export default class CollectionHelper extends BaseCollectionHelper<CollectionHel
     >
       <option value="">No Collection Selected</option>
       {directive.meta.records.sort((r1, r2) => r1.createdAt > r2.createdAt ? 1 : -1).map(record => {
-        return record.templateId === `${directive.key}-page` ? <option value={record.id}>{record.name}</option> : null;
+        return record.templateId === `${(this.options.templateId || '')}-page` ? <option value={record.id}>{record.name}</option> : null;
       })}
     </select>;
   }
