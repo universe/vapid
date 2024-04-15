@@ -1,4 +1,4 @@
-import { INDEX_PAGE_ID, IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Template, UploadResult } from '@neutrino/core';
+import { INDEX_PAGE_ID, IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, POJONeutrinoValue, Template, UploadResult } from '@neutrino/core';
 import { uuid } from '@universe/util';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -30,7 +30,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
   private records: Map<string, IRecord> = new Map();
   private templates: Map<string, ITemplate> = new Map();
   private staticServer: http.Server | null = null;
-  private env: Record<string, any> = {};
+  private env: Record<string, POJONeutrinoValue> = {};
 
   async start() {
     logger.info('Starting Memory Provider');

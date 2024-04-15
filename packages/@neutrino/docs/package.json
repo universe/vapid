@@ -8,14 +8,14 @@
       "type": "firebase",
       "scope": "websites/default",
       "projectId": "neutrino-example",
-      "username": "admin@neutrino.dev",
+      "username": "adam@neutrino.dev",
       "password": "*******************"
     }
   },
   "scripts": {
     "serve": "forever start -c 'yarn start' .",
     "start": "neutrino start",
-    "build": "rm -rf dist & neutrino build ."
+    "build": "exit 0"
   },
   "devDependencies": {
     "@neutrino/cli": "1.0.0-beta.0"

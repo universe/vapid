@@ -10,10 +10,10 @@
   "type": "module",
   "scripts": {
     "lint": "eslint bin lib test",
-    "test": "jest | pino-pretty",
+    "test": "npm run build && mocha dist/test | pino-pretty",
     "emulate": "firebase emulators:start",
     "build": "rm -rf dist && tsc",
-    "watch": "watch 'npm run build' './src' --wait=1"
+    "watch": "watch 'npm run test' './src' './test' --wait=0"
   },
   "engines": {
     "node": ">=12.0.0"

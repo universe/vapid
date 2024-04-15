@@ -1,13 +1,14 @@
-import { appendFragment, CollectionHelper as BaseCollectionHelper, compileExpression, DirectiveProps, NeutrinoHelperOptions, RECORD_META } from '@neutrino/core';
+import { CollectionHelper as BaseCollectionHelper, compileExpression, DirectiveProps, NeutrinoHelperOptions } from '@neutrino/core';
+import { Json } from '@universe/util';
 
-interface CollectionHelperValue {
+export interface CollectionHelperValue {
   collectionId: string | null;
   limit: number | null;
   sort: string | null;
   order: 'asc' | 'desc';
 }
 
-interface CollectionHelperOptions {
+export interface CollectionHelperOptions {
   templateId?: null,
   limit?: number;
   min?: number;
@@ -59,36 +60,22 @@ export default class CollectionHelper extends BaseCollectionHelper<CollectionHel
   }
 
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  render([ data, config ]: [any[], CollectionHelperValue], hash: CollectionHelperOptions = {}, options: NeutrinoHelperOptions) {
+  render([ data, config ]: [any[], CollectionHelperValue], hash: CollectionHelperOptions = {}, _options: NeutrinoHelperOptions) {
     const items = (Array.isArray(data) ? data : [data]).filter(Boolean);
     const limit = hash.limit || Infinity;
     const filter = hash.filter ? compileExpression(hash.filter) : null;
 
-    if (!options.fragment) { throw new Error('The {{collection}} helper must be used as a block helper.'); }
-
-    // If collection is empty, and the helper provides an empty state, render the empty state.
-    if (items.length === 0) return options.inverse?.() || '';
-
     // Otherwise, render each item!
-    const out = options.fragment;
+    const out: Json[] = [];
     let index = 0;
     for (const item of items) {
+      if (!item) { continue; }
       if (index >= limit) { break; }
       if (item['@record']?.deletedAt) { continue; }
-      if (config.collectionId && item['@record']?.parent?.id !== config.collectionId) { continue; }
-      if (!config.collectionId && item['@record']?.parent?.id !== config.collectionId) { continue; }
+      if (config?.collectionId && item['@record']?.parent?.id !== config?.collectionId) { continue; }
       if (item.deletedAt) { continue; }
       if (filter && !filter(item)) { continue; }
-
-      appendFragment(out, options.block?.([item], {
-        index,
-        length: items.length,
-        first: index === 0,
-        last: index === items.length - 1,
-        next: items[index + 1],
-        prev: items[index - 1],
-        record: item[RECORD_META],
-      }));
+      out.push(item as Json);
       index += 1;
     }
     return out;

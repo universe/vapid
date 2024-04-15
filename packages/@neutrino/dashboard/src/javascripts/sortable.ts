@@ -10,18 +10,28 @@ interface SortableUpdate {
   parentId: string | null;
 }
 
+interface SortableEvent {
+  detail: { 
+    item: Element;
+    origin: { index: number };
+    destination: { index: number }
+  };
+}
+
 export function init(adapter: DataAdapter, onSort?: (update: SortableUpdate) => void) {
   const tbody = document.querySelector('.sortable.table tbody') as HTMLElement;
 
   if (tbody) {
     sortable(tbody, { forcePlaceholderSize: true });
 
-    tbody.addEventListener('sortupdate', (e: any) => {
+    tbody.addEventListener('sortupdate' as 'click', (evt: unknown) => {
+      const e = evt as unknown as SortableEvent; // For the TypeScript gods.
       const { item } = e.detail;
       const { index: from } = e.detail.origin;
       const { index: to } = e.detail.destination;
       const id = item.getAttribute('data-id');
       const parentId = item.getAttribute('data-parent-id');
+      if (!id) { console.error('Missing Sort Update ID'); return; }
       adapter.updateOrder({ id, from, to, parentId });
     });
   }
@@ -35,15 +45,17 @@ export function init(adapter: DataAdapter, onSort?: (update: SortableUpdate) => 
       placeholder: '<a class="item" style="height: 37px"></a>',
     });
 
-    el.addEventListener('sortupdate', (e: any) => {
+    el.addEventListener('sortupdate', (evt: unknown) => {
+      const e = evt as SortableEvent; // For the TypeScript gods.
       const { item } = e.detail;
       const id = item.getAttribute('data-id');
+      if (!id) { console.error('Missing Sort Update ID'); return; }
       const { index: from } = e.detail.origin;
       const { index: to } = e.detail.destination;
 
       // Check if this element is a nav item.
       let nav = false;
-      for (const el of item.parentElement.children) {
+      for (const el of Array.from(item?.parentElement?.children || [])) {
         if (el.tagName.toLowerCase() === 'hr') { break; }
         if (el === item) { nav = true; }
       }

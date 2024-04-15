@@ -314,6 +314,7 @@ export const Palette = ({ hidden, color, cta, onChange, onChangeCta, onDefaultCt
   useEffect(() => {
     const palette = getpalette(color, null);
     onDefaultCta?.(palette.cta);
+  /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [color]);
 
   return <ul class={`palette ${hidden === true ? 'palette--hidden' : ''}`}>

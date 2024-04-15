@@ -222,11 +222,12 @@
   flex-flow: column;
   padding: 0.8rem;
   border: var(--form-border);
-  border-radius: 8px;
+  border-radius: 4px;
   user-select: none;
   background: white;
   box-shadow: var(--elevation-2);
 }
+
 .form .field__choice .help {
   margin-bottom: 0.4rem;
 }
@@ -274,7 +275,7 @@
   position: relative;
   padding: 0.8rem;
   border: var(--form-border);
-  border-radius: 8px;
+  border-radius: 4px;
   user-select: none;
   margin-left: 0;
   background: white;

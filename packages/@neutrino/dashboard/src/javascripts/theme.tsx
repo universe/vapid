@@ -1,6 +1,6 @@
 import { BaseHelper, IRecord } from '@neutrino/core';
 import { IWebsite } from '@neutrino/runtime';
-import { ComponentChildren,createContext } from 'preact';
+import { ComponentChildren, createContext } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 
 import { DataAdapter } from './adapters/types.js';

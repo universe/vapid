@@ -1,7 +1,7 @@
 import { BaseHelper, CollectionHelper, Helper, ValueHelper } from '@neutrino/core';
 import stdlib from '@neutrino/stdlib';
 
-export type GenericHelper = Helper | ValueHelper<any, any> | CollectionHelper<any, any>;
+export type GenericHelper = Helper | ValueHelper<unknown, object> | CollectionHelper<unknown, object>;
 type HelperNames = keyof typeof stdlib;
 const HELPERS: Record<string, typeof stdlib[HelperNames]> = {};
 

@@ -38,7 +38,9 @@ export default class UrlHelper extends ValueHelper<string, UrlHelperOptions> {
 
     let parentPrefix = (parent && parent.slug) ? `/${parent.slug}/` : null;
     parentPrefix = parentPrefix === '/index/' ? '/' : parentPrefix;
-    parentPrefix = directive.options.prefix || parentPrefix;
+
+    // Only use the parent prefix if the magic token "@page" has been passed as the prefix option.
+    parentPrefix = directive.options.prefix === '@page' ? parentPrefix : (directive.options.prefix || '');
     if (parentPrefix && !parentPrefix.endsWith('/')) { parentPrefix += '/'; }
 
     const val = value === INDEX_PAGE_ID ? '' : value;

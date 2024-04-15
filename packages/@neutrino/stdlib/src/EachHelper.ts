@@ -2,6 +2,7 @@ import { appendFragment, Helper, NeutrinoHelperOptions,RECORD_META } from '@neut
 
 export default class EachHelper extends Helper {
   render([data]: unknown[], _hash={}, options: NeutrinoHelperOptions) {
+    /* eslint-disable-next-line */
     const items = (Array.isArray(data) ? data : [data]).filter(Boolean);
 
     if (!options.fragment) { throw new Error('The {{each}} helper must be used as a block helper.'); }
@@ -14,14 +15,14 @@ export default class EachHelper extends Helper {
     let index = 0;
     for (const item of items) {
       appendFragment(out, options.block?.([item], {
-          index,
-          length: items.length,
-          first: index === 0,
-          last: index === items.length - 1,
-          next: items[index + 1],
-          prev: items[index - 1],
-          record: item[RECORD_META],
-        }));
+        index,
+        length: items.length,
+        first: index === 0,
+        last: index === items.length - 1,
+        next: items[index + 1],
+        prev: items[index - 1],
+        record: item[RECORD_META],
+      }));
       index += 1;
     }
     return out;

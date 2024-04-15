@@ -52,6 +52,7 @@ export default class LinkHelper extends ValueHelper<ILinkValue> {
    * @return rendered input
    */
   input({ name, value = this.default, directive }: DirectiveProps<ILinkValue, this>) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const id = useId();
     value = JSON.parse(JSON.stringify(value));
     let namePlaceholder = value?.url || '';

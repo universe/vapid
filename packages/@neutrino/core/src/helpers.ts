@@ -31,34 +31,36 @@ export class SafeString {
   }
 }
 
+export type BlockRenderer = Json | { toString: () => string; };
+export type SimpleNeutrinoValue = string | boolean | number | null | SafeString | SimpleDocumentFragment;
+export type DataNeutrinoValue = object | Json | Json[];
+export type POJONeutrinoValue = string | boolean | number | null | DataNeutrinoValue;
+export type RuntimeHelper = () => SimpleNeutrinoValue;
+export type NeutrinoValue = SimpleNeutrinoValue | RuntimeHelper | DataNeutrinoValue;
+
 export interface ParsedExpr {
   original: string;
   key: string;
   context: string;
   path: string;
   parts: string[];
-  hash: Record<string, any>;
+  hash: Record<string, POJONeutrinoValue>;
   isPrivate: boolean;
   type: string;
 }
 
-export type BlockRenderer = Json | { toString: () => string; };
-export type SimpleNeutrinoValue = string | boolean | number | SafeString | SimpleDocumentFragment;
-export type RuntimeHelper = () => SimpleNeutrinoValue;
-export type NeutrinoValue = SimpleNeutrinoValue | RuntimeHelper | null;
-
 /**
  * Attempts to cast value to the correct type
  */
-function coerceType(val: any): string | number | boolean | null {
-  try { return JSON.parse(val); }
- catch (err) { return val; }
+function coerceType(val: string | number | boolean): string | number | boolean | null {
+  try { return JSON.parse(val as string); }
+  catch (err) { return val; }
 }
 
 export interface NeutrinoHelperOptions {
   fragment?: SimpleDocumentFragment;
-  block?: (blockParams?: any[], data?: Record<string, any>) => SimpleDocumentFragment;
-  inverse?: (blockParams?: any[], data?: Record<string, any>) => SimpleDocumentFragment;
+  block?: (blockParams?: NeutrinoValue[], data?: Record<string, NeutrinoValue>) => SimpleDocumentFragment;
+  inverse?: (blockParams?: NeutrinoValue[], data?: Record<string, NeutrinoValue>) => SimpleDocumentFragment;
 }
 
 export interface DirectiveMeta {
@@ -71,7 +73,7 @@ export interface DirectiveMeta {
 
 export type DirectiveField = Partial<IField>;
 export type DirectiveCallback<DirectiveType> = (key: string, value: DirectiveType) => void | Promise<void>;
-export interface DirectiveProps<DirectiveType, T extends BaseHelper<any> = BaseHelper<any>> {
+export interface DirectiveProps<DirectiveType, T extends BaseHelper<unknown> = BaseHelper<unknown>> {
   name: string;
   value?: DirectiveType | undefined;
   directive: T;
@@ -160,7 +162,7 @@ export abstract class BaseHelper<DirectiveType, Options extends object = object>
    */
   public async data(value?: DirectiveType | undefined): Promise<BlockRenderer> { return `${value || this.default}`; }
   public preview(value?: DirectiveType | undefined): ComponentChildren { return `${value || this.default}`; }
-  public render(_params: any[], _hash: DirectiveOptions & Options, _options: NeutrinoHelperOptions): NeutrinoValue { return ''; }
+  public render(_params: NeutrinoValue[], _hash: DirectiveOptions & Options, _options: NeutrinoHelperOptions): NeutrinoValue { return ''; }
   public inject(): BlockRenderer { return ''; }
 }
 

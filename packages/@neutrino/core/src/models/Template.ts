@@ -1,14 +1,15 @@
-import { Json, toTitleCase } from "@universe/util";
+import { toTitleCase } from "@universe/util";
 import * as fs from 'fs';
 import * as path from 'path';
 import pluralize from 'pluralize';
 
+import { POJONeutrinoValue } from "../helpers.js";
 import { IField, INDEX_PAGE_ID, ITemplate, PageType, templateId } from '../types.js';
 
 export class Template implements ITemplate {
   name: string;
   sortable: boolean;
-  options: Json;
+  options: Record<string, POJONeutrinoValue>;
   fields: Record<string, IField | undefined>;
   metadata: Record<string, IField | undefined>;
   type: PageType;
@@ -127,7 +128,7 @@ export class Template implements ITemplate {
         options: {
           type: 'url',
           help: 'The URL where this page can be found.',
-          prefix: null,
+          prefix: '@page',
         },
       }, {
         type: 'date',

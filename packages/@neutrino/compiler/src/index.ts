@@ -33,7 +33,7 @@ import { ComponentResolver, parse } from './parser.js';
  * TemplateCompiler class
  * Used in conjunction with a modified version of Mustache.js (Goatee)
  */
- export class TemplateCompiler {
+export class TemplateCompiler {
   private resolveHelper: HelperResolver;
   private resolveComponent: ComponentResolver;
 
@@ -89,7 +89,7 @@ import { ComponentResolver, parse } from './parser.js';
         if (stylesheets[path]) { continue; }
         const from = join(root, path);
         stylesheet.content = (await postcss([
-          postcssImport({ root: dirname(from) }) as any, /* Types are off... this works though. */
+          postcssImport({ root: dirname(from) }) as unknown as postcss.AcceptedPlugin, /* Types are off... this works though. */
           autoprefixer,
         ]).process(readFileSync(from), { from, map: { inline: true } })).css;
         const hash = createHash('md5').update(stylesheet.content).digest('hex');

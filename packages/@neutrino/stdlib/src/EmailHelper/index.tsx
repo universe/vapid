@@ -56,8 +56,8 @@ export default class EmailHelper extends ValueHelper<EmailValue, EmailOptions> {
         if (!window.confirm('Are you sure you want to remove your email integration?')) { return; }
         directive.update({ provider: null, listId: null });
       }}>Disconnect</button>
-      <UniverseButton realm={directive.meta.website.env.realm} onClick={() => directive.update({ provider: 'universe', listId: null })} />
-      <MailchimpButton realm={directive.meta.website.env.realm} onClick={() => directive.update({ provider: 'mailchimp', listId: null })} />
+      <UniverseButton realm={directive.meta.website.env.realm as string} onClick={() => directive.update({ provider: 'universe', listId: null })} />
+      <MailchimpButton realm={directive.meta.website.env.realm as string} onClick={() => directive.update({ provider: 'mailchimp', listId: null })} />
       <NgpvanButton onClick={() => directive.update({ provider: 'ngpvan', listId: null })} />
       <ConstantContactButton onClick={() => directive.update({ provider: 'constant-contact', listId: null })} />
     </section>;

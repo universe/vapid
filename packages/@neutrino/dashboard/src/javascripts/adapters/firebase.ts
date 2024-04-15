@@ -248,7 +248,6 @@ export default class FirebaseAdapter extends DataAdapter {
 
   async deploy(website: IWebsite, records: Record<string, IRecord>) {
     const bucket = this.provider.config?.database?.storage?.bucket || website.meta.domain;
-    debugger;
     const storage = getStorage(this.app, `gs://${bucket}`);
     const discoveredDefaults = new Set(Object.keys(WELL_KNOWN_PAGES));
 

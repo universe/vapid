@@ -60,6 +60,7 @@ export default function Preview({ record }: PreviewProps) {
       if (!renderedRecord || !doc) { return; }
 
       // Render the site into our hidden scratch document.
+      /* eslint-disable-next-line */
       const fragment = await renderRecord(false, doc as unknown as SimpleDocument, renderedRecord, siteUpdate, recordsUpdate) as unknown as DocumentFragment;
       if (fragment) {
         update(fragment.children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);

@@ -74,7 +74,7 @@ export class Vapid {
     // TODO: Ensure package.json is present.
     const pjson = JSON.parse(readFileSync(this.paths.pjson, 'utf-8'));
     const pjsonConfig = (pjson.vapid || {}) as Partial<VapidSettings<DatabaseConfig>>;
-    (pjsonConfig.domain || pjson.homepage) && (pjsonConfig.domain =  pjsonConfig.domain || pjson.homepage);
+    (pjsonConfig.domain || pjson.homepage) && (pjsonConfig.domain = pjsonConfig.domain || pjson.homepage);
     dotenv.config({ path: resolve(cwd, '.env') });
 
     // Construct config object.

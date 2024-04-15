@@ -77,6 +77,7 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
         });
         directive.quill?.enable();
       })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editor.current]);
 
     // When we receive a new value, if we weren't the ones to set it, update our current state to reflect.
@@ -89,6 +90,7 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
         directive.quill?.clipboard.dangerouslyPasteHTML(value);
         directive.quill?.enable();
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value]);
 
     /* eslint-disable max-len */

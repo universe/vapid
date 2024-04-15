@@ -18,12 +18,14 @@ interface VapidRuntimeEnv {
   resolveHelper: HelperResolver,
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export type UnknonwValueHash = Record<string, any>;
+
 function isComponent(tag: string) {
   return tag[0] === tag[0].toUpperCase() || !!~tag.indexOf('-');
 }
 
-/* eslint-enable no-param-reassign */
-function parseHash(pairs: (ASTv1.HashPair | ASTv1.AttrNode)[]): Record<string, any> {
+function parseHash(pairs: (ASTv1.HashPair | ASTv1.AttrNode)[]): UnknonwValueHash {
   const out: Record<string, string> = {};
   for (const pair of pairs || []) {
     const key = (pair as ASTv1.HashPair).key || (pair as ASTv1.AttrNode).name;
@@ -67,8 +69,8 @@ function isDocumentFragment(node: NeutrinoValue): node is SimpleDocumentFragment
 
 function resolveValue(
   node: ASTv1.MustacheStatement | ASTv1.BlockStatement | ASTv1.Expression, 
-  ctx: Record<string, any>, 
-  data: Record<string, any>, 
+  ctx: UnknonwValueHash, 
+  data: UnknonwValueHash, 
   resolveHelper: HelperResolver, 
   options?: NeutrinoHelperOptions,
 ): NeutrinoValue {
@@ -86,13 +88,16 @@ function resolveValue(
       }
       if (typeof obj === 'function') { obj = obj(); }
       if (obj instanceof SafeString) { return obj; }
+      if (node.original.startsWith('@collection')) {
+        return [...data.collection];
+      }
       return obj;
     }
   }
   switch(node.path.type) {
     case 'PathExpression':
       // If is helper
-      if (node.path.parts.length === 1 && !node.path.this && !node.path.data) {
+      if (!node.path.this && (node.params?.length || node.hash?.pairs?.length)/* !node.path.data */) {
         const type = node.path.parts[0];
         const helper = resolveHelper(type);
         if (!helper) { return resolveValue(node.path, ctx, data, resolveHelper); }
@@ -102,13 +107,19 @@ function resolveValue(
           hash[pair.key] = resolveValue(pair.value, ctx, data, resolveHelper);
         }
 
+        // If this is a collection helper, and no param has been passed to allow the user to specify
+        // which collection should be used, then use the default collection for this page.
+        if (type === 'collection' && !params[0]) {
+          params[0] = data.collection;
+        }
+
         /* eslint-disable-next-line */
         /* @ts-ignore */
         return (helper && helper.prototype.render(params, hash, options || {})) ?? null;
       }
-      
+
       return resolveValue(node.path, ctx, data, resolveHelper);
-      
+
     default:
       return resolveValue(node.path, ctx, data, resolveHelper);
   }
@@ -295,7 +306,7 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
       case 'BlockStatement': {
         const val = resolveValue(node, context, data, resolveHelper, {
           fragment: document.createDocumentFragment(),
-          block: (blockParams: any[] = [], dat: Record<string, any> = {}) => {
+          block: (blockParams: NeutrinoValue[] = [], dat: UnknonwValueHash = {}) => {
             const fragment = document.createDocumentFragment();
             if (!node.program) { return fragment; }
             const subEnv: VapidRuntimeEnv = { ...env, program: node.program, root: fragment, contents: [] };
@@ -307,7 +318,7 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
             traverse(subEnv, tmpl, subCtx, subData);
             return fragment;
           },
-          inverse: (blockParams: any[] = [], dat: Record<string, any> = {}) => {
+          inverse: (blockParams: NeutrinoValue[] = [], dat: UnknonwValueHash = {}) => {
             const fragment = document.createDocumentFragment();
             if (!node.inverse) { return fragment; }
             const subEnv: VapidRuntimeEnv = { ...env, program: node.inverse, root: fragment, contents: [] };
@@ -321,13 +332,14 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
           },
         });
 
-        let parent = root;
-        if (env.isDevelopment && val?.toString()) {
-          const el = document.createElementNS(env.namespace, 'span');
-          applyDebugAttr('content', el, node);
-          root.appendChild(el);
-          parent = el;
-        }
+        const parent = root;
+        // TODO: Re-enable?
+        // if (env.isDevelopment && val?.toString()) {
+        //   const el = document.createElementNS(env.namespace, 'span');
+        //   applyDebugAttr('content', el, node);
+        //   root.appendChild(el);
+        //   parent = el;
+        // }
 
         // Append our new content.
         if (val === undefined) { throw new Error(`Unknown helper {{${(node.path as ASTv1.PathExpression).original}}}`); }
@@ -352,8 +364,10 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
   }
 }
 
+export type IRenderValue = NeutrinoValue | ((params: [Record<string, NeutrinoValue>[]], hash: UnknonwValueHash) => Record<string, NeutrinoValue>[])
+export type IRenderCollections = Record<string, Record<string, IRenderValue>[] | Record<string, IRenderValue>>;
 export type IRenderPageContext = Omit<Omit<IPageContext, 'content'>, 'collection'> & { 
-  collection: Record<string, Record<string, NeutrinoValue>[]>;
+  collection: IRenderCollections;
   props: Record<string, NeutrinoValue>;
   component: { id: string; };
 };

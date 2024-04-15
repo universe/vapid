@@ -3,6 +3,8 @@ import { compileExpression as compileExpressionOrig, useDotAccessOperatorAndOpti
 import { customAlphabet } from 'nanoid';
 import pluralize from 'pluralize';
 
+import { POJONeutrinoValue } from './helpers.js';
+
 export const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 10);
 
 export interface IWebsiteTheme {
@@ -15,7 +17,7 @@ export interface IWebsiteMeta {
   domain: string;
   media: string;
   theme: IWebsiteTheme;
-  env: Record<string, any>;
+  env: Record<string, POJONeutrinoValue>;
 }
 
 export enum PageType {
@@ -29,7 +31,7 @@ export const NAVIGATION_GROUP_ID = 'navigation';
 export const GENERAL_SETTINGS_ID = 'general';
 export const INDEX_PAGE_ID = 'index';
 
-export function isPageType(value: any): value is PageType {
+export function isPageType(value: unknown): value is PageType {
   return value === PageType.SETTINGS || value === PageType.COLLECTION || value === PageType.PAGE || value === PageType.COMPONENT;
 }
 
@@ -39,13 +41,13 @@ export interface IField<DirectiveTypes=string> {
   label: string;
   key: string;
   templateId: string | null;
-  options: Record<string, string | number | boolean | null>;
+  options: Record<string, POJONeutrinoValue>;
 }
 
 export interface ITemplate {
   name: string;
   sortable: boolean;
-  options: Json;
+  options: Record<string, POJONeutrinoValue>;
   fields: Record<string, IField | undefined>;
   metadata: Record<string, IField | undefined>;
   type: PageType;
@@ -74,6 +76,7 @@ export interface SerializedRecord {
   name: string;
   createdAt: number;
   updatedAt: number;
+  deletedAt: number | null;
 
   permalink: string | null;
   isNavigation: boolean;
@@ -88,7 +91,7 @@ export interface SerializedRecord {
 }
 
 export const RECORD_META = '@record';
-export type IRecordData = { [RECORD_META]: SerializedRecord } & Json;
+export type IRecordData = { [RECORD_META]: SerializedRecord } & Record<string, POJONeutrinoValue>;
 
 export function stampField(field: Partial<IField> = {}): IField {
   return {
@@ -172,7 +175,8 @@ export function sortTemplatesAlphabetical(a: ITemplate, b: ITemplate) {
 
 export function compileExpression(expr: string) {
   return compileExpressionOrig(expr, {
-    customProp(name: string, get: (name: string) => any, object: any, type: 'unescaped' | 'single-quoted') {
+    customProp(name: string, get: (name: string) => unknown, object: Record<string, unknown>, type: 'unescaped' | 'single-quoted') {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       const value = useDotAccessOperatorAndOptionalChaining(name, get, object, type);
       return value?.src?.startsWith('data:') ? undefined : value;
     },

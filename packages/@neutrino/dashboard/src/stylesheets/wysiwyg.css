@@ -1,5 +1,27 @@
 @import "../vendor/quill.bubble";
 
+/* TODO: Fix These Styles */
+textarea.quill-video__caption-edit {
+  display: none !important;
+}
+
+/* TODO: Fix These Styles */
+textarea.quill-image__caption-edit {
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+/* TODO: Fix These Styles */
+.quill-image input.quill-image__link {
+  transition: width .28s, color .15s, border-color .15s background-color .28s !important;
+}
+.quill-image input.quill-image__link:focus {
+  width: 100% !important;
+  color: white !important;
+  background-image: none !important;
+  background-color: black !important;
+}
+
 .wysiwyg {
   cursor: text;
 }

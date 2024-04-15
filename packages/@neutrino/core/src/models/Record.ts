@@ -77,6 +77,7 @@ export class Record implements IRecord {
       name: record.name || toTitleCase(record.templateId),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      deletedAt: record.deletedAt || null,
       slug: record.slug,
       permalink,
       isNavigation: Record.isNavigation(record),

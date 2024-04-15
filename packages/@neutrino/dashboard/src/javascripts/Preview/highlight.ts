@@ -1,6 +1,9 @@
+interface HighlightElement {
+  __HIGHLIGHT__: boolean;
+}
 export default function highlight() {
-  if ((window as any).__HIGHLIGHT__) { return; }
-  (window as any).__HIGHLIGHT__ = true;
+  if ((window as unknown as HighlightElement).__HIGHLIGHT__) { return; }
+  (window as unknown as HighlightElement).__HIGHLIGHT__ = true;
   console.log('START');
   const marker = document.getElementById('editor-marker') || document.createElement('div');
   marker.id = 'editor-marker';
@@ -102,7 +105,7 @@ export default function highlight() {
     }
   
     const newScrollPosition = document.scrollingElement ? document.scrollingElement.scrollTop : 0;
-    const animate = (marker as any).computedStyleMap().get('opacity').value > 0.1 && scrollPosition === newScrollPosition;
+    const animate = parseInt(marker?.computedStyleMap()?.get?.('opacity')?.toString() || '1', 10) > 0.1 && scrollPosition === newScrollPosition;
     scrollPosition = newScrollPosition;
     marker.setAttribute('style', `
       animation: pulse 2s infinite;
@@ -144,8 +147,8 @@ export default function highlight() {
   positionMarker();
   
   let prevSelector: string | null = null;
-  window.addEventListener('message', (event: Event) => {
-    const data = (event as any).data;
+  window.addEventListener('message', (event: MessageEvent) => {
+    const data = event.data;
     timeout && clearTimeout(timeout);
     if (selector === `[data-neutrino-${data.target}]`) { return; }
     if (data.target === null) {

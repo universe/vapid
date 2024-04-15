@@ -12,7 +12,7 @@ export default class CountHelper extends CollectionHelper<null, CountHelperOptio
     let count = 0;
     records = (Array.isArray(records) ? records : [records]).filter(Boolean);
     for (const record of records) {
-      if (record['@record'].deletedAt) { continue; }
+      if (record['@record']?.deletedAt) { continue; }
       count += (record && (!filter || filter(record))) ? 1 : 0;
     }
     return count;

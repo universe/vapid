@@ -61,7 +61,7 @@ export default class CollateHelper extends CollectionHelper<CollectionHelperValu
 
     for (const record of (collection || []).filter(Boolean)) {
       if (!record || record['@record']?.deletedAt) { continue; }
-      if (!config || record['@record']?.parent?.id !== config.collectionId) { continue; }
+      if (config?.collectionId && record['@record']?.parent?.id !== config?.collectionId) { continue; }
       if (filter && !filter(record)) { continue; }
 
       let value = typeof record[prop] === 'function' ? record[prop]() : record[prop];

@@ -57,7 +57,7 @@ export default function Page({ adapter, isNewRecord, template, record, records, 
   const parentTemplate = parent ? templateFor(parent, templates) : template;
   const childrenTemplate = parent ? template : theme.hbs.templates[`${template?.name}-${PageType.COLLECTION}`];
   const domain = adapter?.getDomain() || '';
-  const isPage = theme.hbs.pages[`${template?.name}-${template?.type}`];
+  // const isPage = theme.hbs.pages[`${template?.name}-${template?.type}`];
 
   // Assemble all records that are members of the selected collection.
   const collectionRecords: IRecord[] = Object.values(records).filter((dat) => {

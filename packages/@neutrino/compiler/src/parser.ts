@@ -1,5 +1,5 @@
 import { ASTv1,preprocess } from '@glimmer/syntax';
-import { DirectiveMeta, HelperType,IField, ITemplate, PageType, ParsedExpr, stampTemplate, Template } from '@neutrino/core';
+import { DirectiveMeta, HelperType,IField, ITemplate, NeutrinoValue, PageType, ParsedExpr, stampTemplate, Template } from '@neutrino/core';
 import { GlimmerTemplate, HelperResolver, IParsedTemplate, ITemplateAst,parsedTemplateToAst } from '@neutrino/runtime';
 import pino from 'pino';
 
@@ -14,7 +14,7 @@ function isComponent(tag: string) {
 }
 
 /* eslint-enable no-param-reassign */
-function parseHash(pairs: (ASTv1.HashPair | ASTv1.AttrNode)[]): Record<string, any> {
+function parseHash(pairs: (ASTv1.HashPair | ASTv1.AttrNode)[]): Record<string, NeutrinoValue> {
   const out: Record<string, string> = {};
   for (const pair of pairs || []) {
     const key = (pair as ASTv1.HashPair).key || (pair as ASTv1.AttrNode).name;
@@ -33,7 +33,7 @@ function parseExpression(node:
   | ASTv1.Expression,
   ): [ParsedExpr | null, ASTv1.PathExpression | ASTv1.Literal | null] {
   let path;
-  let hash: Record<string, any> | null;
+  let hash: Record<string, NeutrinoValue> | null;
 
   switch (node?.type) {
     case 'PathExpression':
@@ -46,15 +46,8 @@ function parseExpression(node:
       break;
     case 'MustacheStatement':
     case 'SubExpression':
-      if (node.params.length) {
-        const tmp = parseExpression(node.params[0]);
-        path = tmp[1];
-        hash = tmp[0]?.hash || {};
-      }
-      else {
-        path = node.path;
-        hash = parseHash(node.hash.pairs);
-      }
+      path = node.path;
+      hash = parseHash(node.hash.pairs);
       break;
     default: {
       return [ null, null ];
@@ -62,13 +55,13 @@ function parseExpression(node:
   }
 
   const context = (path as ASTv1.PathExpression)?.original.indexOf('this') === 0 ? 'this' : '';
-  const key = (path as ASTv1.PathExpression).parts?.length === 1 
+  const key = (path as ASTv1.PathExpression).parts.length === 1 
     ? (path as ASTv1.PathExpression).parts[0] 
     : (path as ASTv1.PathExpression).parts.slice(1).join('.');
 
   // TODO: Handle literal values
   return [{
-    type: hash?.type,
+    type: typeof hash?.type === 'string' ? hash?.type : '',
     original: (path as ASTv1.PathExpression)?.original || '',
     key,
     context: (path as ASTv1.PathExpression)?.parts?.length === 1 ? context : (path as ASTv1.PathExpression)?.parts?.[0],
@@ -82,23 +75,21 @@ function parseExpression(node:
 function ensureBranch(template: IParsedTemplate, collectionExpr: ParsedExpr) {
   const data = template.templates;
 
-  // We can discover collections names in three different formats:
-  // 1. {{this.key type=@collection.value}}
-  // 2. {{helper @collection.value}}
-  // 3. {{#helper @collection}}
+  // We can discover collections names in two different formats:
+  // 1. {{@collection.value}}
+  // 2. {{@collection}}
   // Regardless of how it arrives, discover the name appropriately.
   // TODO: This is convoluted. Theres probably a way to simplify.
   let name = '';
-  if (collectionExpr.type?.startsWith('@collection')) {
-    name = collectionExpr.type.split('.')?.[1]?.trim();
-  }
-  else if (collectionExpr.context === 'collection') {
+  if (collectionExpr.context === 'collection') {
     name = collectionExpr.key;
   }
   else if (collectionExpr.key === 'collection' && !collectionExpr.context) {
     name = template.name;
   }
+
   if (!name) { return; }
+
   const newBranch: ITemplate = stampTemplate({
     name,
     type: PageType.COLLECTION,
@@ -148,7 +139,7 @@ interface IAlias {
  * @params {Object} aliases
  * @return {Object}
  */
-function addToTree(template: IParsedTemplate, leaf: ParsedExpr, path: ASTv1.PathExpression | ASTv1.Literal, aliases: Record<string, IAlias>) {
+function addToTree(template: IParsedTemplate, leaf: ParsedExpr, path: ASTv1.PathExpression | ASTv1.Literal, aliases: Record<string, IAlias>, collectionId?: string) {
   if (!leaf) { return; }
 
   const data: Record<string, ITemplate> = template.templates;
@@ -183,6 +174,7 @@ function addToTree(template: IParsedTemplate, leaf: ParsedExpr, path: ASTv1.Path
   // Ensure the model object reference exists.
   const tmpl: ITemplate = stampTemplate({ name, type });
   const sectionKey = Template.id(tmpl);
+
   data[sectionKey] = data[sectionKey] || tmpl;
 
   // Ensure the field descriptor exists. Merge settings if already exists.
@@ -193,7 +185,7 @@ function addToTree(template: IParsedTemplate, leaf: ParsedExpr, path: ASTv1.Path
     leaf.hash.priority = '0';
   }
 
-  let priority = parseInt(leaf.hash.priority, 10) ?? Infinity;
+  let priority = parseInt(`${leaf.hash.priority}`, 10) ?? Infinity;
   if (isNaN(priority)) { priority = Infinity; }
 
   if (Object.hasOwnProperty.call(leaf.hash, 'priority') && (priority < 0 || isNaN(priority))) {
@@ -201,32 +193,30 @@ function addToTree(template: IParsedTemplate, leaf: ParsedExpr, path: ASTv1.Path
     throw new Error(`Priority value must be a positive integer. Instead found: {{${leaf.original} priority=${leaf.hash.priority}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
   }
 
-  leaf.hash.type = leaf.hash.type || 'text'; // Text is the default type.
-  if (leaf.hash.type.startsWith('@collection')) {
-    if (leaf.hash.type === '@collection') {
-      /* eslint-disable-next-line max-len */
-      throw new Error(`Collection references used as a field types must specify a collection name. E.g. {{@collection.name}}. Instead found: {{${leaf.original} type=${leaf.hash.type}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
-    }
-    data[sectionKey][contentLocation][key] = {
-      key,
-      type: 'collection',
-      priority: Math.min(priority ?? Infinity, old?.priority ?? Infinity),
-      label: leaf.hash.label || old?.label || '',
-      templateId: leaf.hash.type.split('.')[1],
-      options: { ...(old?.options || {}), ...leaf.hash, templateId: leaf.hash.type.split('.')[1], type: 'collection' },
-    };
-    ensureBranch(template, leaf);
-  }
-  else {
-    data[sectionKey][contentLocation][key] = {
-      key,
-      templateId: null,
-      type: (leaf.hash.type === 'text' ? (old?.type || leaf.hash.type) : (leaf.hash.type || old?.type)) || 'text',
-      priority: Math.min(priority ?? Infinity, old?.priority ?? Infinity),
-      label: leaf.hash.label || old?.label || '',
-      options: { ...(old?.options || {}), ...leaf.hash },
-    };
-  }
+  // Fetch our datum's directive type (if any) and fall back to plaintext.
+  let directive: string = leaf.hash.type = typeof leaf.hash.type === 'string' ? leaf.hash.type : 'text';
+  const newLabel: string = typeof leaf.hash.label === 'string' ? leaf.hash.label : '';
+
+  // If our directive is an `@collection.<name>` statement, we're dealing with a collection helper.
+  if (collectionId) { directive = 'collection'; }
+
+  // If don't have a custom type value, keep the old definitions value if it's distinct, or default to text.
+  directive = (directive === 'text' ? (old?.type || directive) : (directive || old?.type)) || 'text';
+  // Save our fieldset configuration.
+  const templateId = collectionId?.split?.('.')?.[1] || null;
+  data[sectionKey][contentLocation][key] = {
+    key,
+    type: directive,
+    priority: Math.min(priority ?? Infinity, old?.priority ?? Infinity),
+    label: newLabel || old?.label || '',
+    templateId: old?.templateId || templateId,
+    options: {
+      ...(old?.options || {}),
+      ...leaf.hash,
+      type: directive,
+      templateId: old?.options?.templateId || templateId,
+    },
+  };
 
   return data;
 }
@@ -312,17 +302,33 @@ function walk(
 
     case 'MustacheStatement':
     case 'SubExpression': {
+      const [ leaf, path ] = parseExpression(node);
+      const isCollection = leaf && (leaf?.isPrivate && (leaf.context === 'collection' || (leaf.key === 'collection' && !leaf.context)));
+
       // If this mustache has params, it must be a helper.
       // Crawl all its params as potential data values.
       if (node.params && node.params.length) {
-        for (const param of node.params) {
-          walk(template, param, aliases, resolveComponent, helpers);
+
+        // If this helper is a collection,
+        if (isCollection) {
+          // Add our collection reference. This ensure the branch exists.
+          leaf && path && addToTree(template, leaf, path, aliases);
+
+          // If there is a pram passed to the `@collection` reference, add it as a collection field to the current model.
+          const [ childLeaf, childPath ] = parseExpression(node.params[0]);
+          childLeaf && childPath && addToTree(template, childLeaf, childPath, aliases, leaf.original);
+        }
+
+        else {
+          // Ensure we get all child params.
+          for (const param of node.params) {
+            walk(template, param, aliases, resolveComponent, helpers);
+          }
         }
 
       // Otherwise, this is a plain data value reference. Add it to the current object.
       }
       else {
-        const [ leaf, path ] = parseExpression(node);
         leaf && path && addToTree(template, leaf, path, aliases);
       }
       break;
@@ -336,13 +342,12 @@ function walk(
       const [expr] = parseExpression(node.params[0]);
 
       // If the first expression is `@collection.name`, or simply `@collection`, then we're dealing with a collection value!
-      const isCollection = expr?.isPrivate && (expr.context === 'collection' || (expr.key === 'collection' && !expr.context));
+      const isCollection = expr && (expr?.isPrivate && (expr.context === 'collection' || (expr.key === 'collection' && !expr.context)));
+      const collectionName = isCollection ? (!expr.context ? template.name : expr.key) : null;
 
       // Crawl all its params as potential data values in scope.
-      if (node.params.length && !isCollection) {
-        for (const param of node.params) {
-          walk(template, param, aliases, resolveComponent, helpers);
-        }
+      for (const param of (node.params || [])) {
+        walk(template, param, aliases, resolveComponent, helpers);
       }
 
       // If this helper denotes the creation of a field, add it to the current model.
@@ -354,40 +359,23 @@ function walk(
         }
       }
 
-      // If this helper denotes the creation of a new model type, ensure the model.
-      if (isCollection) {
-        ensureBranch(template, expr);
-      }
-
       // Assign any yielded block params to the aliases object.
-      node.program.blockParams = node.program.blockParams || [];
-      for (let idx = 0; idx < node.program.blockParams.length; idx += 1) {
-        const param = node.program.blockParams[idx];
+      const blockParams = node.program.blockParams = node.program.blockParams || [];
+      for (let idx = 0; idx < blockParams.length; idx += 1) {
+        const param = blockParams[idx];
         const path = (node.path as ASTv1.PathExpression);
-        if (isCollection) {
-          const name = expr?.parts[1] || template.name;
 
+        // Throw if the block param contains invalid characters.
+        if (param.startsWith('@') || param.startsWith('_')) {
           /* eslint-disable-next-line max-len */
-          if (!name) { throw new Error(`Unexpected value for collection name. Found: {{${expr?.original} priority=${expr?.hash.priority}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);}
-
-          if (name.startsWith('@') || name.startsWith('_')) {
-            /* eslint-disable-next-line max-len */
-            throw new Error(`Unexpected value for collection name. Collection names can not begin with '@' or '_'. Instead found: {{${expr?.original} priority=${expr?.hash.priority}}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
-          }
-
-          aliases[param] = {
-            name,
-            type: PageType.COLLECTION,
-            isPrivate: !!path.data,
-          };
+          throw new Error(`Unexpected value for block param. Names can not begin with '@' or '_'. Instead found: {{${path?.original} | ${param} |}} at ${path.loc.module}:${path.loc.startPosition.line}:${path.loc.startPosition.column}`);
         }
-        else if (!param.startsWith('@')) {
-          aliases[param] = {
-            name: param,
-            type: PageType.SETTINGS,
-            isPrivate: true,
-          };
-        }
+
+        aliases[param] = {
+          name: (collectionName && idx === 0) ? collectionName : param,
+          type: (isCollection && idx === 0) ? PageType.COLLECTION : PageType.SETTINGS,
+          isPrivate: !(isCollection && idx === 0),
+        };
       }
 
       if (node.program) walk(template, node.program, aliases, resolveComponent, helpers);
@@ -415,6 +403,8 @@ function walk(
   return template;
 }
 
+const NOOP_FUNCTION = () => null;
+
 /**
  * Parses the HTML, and creates a template tree
  *
@@ -424,8 +414,8 @@ function walk(
   name: string, 
   type: PageType, 
   html: string, 
-  resolveComponent: ComponentResolver, 
-  helpers: HelperResolver, 
+  resolveComponent: ComponentResolver = NOOP_FUNCTION,
+  helpers: HelperResolver = NOOP_FUNCTION,
   templates: Record<string, ITemplate> = {}, 
   components: Record<string, ITemplateAst> = {},
 ): IParsedTemplate {

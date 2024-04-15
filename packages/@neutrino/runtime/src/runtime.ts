@@ -4,7 +4,6 @@ import {
   ITemplate, 
   nanoid,
   NAVIGATION_GROUP_ID, 
-  NeutrinoValue,
   PageType, Record as DBRecord, 
   RECORD_META, 
   SerializedRecord, 
@@ -16,7 +15,7 @@ import type { SimpleDocument, SimpleDocumentFragment } from '@simple-dom/interfa
 import type { Json } from '@universe/util';
 
 import { HelperResolver, resolveHelper as defaultResolveHelper } from './helpers.js';
-import { IRenderPageContext, render as rawRender } from './renderer.js';
+import { IRenderCollections, IRenderPageContext, render as rawRender } from './renderer.js';
 import { IPageContent, IPageContext, IParsedTemplate, ITemplateAst, IWebsite, RendererComponentResolver, RuntimeHelper } from './types.js';
 
 export * from './helpers.js';
@@ -133,6 +132,7 @@ async function makeRenderRecord(data: IRecordData, templates: Record<string, ITe
   const record = data[RECORD_META];
   if (!record) { return null; }
   const template = templates[`${record.templateId}`];
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   const helperRecord: Record<string, any> = {};
   for (const key of Object.keys(data)) {
     if (key.startsWith('@')) { helperRecord[key] = data[key]; continue; }
@@ -151,7 +151,6 @@ async function makeRenderRecord(data: IRecordData, templates: Record<string, ITe
       },
     ) : null;
     helperRecord[key] = helper ? await helper.data(data?.[key] as unknown as never || helper.default) : null;
-    // if ((helper?.options as unknown as any).templateId) {
     if (helper?.options?.type === 'collection') {
       helperRecord[key] = await Promise.all(helperRecord[key].map((r: IRecord) => makeRenderRecord(makeRecordData(r, templates[r.templateId], 'content'), templates, context)));
     }
@@ -171,6 +170,7 @@ async function makeRenderRecord(data: IRecordData, templates: Record<string, ITe
         website: context.site,
       },
     );
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     helperRecord[key] = helperRecord[key] || helper ? await (helper.data as any)() : null;
   }
   return helperRecord;
@@ -194,7 +194,7 @@ export async function render(
 
   const renderData: IRenderPageContext = { 
     ...data,
-    collection: [] as unknown as Record<string, Record<string, NeutrinoValue>[]>,
+    collection: [] as unknown as IRenderCollections,
     props: {},
     component: { id: nanoid() },
   };
@@ -202,13 +202,10 @@ export async function render(
   for (const collectionName of Object.keys(data.collection || {})) {
     const list = data.collection[collectionName];
     if (!list) { continue; }
-    if (Array.isArray(list)) {
-      renderData.collection[collectionName] = (await Promise.all(list.map(rec => makeRenderRecord(rec, tmpl.templates, data)))).filter(Boolean) as Record<string, RuntimeHelper>[];
-    }
-    else {
-      const out = await makeRenderRecord(list as unknown as IRecordData, tmpl.templates, data) as unknown as Record<string, RuntimeHelper>[] | null;
-      out && (renderData.collection[parseInt(collectionName, 10)] = out);
-    }
+    // renderData.collection[collectionName] = list as unknown as Record<string, RuntimeHelper>[];
+    renderData.collection[collectionName] = Array.isArray(list) 
+      ? (await Promise.all(list.map(rec => makeRenderRecord(rec, tmpl.templates, data)))).filter(Boolean) as Record<string, RuntimeHelper>[]
+      :  (await makeRenderRecord(list, tmpl.templates, data)) as Record<string, RuntimeHelper>;
   }
 
   resolveComponent = resolveComponent || ((name: string) => tmpl.components[name]?.ast || null);

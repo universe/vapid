@@ -14,13 +14,14 @@ import {
   Firestore, 
   getDoc, 
   getDocs, 
-  initializeFirestore, 
+  getFirestore,
+  initializeFirestore,
   query, 
   QueryConstraint,
   setDoc, 
   where,
 } from 'firebase/firestore';
-import { connectStorageEmulator,FirebaseStorage, getStorage, ref, uploadBytesResumable, uploadString } from "firebase/storage";
+import { connectStorageEmulator, FirebaseStorage, getStorage, ref, uploadBytesResumable, uploadString } from "firebase/storage";
 import mime from 'mime';
 import pino from 'pino';
 
@@ -95,7 +96,12 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
 
   private getDatabase() {
     if (this.#db) return this.#db;
-    this.#db = (this.#firebase && initializeFirestore(this.#firebase, { ignoreUndefinedProperties: true })) || null;
+    try {
+      this.#db = (this.#firebase && initializeFirestore(this.#firebase, { ignoreUndefinedProperties: true })) || null;
+    }
+    catch {
+      this.#db = (this.#firebase && getFirestore(this.#firebase)) || null;
+    }
     if (!this.#db) { throw new Error('Problem connecting to database'); }
     if (ENV.FIRESTORE_EMULATOR_HOST) {
       logger.info(`Connecting Firebase Emulator`);

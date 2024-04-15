@@ -35,7 +35,6 @@ export function renderFields(
       website: context.site,
     });
     directive?.onChange(onChange);
-
     let value = null;
     switch (type) {
       case 'page': value = record[field.key as keyof typeof record]; break;

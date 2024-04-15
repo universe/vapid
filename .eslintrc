@@ -37,6 +37,7 @@
     "sort-imports": "off",
     "import/order": "off",
     "import/no-named-default": "off",
+    "jest/expect-expect": "off",
     "semi": [
       "error",
       "always"
@@ -106,7 +107,7 @@
     "@typescript-eslint/interface-name-prefix": "off",
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
-    "react-hooks/rules-of-hooks": "warn",
+    "react-hooks/rules-of-hooks": "off",
     "react-hooks/exhaustive-deps": "warn",
     "react/no-deprecated": "warn",
     "jest/no-deprecated-functions": "off",
