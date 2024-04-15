@@ -50,11 +50,8 @@ export default defineConfig({
       },
       treeshake: false,
       external: (name: string) => {
-        return name.includes('@simple-dom') ||
+        return name.includes('simple-dom') ||
           name.includes('livereload') ||
-          name.startsWith('@firebase') ||
-          name.startsWith('firebase') ||
-          name.startsWith('preact') ||
           module.builtinModules.includes(name);
       },
     },

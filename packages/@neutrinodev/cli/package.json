@@ -1,6 +1,6 @@
 {
   "name": "@neutrinodev/cli",
-  "version": "1.0.0-beta.0",
+  "version": "1.0.0-beta.2",
   "license": "MIT",
   "description": "A template-driven content management system",
   "repository": "universe/vapid",
@@ -10,20 +10,20 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "bin": {
-    "neutrino": "./dist/entry.js"
+    "neutrino": "./dist/src/entry.js"
   },
   "exports": {
     "./loader": "./dist/src/css-loader.js",
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./default/index.js"
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
     }
   },
   "scripts": {
     "lint": "eslint bin lib test",
     "test": "jest | pino-pretty",
     "emulate": "firebase emulators:start",
-    "build": "rm -rf dist && vite build && chmod 777 ./dist/entry.js",
+    "build": "rm -rf dist && tsc && chmod 777 ./dist/src/entry.js",
     "watch": "watch 'npm run build' './src' --wait=1"
   },
   "engines": {
@@ -44,7 +44,8 @@
     "livereload": "^0.9.3",
     "pino": "^8.11.0",
     "update-notifier": "^5.1.0",
-    "pino-pretty": "^9.4.0"
+    "pino-pretty": "^9.4.0",
+    "simple-dom": "^1.4.0"
   },
   "devDependencies": {
     "@jest/globals": "^28.1.1",

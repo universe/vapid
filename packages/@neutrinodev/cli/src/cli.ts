@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 
 import program from 'commander';
-import * as fs from 'fs';
 import * as path from 'path';
 import pino from 'pino';
 import { default as updateNotifier } from 'update-notifier';
 
+import pkg from '../package.json' assert { type: 'json' };
 import VapidServer from './runners/VapidServer/index.js';
-
-const pkg = JSON.parse(fs.readFileSync('../package.json', 'utf8'));
 
 declare global {
   /* eslint-disable-next-line @typescript-eslint/no-namespace */
