@@ -18,13 +18,12 @@
   },
   "workspaces": {
     "packages": [
-      "packages/@neutrino/*"
+      "packages/@neutrinodev/*"
     ]
   },
   "resolutions": {
     "canvas": "https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.0.2.tgz",
     "firebase": "^10.1.0",
-    "@universe/campaign": "0.30.0",
     "esbuild": "^0.19.4"
   },
   "devDependencies": {

@@ -1,0 +1,12 @@
+diff --git a/node_modules/react-hot-toast/dist/index.d.ts b/node_modules/react-hot-toast/dist/index.d.ts
+index 80011fe..034065c 100644
+--- a/node_modules/react-hot-toast/dist/index.d.ts
++++ b/node_modules/react-hot-toast/dist/index.d.ts
+@@ -1,5 +1,5 @@
+-import * as react from 'react';
+-import { CSSProperties } from 'react';
++import * as react from 'preact/compat';
++import { CSSProperties } from 'preact/compat';
+ import * as goober from 'goober';
+ 
+ type ToastType = 'success' | 'error' | 'loading' | 'blank' | 'custom';

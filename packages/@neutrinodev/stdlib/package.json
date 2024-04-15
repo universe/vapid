@@ -1,0 +1,90 @@
+{
+  "name": "@neutrinodev/stdlib",
+  "version": "1.0.0-beta.0",
+  "license": "MIT",
+  "description": "A template-driven content management system",
+  "repository": "universe/vapid",
+  "author": "Adam Miller <adam@universe.app>",
+  "main": "dist/index.js",
+  "types": "dist/src/index.d.ts",
+  "type": "module",
+  "bin": {
+    "vapid": "./dist/lib/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --emitDeclarationOnly",
+    "lint": "eslint bin src test",
+    "test": "jest | pino-pretty",
+    "emulate": "firebase emulators:start",
+    "build": "rm -rf dist && vite build",
+    "postbuild": "rm -f tsconfig.tsbuildinfo && tsc --emitDeclarationOnly --project tsconfig.json && rm -f dist/main.d.ts && rm -f dist/test.d.ts",
+    "watch": "watch 'npm run build' './src' --wait=1",
+    "lint:fix": "eslint 'src/**/*.ts*' --fix && stylelint '**/*.css' --fix"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "keywords": [
+    "app",
+    "cms",
+    "framework",
+    "web"
+  ],
+  "nodemonConfig": {
+    "ignore": [
+      "assets/*"
+    ]
+  },
+  "files": [
+    "assets",
+    "bin",
+    "dist"
+  ],
+  "dependencies": {
+    "@neutrinodev/core": "^1.0.0-beta.0"
+  },
+  "peerDependencies": {
+    "preact": "^10.19.3"
+  },
+  "devDependencies": {
+    "@types/color": "^3.0.2",
+    "@types/colorjs.io": "link:../../../types-local/colorjs.io",
+    "@types/markdown-it": "^12.0.3",
+    "@types/quill": "^2.0.9",
+    "@types/quill-button": "link:../../../types-local/quill-button",
+    "@types/quill-hr": "link:../../../types-local/quill-hr",
+    "@types/quill-image": "link:../../../types-local/quill-image",
+    "@types/quill-video-embed": "link:../../../types-local/quill-video-embed",
+    "@types/react-tag-autocomplete": "^6.1.1",
+    "@types/sanitize-html": "^1.27.2",
+    "@preact/preset-vite": "^2.3.0",
+    "@vitejs/plugin-basic-ssl": "^0.1.2",
+    "normalize-url": "6",
+    "@uiw/react-md-editor": "^3.13.0",
+    "@universe/image-focus": "^3.3.0",
+    "@universe/wysiwyg": "^1.1.2",
+    "@universe/util": "^1.1.2",
+    "blurhash": "^1.1.4",
+    "color": "^4.1.0",
+    "colorjs.io": "^0.4.0",
+    "filtrex": "^3.0.0",
+    "markdown-it": "^12.1.0",
+    "palettey": "^1.0.2",
+    "preact": "^10.19.3",
+    "quill": "^1.3.6",
+    "quill-button": "^0.0.7",
+    "quill-hr": "^0.0.4",
+    "quill-image": "^0.0.21",
+    "quill-video-embed": "^0.0.5",
+    "react-tag-autocomplete": "^6.3.0",
+    "sanitize-html": "^1.18.2",
+    "tui-image-editor": "^3.9.0"
+  }
+}

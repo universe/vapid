@@ -1,0 +1,23 @@
+{
+  "name": "@neutrinodev/docs",
+  "vapid": {
+    "name": "Neutrino Documentation",
+    "domain": "neutrino.dev",
+    "port": 1776,
+    "database": {
+      "type": "firebase",
+      "scope": "websites/default",
+      "projectId": "neutrino-example",
+      "username": "adam@neutrino.dev",
+      "password": "*******************"
+    }
+  },
+  "scripts": {
+    "serve": "forever start -c 'yarn start' .",
+    "start": "neutrino start",
+    "build": "exit 0"
+  },
+  "devDependencies": {
+    "@neutrinodev/cli": "1.0.0-beta.0"
+  }
+}
