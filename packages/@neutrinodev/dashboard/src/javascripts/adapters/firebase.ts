@@ -169,7 +169,7 @@ export default class FirebaseAdapter extends DataAdapter {
     }
 
     if (this.hasLocalTheme === false) {
-      data = await (await fetch(`${import.meta.env.THEME_URL}/${name}/${name}@${version}.json`)).json();
+      data = await (await fetch(`${import.meta.env.THEME_URL}/${name}/${name}@${version}.json?1`)).json();
     }
 
     if (!data) { throw new Error('Error fetching website theme.'); }

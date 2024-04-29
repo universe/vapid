@@ -37,7 +37,7 @@
   -webkit-app-region: no-drag;
   transition: color .18s, background-color .18s;
   margin: 0.4rem;
-  border-radius: 0.8rem;
+  border-radius: 0.4rem;
   cursor: pointer;
   font-size: 1.4rem;
 }

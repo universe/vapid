@@ -28,12 +28,6 @@ function focusFieldPreview(evt: Event): void {
 document.addEventListener('focusin', focusFieldPreview);
 document.addEventListener('focusout', focusFieldPreview);
 
-const SCRATCH_DOC = document.createElement('iframe');
-SCRATCH_DOC.setAttribute('src', 'about:blank');
-SCRATCH_DOC.setAttribute('id', 'vapid-preview-scratch');
-SCRATCH_DOC.setAttribute('class', 'vapid-preview__scratch-iframe');
-SCRATCH_DOC.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-modals allow-forms');
-
 export default function Preview({ record }: PreviewProps) {
 
   const { theme, records, loading } = useContext(WebsiteContext);
@@ -79,5 +73,7 @@ export default function Preview({ record }: PreviewProps) {
   return <>
     <Spinner size="large" className={`vapid-preview__loading vapid-preview--${typeof loading === 'string' ? 'error' : (loading ? 'loading' : 'success')}`} />
     <iframe src="about:blank" id="vapid-preview" class="vapid-preview__iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-modals allow-forms" />
+    { /* eslint-disable-next-line max-len */ }
+    <iframe src="about:blank" id="vapid-preview-scratch" class="vapid-preview__iframe vapid-preview__iframe--scratch" sandbox="allow-same-origin allow-scripts allow-popups allow-modals allow-forms" />
   </>;
 }

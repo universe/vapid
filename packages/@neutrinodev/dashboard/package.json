@@ -22,7 +22,8 @@
     "emulate": "firebase emulators:start",
     "start": "yarn clean && vite --force",
     "build": "yarn clean && vite build && rm -f tsconfig.tsbuildinfo && tsc --emitDeclarationOnly -p tsconfig.json",
-    "deploy": "yarn build && hoist up dist"
+    "deploy": "yarn build && hoist up dist",
+    "watch": "watch 'yarn build' './src' --wait=1"
   },
   "engines": {
     "node": ">=12.0.0"

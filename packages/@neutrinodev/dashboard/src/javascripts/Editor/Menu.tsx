@@ -1,9 +1,21 @@
-import { INDEX_PAGE_ID,IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, Record as DBRecord, sortRecords, sortTemplatesAlphabetical, Template } from "@neutrinodev/core";
-import { IWebsite } from "@neutrinodev/runtime";
+import {
+  INDEX_PAGE_ID,
+  IRecord,
+  ITemplate,
+  NAVIGATION_GROUP_ID,
+  PageType,
+  Record as DBRecord,
+  sortRecords,
+  sortTemplatesAlphabetical,
+  stampRecord,
+  Template,
+} from "@neutrinodev/core";
+import { IWebsite,  renderRecord, update } from "@neutrinodev/runtime";
+import type { SimpleDocument, SimpleNode } from '@simple-dom/interface';
 import { toTitleCase } from "@universe/util";
 import { ComponentChildren } from "preact";
 import { createPortal } from "preact/compat";
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 
 import CollectionImage from '../../images/collection.svg';
 import PageImage from '../../images/page.svg';
@@ -65,6 +77,35 @@ export default function Menu({
 
   const recordsList = Object.values(records || {}).sort(sortRecords);
 
+  useEffect(() => {
+    (async() => {
+      for (const template of templates) {
+        // If is a component, settings page, or collection with a renderable base page, skip.
+        if (
+          template.type === PageType.COMPONENT || 
+          template.type === PageType.SETTINGS || 
+          (template.type === PageType.COLLECTION && theme.hbs.pages[`${template.name}-page`])
+        ) { continue; }
+        // Grab our preview iframe documents.
+        const doc = (document.getElementById(`template-${template.name}-preview`) as HTMLIFrameElement).contentDocument;
+        if (!doc) { return; }
+  
+        // Render the site into our hidden scratch document.
+        /* eslint-disable-next-line */
+        const fragment = await renderRecord(false, doc as unknown as SimpleDocument, stampRecord(template), theme, records) as unknown as DocumentFragment;
+        if (fragment) {
+          update(fragment.children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
+          doc.children[0].querySelector('body')?.setAttribute('neutrino-preview', 'true');
+        }
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templates]);
+
+  useEffect(() => {
+    (document.getElementById(`vapid-preview-scratch`) as HTMLIFrameElement)?.classList?.toggle('visible', pageTemplatesOpen);
+  }, [pageTemplatesOpen]);
+
   return <section class="sidebar vapid-nav">
     <header class="vapid-outlet">
       {children || <h2 class="heading">{theme.meta.name}</h2>}
@@ -75,7 +116,7 @@ export default function Menu({
           Save Template
         </button> : null}
         <button id="add-page" class="sidebar__add-page" onClick={() => { setPageTemplatesOpen(true); }}>
-          Add a Page
+          + Add a Page
         </button>
         <div class="menu sortable">
           {recordsList.map((page) => page.parentId === NAVIGATION_GROUP_ID
@@ -132,11 +173,55 @@ export default function Menu({
             return a.name > b.name ? 1 : -1;
           }).map((template) => {
             if (template.type !== PageType.PAGE) { return null; }
-            return <li key={template.name} class="page-templates__template">
+            return <li key={template.name} class={`page-templates__template page-templates__template--${template.name}`}>
               <a
                 href={`/page/${template.name}/new`}
                 onClick={() => { setPageTemplatesOpen(false); scrollToEdit(); }}
+                onMouseLeave={() => {
+                  const el = (document.getElementById(`vapid-preview-scratch`) as HTMLIFrameElement);
+                  const doc = el?.contentDocument;
+                  if (!doc) { return; }
+                  el.classList.remove('over');
+                  // eslint-disable-next-line max-len
+                  doc.children[0].querySelector('body')?.setAttribute('style', 'opacity: 0; background: transparent; overflow: hidden; transition: opacity .18s ease-in-out, background .18s ease-in-out;');
+                }}
+                onMouseOver={async() => {
+                  // If is a component, settings page, or collection with a renderable base page, skip.
+                  // Grab our preview iframe documents.
+                  const el = (document.getElementById(`vapid-preview-scratch`) as HTMLIFrameElement);
+                  const doc = el?.contentDocument;
+                  if (!doc) { return; }
+                  el.classList.add('over');
+
+                  let tmpl: ITemplate | null = template;
+                  if (template.type === PageType.PAGE && !theme.hbs.pages[`${template.name}-page`] && theme.hbs.pages[`${template.name}-collection`]) {
+                    tmpl = templates.find(t => (t.name === template.name && t.type === PageType.COLLECTION)) || null;
+                  }
+
+                  if (!tmpl) {
+                    // eslint-disable-next-line max-len
+                    doc.children[0].querySelector('body')?.setAttribute('style', 'opacity: 0; background: transparent; overflow: hidden; transition: opacity .18s ease-in-out, background .18s ease-in-out;');
+                    el.classList.remove('over');
+                    return;
+                  }
+
+                  // Render the site into our hidden scratch document.
+                  /* eslint-disable-next-line */
+                  const fragment = await renderRecord(false, doc as unknown as SimpleDocument, stampRecord(tmpl), theme, records) as unknown as DocumentFragment;
+                  if (!el.classList.contains('over')) { return; }
+                  if (fragment) {
+                    // eslint-disable-next-line max-len
+                    doc.children[0].querySelector('body')?.setAttribute('style', 'opacity: 0; background: transparent; overflow: hidden; transition: opacity .18s ease-in-out, background .18s ease-in-out;');
+                    await new Promise(r => setTimeout(r, 180));
+                    if (!el.classList.contains('over')) { return; }
+                    update(fragment.children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
+                    doc.children[0].querySelector('body')?.setAttribute('neutrino-preview', 'true');
+                    // eslint-disable-next-line max-len
+                    doc.children[0].querySelector('body')?.setAttribute('style', 'opacity: 1; background: white; overflow: hidden; transition: opacity .18s ease-in-out, background .18s ease-in-out;');
+                  }
+                }}
               >
+                <iframe class="page-templates__preview" id={`template-${template.name}-preview`} />
                 {template.name === INDEX_PAGE_ID ? 'Home Page' : toTitleCase(template.name)}
               </a>
             </li>;
