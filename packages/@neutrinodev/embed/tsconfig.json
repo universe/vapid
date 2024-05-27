@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig",
+  "include": [ "./src" ],
+  "compilerOptions": {
+    "outDir": "dist",
+    "composite": true,
+  },
+  "references": [
+    { "path": "../compiler" },
+    { "path": "../dashboard" },
+    { "path": "../datastore" },
+    { "path": "../runtime" }
+  ]
+}

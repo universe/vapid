@@ -1,4 +1,4 @@
-import { INDEX_PAGE_ID, IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Record, Template, UploadResult } from '@neutrinodev/core';
+import { INDEX_PAGE_ID, IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, Record as RecordModel, Template, UploadResult } from '@neutrinodev/core';
 
 declare global {
   /* eslint-disable-next-line @typescript-eslint/no-namespace */
@@ -29,8 +29,8 @@ export default class Database<T extends { type: string; } = { type: string; }> e
   }
 
   getMetadata(): Promise<IWebsiteMeta> { return this.provider.getMetadata(); }
-  getAllTemplates(): Promise<ITemplate[]> { return this.provider.getAllTemplates(); }
-  getAllRecords(): Promise<IRecord[]> { return this.provider.getAllRecords(); }
+  getAllTemplates(): Promise<Record<string, ITemplate>> { return this.provider.getAllTemplates(); }
+  getAllRecords(): Promise<Record<string, IRecord>> { return this.provider.getAllRecords(); }
   getTemplateById(id: string): Promise<ITemplate | null> { return this.provider.getTemplateById(id); }
   getTemplateByName(name: string, type: PageType): Promise<ITemplate | null> { return this.provider.getTemplateByName(name, type); }
   getTemplatesByType(type: PageType): Promise<ITemplate[]> { return this.provider.getTemplatesByType(type); }
@@ -104,28 +104,28 @@ export default class Database<T extends { type: string; } = { type: string; }> e
   }
   async stop() { await this.provider.stop(); }
 
-  async hydrateRecord(record: IRecord): Promise<Record> {
+  async hydrateRecord(record: IRecord): Promise<RecordModel> {
     const template = await this.provider.getTemplateById(record.templateId);
     if (!template) { throw new Error('No template found for record.'); }
     const parent = record.parentId ? await this.provider.getRecordById(record.parentId) : null;
-    return new Record(record, new Template(template), parent ? await this.hydrateRecord(parent) : null);
+    return new RecordModel(record, new Template(template), parent ? await this.hydrateRecord(parent) : null);
   }
 
-  async getIndex(): Promise<Record | null> {
+  async getIndex(): Promise<RecordModel | null> {
     const template = await this.getTemplateByName(INDEX_PAGE_ID, PageType.PAGE);
     if (!template) { return null; }
     const record = (await this.getRecordsByTemplateId(Template.id(template)))[0] || null;
     return record ? this.hydrateRecord(record) : null;
   }
 
-  async getGeneral(): Promise<Record | null> {
+  async getGeneral(): Promise<RecordModel | null> {
     const template = await this.getTemplateByName('general', PageType.SETTINGS);
     if (!template) { return null; }
     const record = (await this.getRecordsByTemplateId(Template.id(template)))[0] || null;
     return record ? this.hydrateRecord(record) : null;
   }
 
-  async getRecordFromPath(permalink: string): Promise<Record | null> {
+  async getRecordFromPath(permalink: string): Promise<RecordModel | null> {
 
     // Alias root requests.
     if (permalink.endsWith('/')) { permalink = permalink.slice(0, -1); }

@@ -18,8 +18,8 @@ export interface MemoryProviderConfig {
 }
 
 interface SerializedMemoryProvider {
-  records: IRecord[];
-  templates: ITemplate[]
+  records: Record<string, IRecord>
+  templates: Record<string, ITemplate>
 }
 
 const DB_NAME = 'data.json';
@@ -27,8 +27,8 @@ const DB_NAME = 'data.json';
 export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
 
   private workingDirectory: string = tmp.dirSync().name;
-  private records: Map<string, IRecord> = new Map();
-  private templates: Map<string, ITemplate> = new Map();
+  private records: Record<string, IRecord> = {};
+  private templates: Record<string, ITemplate> = {};
   private staticServer: http.Server | null = null;
   private env: Record<string, POJONeutrinoValue> = {};
 
@@ -38,13 +38,13 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
       this.workingDirectory = this.config.database.path;
       try {
         const data = JSON.parse(fs.readFileSync(path.join(this.workingDirectory, DB_NAME), 'utf8')) as SerializedMemoryProvider;
-        for (const template of data.templates) {
-          this.templates.set(Template.id(template), template);
+        for (const template of Object.values(data.templates)) {
+          this.templates[Template.id(template)] = template;
         }
-        for (const record of data.records) {
+        for (const record of Object.values(data.records)) {
           const template = await this.getTemplateById(record.templateId);
           MAX_ID = Math.max(parseInt(record.id, 10), MAX_ID);
-          template && this.records.set(record.id, record);
+          template && (this.records[record.id] = record);
         }
       }
       catch { 1; }
@@ -64,21 +64,21 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
 
   private save() {
     const data: SerializedMemoryProvider = {
-      templates: [...this.templates.values()],
-      records: [...this.records.values()],
+      templates: this.templates,
+      records: this.records,
     };
     fs.writeFileSync(path.join(this.workingDirectory, DB_NAME), JSON.stringify(data, null, 2));
   }
 
   async purge() {
-    this.records.clear();
-    this.templates.clear();
+    this.records = {};
+    this.templates = {};
   }
 
   log(): void {
     logger.info({
-      templates: [...this.templates.values()],
-      records: [...this.records.values()],
+      templates: this.templates,
+      records: this.records,
     });
   }
 
@@ -93,20 +93,20 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
     };
   }
 
-  async getAllTemplates(): Promise<ITemplate[]> {
-    return [...this.templates.values()];
+  async getAllTemplates(): Promise<Record<string, ITemplate>> {
+    return this.templates;
   }
 
-  async getAllRecords(): Promise<IRecord[]> {
-    return [...this.records.values()];
+  async getAllRecords(): Promise<Record<string, IRecord>> {
+    return this.records;
   }
 
   async getTemplateById(id: string): Promise<ITemplate | null> {
-    return this.templates.get(id) || null;
+    return this.templates[id] || null;
   }
 
   async getTemplateByName(name: string, type: PageType): Promise<ITemplate | null> {
-    for (const [ _, template ] of this.templates) {
+    for (const template of Object.values(this.templates)) {
       if (template.name === name && template.type === type) {
         return template;
       }
@@ -116,7 +116,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
 
   async getTemplatesByType(type: PageType): Promise<ITemplate[]> {
     const res: ITemplate[] = [];
-    for (const [ _, template ] of this.templates) {
+    for (const template of Object.values(this.templates)) {
       if (template && template.type === type) {
         res.push(template);
       }
@@ -125,13 +125,13 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
   }
 
   async getRecordById(id: string): Promise<IRecord | null> {
-    const record = this.records.get(id) || null;
+    const record = this.records[id] || null;
     return record;
   }
 
   async getRecordBySlug(slug: string, parentId?: string | null): Promise<IRecord | null> {
     slug = slug || INDEX_PAGE_ID;
-    for (const [ _, record ] of this.records) {
+    for (const record of Object.values(this.records)) {
       if (record.slug === slug && (parentId === undefined || record.parentId === parentId)) {
         return record;
       }
@@ -141,7 +141,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
 
   async getRecordsByTemplateId(id: string): Promise<IRecord[]> {
     const res: IRecord[] = [];
-    for (const [ _, record ] of this.records) {
+    for (const record of Object.values(this.records)) {
       if (record.templateId === id) {
         res.push(record);
       }
@@ -151,8 +151,8 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
 
   async getRecordsByType(type: PageType, parentId?: string | null): Promise<IRecord[]> {
     const res: IRecord[] = [];
-    for (const [ _, record ] of this.records) {
-      const template = this.templates.get(record.templateId);
+    for (const record of Object.values(this.records)) {
+      const template = this.templates[record.templateId];
       if (template && template.type === type && (parentId === undefined || record.parentId === parentId)) {
         res.push(record);
       }
@@ -162,7 +162,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
 
   async getChildren(id: string): Promise<IRecord[]> {
     const res: IRecord[] = [];
-    for (const [ _, record ] of this.records) {
+    for (const record of Object.values(this.records)) {
       if (record && record.parentId === id) {
         res.push(record);
       }
@@ -175,7 +175,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
    * Primarily used by the Vapid module when rebuilding the site
    */
   async updateTemplate(update: ITemplate): Promise<ITemplate> {
-    this.templates.set(Template.id(update), update);
+    this.templates[Template.id(update)] = update;
     this.save();
     return update;
   }
@@ -199,18 +199,18 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
     update.id = old?.id || update.id || getNextId();
     update.updatedAt = Date.now();
     update.createdAt = update.createdAt || Date.now();
-    this.records.set(update.id, update);
+    this.records[update.id] = update;
     this.save();
     return update;
   }
 
   async deleteTemplate(templateId: string): Promise<void> {
-    this.templates.delete(templateId);
+    delete this.templates[templateId];
     this.save();
   }
 
   async deleteRecord(recordId: string): Promise<void> {
-    this.records.delete(recordId);
+    delete this.records[recordId];
     this.save();
   }
 

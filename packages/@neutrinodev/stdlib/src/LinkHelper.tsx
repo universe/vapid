@@ -54,7 +54,7 @@ export default class LinkHelper extends ValueHelper<ILinkValue> {
   input({ name, value = this.default, directive }: DirectiveProps<ILinkValue, this>) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const id = useId();
-    value = JSON.parse(JSON.stringify(value));
+    value = structuredClone(value);
     let namePlaceholder = value?.url || '';
     let selectedPage = null;
     const options: JSX.Element[] = directive.meta.records.reduce((memo: JSX.Element[], p) => {

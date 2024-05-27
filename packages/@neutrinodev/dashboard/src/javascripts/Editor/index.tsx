@@ -6,11 +6,10 @@ import { useContext, useEffect } from "preact/hooks";
 import { route } from "preact-router";
 import { Toaster } from 'react-hot-toast';
 
-import * as sortable from '../sortable.js';
-import { WebsiteContext } from "../theme.js";
-import { getRecord, getTemplate, scrollToNav,settingFor } from '../utils.js';
-import Menu from './Menu.js';
+import { DataContext } from "../Data/index.js";
+import Menu, { scrollToEdit, scrollToNav } from './Menu.js';
 import Page from './Page.js';
+import * as sortable from './sortable.js';
 
 interface RouteParts {
   active: IRecord | null;
@@ -48,7 +47,16 @@ export default function Editor(params: RouteParts) {
     afterDeploy,
   } = params;
 
-  const { adapter, theme, records, isLocal, setTheme, setRecords } = useContext(WebsiteContext);
+  const {
+    adapter,
+    theme,
+    records,
+    templates,
+    isLocal,
+    findTemplate,
+    getRecord,
+    settingFor,
+  } = useContext(DataContext);
 
   // If loading at root, route to the index page.
   useEffect(() => {
@@ -57,35 +65,29 @@ export default function Editor(params: RouteParts) {
 
   // Make sure our sortables are sorted.
   useEffect(() => {
-    if (!adapter || !theme) return;
-    return sortable.init(adapter, ({ id, to, parentId }) => {
-      const record = records[id];
-      record.parentId = parentId;
-      record.order = to;
-      setTheme({ ...theme });
-    });
-  }, [ templateName, templateType, pageId, collectionId, theme, records ]);
+    if (!adapter) return;
+    return sortable.init(adapter);
+  }, [ adapter, templateName, templateType, pageId, collectionId, records ]);
 
   const recordsList = Object.values(records || {}).sort(sortRecords);
   const permalinks: Record<string, string> = {};
   for (const record of recordsList) { permalinks[DBRecord.permalink(record)] = record.id; }
 
   const isNewRecord = pageId === 'new' || collectionId === 'new';
-  const templates = Object.values(theme?.hbs?.templates || {});
-  const template = (!templateType && !templateName) ? getTemplate(PageType.PAGE, INDEX_PAGE_ID, templates) : getTemplate(templateType, templateName, templates);
+  const template = (!templateType && !templateName) ? findTemplate(PageType.PAGE, INDEX_PAGE_ID) : findTemplate(templateType, templateName);
 
+  let draftKey = '';
   let record: IRecord | null = null;
   let parent: IRecord | null = null;
-  let draftKey = '';
 
   if (template) {
     if (templateType === PageType.SETTINGS) {
-      record = settingFor(template, recordsList) || (drafts[Template.id(template)] = drafts[Template.id(template)] || stampRecord(template));
+      record = settingFor(template) || (drafts[Template.id(template)] = drafts[Template.id(template)] || stampRecord(template));
     }
-    else if (templateType === PageType.PAGE) { record = getRecord(recordsList, Template.id(template), pageId); }
+    else if (templateType === PageType.PAGE) { record = getRecord(pageId, null, Template.id(template)); }
     else if (templateType === PageType.COLLECTION) {
-      record = getRecord(recordsList, Template.id(template), collectionId, pageId);
-      parent = getRecord(recordsList, `${template.name}-${PageType.PAGE}`, pageId);
+      record = getRecord(collectionId, pageId, Template.id(template));
+      parent = getRecord(pageId, null, `${template.name}-${PageType.PAGE}`);
     }
 
     draftKey = Template.id(template) + (parent?.id || '');
@@ -94,34 +96,40 @@ export default function Editor(params: RouteParts) {
     }
   }
 
-  useEffect(() => { onChange(JSON.parse(JSON.stringify(record || parent))); }, [ record?.id, parent?.id ]);
+  useEffect(() => { onChange(structuredClone(record || parent)); }, [ record?.id, parent?.id ]);
 
   if (!theme || !adapter) return <div class="dashboard__loading"><Spinner size="large" /></div>;
   if (!template) return <div class="dashboard__loading">404</div>;
 
   return <Fragment>
-    <link rel="stylesheet" href="https://kit.fontawesome.com/05b8235ba3.css" crossorigin="anonymous" />
+
+    {isLocal ? <button id="add-page" class="sidebar__add-page" onClick={() => { adapter?.deployTheme('neutrino', 'latest'); }}>
+      Save Template
+    </button> : null}
     <menu class={`vapid-menu vapid-menu--${embedded ? 'embedded' : 'standalone'}`} id="vapid-menu">
       {!embedded ? <Menu
-        adapter={adapter || null}
-        theme={theme}
-        templates={templates}
-        records={records}
         pageId={pageId || INDEX_PAGE_ID}
-        isLocal={isLocal}
         templateName={templateName || null}
         templateType={templateType || null}
-        beforeDeploy={beforeDeploy}
-        afterDeploy={afterDeploy}
+        onDeploy={async() => {
+          const res = await beforeDeploy?.();
+          if (res === false) { throw new Error('beforeDeploy hook blocked site deploy'); }
+          await adapter?.deploy(theme, records);
+          await afterDeploy?.();
+        }}
       >
         {children}
       </Menu> : null}
 
       <section class="vapid-editor sidebar vapid-nav" id="vapid-editor">
-        <Page adapter={adapter || null} isNewRecord={isNewRecord} template={template} record={active} parent={parent} records={records} theme={theme}
+        <Page 
+          isNewRecord={isNewRecord}
+          template={template}
+          record={active}
+          parent={parent}
           onCancel={() => {
             delete drafts[draftKey];
-            onChange(JSON.parse(JSON.stringify(record)));
+            onChange(structuredClone(record));
             route(`/${template.type}/${template.name}/${(parent || record)?.slug || ''}`);
           }}
           onChange={record => {
@@ -130,33 +138,37 @@ export default function Editor(params: RouteParts) {
             if ((slugId && slugId !== record.id) || /[^A-Za-z0-9-_.~]/.test(record.slug) || record.slug === 'new') {
               record.slug = `__error__/${record.slug}`;
             }
-            onChange(JSON.parse(JSON.stringify(record)));
+            onChange(structuredClone(record));
           }}
-          onSave={(recordUpdates: IRecord | IRecord[], navigate?: boolean) => {
+          onSave={async(recordUpdates: IRecord | IRecord[], navigate?: boolean) => {
             delete drafts[draftKey];
+            const update = { ...records };
             recordUpdates = Array.isArray(recordUpdates) ? recordUpdates : [recordUpdates];
-            for (const record of recordUpdates) {
-              records[record.id] = record;
+            await Promise.allSettled(recordUpdates.map(async(record) => {
               if (record.deletedAt) {
-                const parent = record.parentId ? (records[record.parentId] || null) : null;
-                const parentTemplate = parent ? (theme.hbs.templates[parent.templateId] || null) : null;
-                const permalink = parent ? DBRecord.permalink(parent) : null;
-                if (parent && parentTemplate) {
-                  route(`/${parentTemplate.type}/${parentTemplate.name}${(!permalink || permalink === '/') ? '/index' : permalink}`);
-                }
-                else {
-                  route('/page/index/index');
-                  scrollToNav();
+                await adapter?.deleteRecord(record);
+                if (navigate !== false) {
+                  const parent = record.parentId ? (update[record.parentId] || null) : null;
+                  const parentTemplate = parent ? (templates[parent.templateId] || null) : null;
+                  const permalink = parent ? DBRecord.permalink(parent) : null;
+                  if (parent && parentTemplate) {
+                    route(`/${parentTemplate.type}/${parentTemplate.name}${(!permalink || permalink === '/') ? '/index' : permalink}`);
+                  }
+                  else {
+                    route('/page/index/index');
+                    scrollToNav();
+                  }
                 }
               }
-              else if (navigate !== false) {
-                onChange(JSON.parse(JSON.stringify(record)));
-                const permalink = DBRecord.permalink(record, parent);
-                route(`/${template.type}/${template.name}${(!permalink || permalink === '/') ? '/index' : permalink}`);
+              else {
+                await adapter?.updateRecord(record);
+                if (navigate !== false) {
+                  onChange(structuredClone(record));
+                  const permalink = DBRecord.permalink(record, parent);
+                  route(`/${template.type}/${template.name}${(!permalink || permalink === '/') ? '/index' : permalink}`);
+                }
               }
-            }
-            setTheme({ ...theme });
-            setRecords({ ...records });
+            }));
           }}
         />
       </section>
@@ -165,3 +177,8 @@ export default function Editor(params: RouteParts) {
     {createPortal(<Toaster />, document.getElementById('toasts') as HTMLElement)}
   </Fragment>;
 }  
+
+export {
+  scrollToEdit,
+  scrollToNav,
+};

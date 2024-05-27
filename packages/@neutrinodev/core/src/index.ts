@@ -31,8 +31,8 @@ export abstract class IProvider<DatabaseConfig extends { type: string } = { type
   abstract stop(): Promise<void>;
 
   abstract getMetadata(): Promise<IWebsiteMeta>;
-  abstract getAllTemplates(): Promise<ITemplate[]>;
-  abstract getAllRecords(): Promise<IRecord[]>;
+  abstract getAllTemplates(): Promise<Record<string, ITemplate>>;
+  abstract getAllRecords(): Promise<Record<string, IRecord>>;
 
   abstract getTemplateById(id: string): Promise<ITemplate | null>;
   abstract getTemplateByName(name: string, type: PageType): Promise<ITemplate | null>;
@@ -55,4 +55,9 @@ export abstract class IProvider<DatabaseConfig extends { type: string } = { type
   abstract saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
   abstract saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
   abstract saveFile(file: File | string, type?: string, name?: string): AsyncIterableIterator<UploadResult>;
+
+  #listeners: Set<() => void> = new Set();
+  listen(cb: () => void): void { this.#listeners.add(cb); }
+  unlisten(cb: () => void): void { this.#listeners.delete(cb); }
+  trigger(){ [...this.#listeners].map(cb => cb()); }
 }

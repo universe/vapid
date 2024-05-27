@@ -3475,6 +3475,22 @@
     got-cjs "^12.0.0"
     ts-node "^10.8.0"
 
+"@neutrinodev/cli@1.0.0-beta.0":
+  version "1.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@neutrinodev/cli/-/cli-1.0.0-beta.0.tgz#c0706a6ca2619cc82fb6248a8a7420b5cef2ffa9"
+  integrity sha512-u/6OnTvOamNr0lo72NQZ1ZSQq2AE4a0nd3/6glO4oWP0o5aqbDMwIr+Qkb9EzL35e2rGuiZAUZG/HoaWC1lLcA==
+  dependencies:
+    "@fastify/cors" "^8.0.0"
+    "@fastify/static" "^6.4.0"
+    commander "^2.12.2"
+    css-loader "^3.0.0"
+    dotenv "^10.0.0"
+    fastify "^4.0.3"
+    livereload "^0.9.3"
+    pino "^8.11.0"
+    pino-pretty "^9.4.0"
+    update-notifier "^5.1.0"
+
 "@nicolo-ribaudo/eslint-scope-5-internals@5.1.1-v1":
   version "5.1.1-v1"
   resolved "https://registry.yarnpkg.com/@nicolo-ribaudo/eslint-scope-5-internals/-/eslint-scope-5-internals-5.1.1-v1.tgz#dbf733a965ca47b1973177dc0bb6c889edcfb129"

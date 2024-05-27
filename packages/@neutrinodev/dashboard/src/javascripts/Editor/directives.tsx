@@ -27,6 +27,7 @@ export function renderFields(
   const out: ComponentChildren[] = [];
   for (const field of fields.sort((f1, f2) => ((f1.priority ?? Infinity) > (f2.priority ?? Infinity) ? 1 : -1))) {
     if (!field) { continue; }
+    if (type === 'page' && (field.key === 'name' || field.key === 'slug')) { continue; }
     const directive = findDirective(type, domain, field.key, field, {
       templateId: record.templateId,
       record: context.page,

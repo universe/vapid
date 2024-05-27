@@ -4,7 +4,8 @@ import type { SimpleDocument, SimpleNode } from '@simple-dom/interface';
 import Spinner from '@universe/aether/components/Spinner';
 import { useContext, useEffect } from 'preact/hooks';
 
-import { WebsiteContext } from '../theme.js';
+import { DataContext } from "../Data/index.js";
+import DeviceFrame from './DeviceFrame/index.js';
 import highlight from './highlight.js';
 
 let isFirstRender = true;
@@ -12,6 +13,7 @@ let queuedRender = 0;
 
 interface PreviewProps {
   record: IRecord | null;
+  frame?: boolean;
   templateName?: string;
   templateType?: string;
   pageId?: string;
@@ -28,14 +30,14 @@ function focusFieldPreview(evt: Event): void {
 document.addEventListener('focusin', focusFieldPreview);
 document.addEventListener('focusout', focusFieldPreview);
 
-export default function Preview({ record }: PreviewProps) {
+export default function Preview({ record, frame }: PreviewProps) {
 
-  const { theme, records, loading } = useContext(WebsiteContext);
+  const { theme, records, loading } = useContext(DataContext);
 
   // If first render and we haven't found an AST match (e.g. loading a settings page), render the home page instead.
   useEffect(() => {
-    const siteUpdate = JSON.parse(JSON.stringify(theme)) as IWebsite;
-    const recordsUpdate = JSON.parse(JSON.stringify(records)) as Record<string, IRecord>;
+    const siteUpdate = structuredClone(theme) as IWebsite;
+    const recordsUpdate = structuredClone(records) as Record<string, IRecord>;
     record && (recordsUpdate[record.id] = record);
     const recordsList = Object.values(recordsUpdate);
     let renderedRecord = record;
@@ -70,10 +72,10 @@ export default function Preview({ record }: PreviewProps) {
     });
   }, [ theme, record, records ]);
 
-  return <>
+  return <DeviceFrame visible={frame !== false}>
     <Spinner size="large" className={`vapid-preview__loading vapid-preview--${typeof loading === 'string' ? 'error' : (loading ? 'loading' : 'success')}`} />
     <iframe src="about:blank" id="vapid-preview" class="vapid-preview__iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-modals allow-forms" />
     { /* eslint-disable-next-line max-len */ }
     <iframe src="about:blank" id="vapid-preview-scratch" class="vapid-preview__iframe vapid-preview__iframe--scratch" sandbox="allow-same-origin allow-scripts allow-popups allow-modals allow-forms" />
-  </>;
+  </DeviceFrame>;
 }

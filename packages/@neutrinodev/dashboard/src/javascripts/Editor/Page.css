@@ -1,3 +1,164 @@
+.vapid-nav__page-header {
+  width: 100%;
+  display: flex;
+  flex-flow: column;
+  gap: 0;
+  align-self: flex-start;
+}
+
+.vapid-nav__page-header::before {
+  content: "\f0ac";
+  font-family: 'fontawesome';
+  position: absolute;
+  width: 3.8rem;
+  height: 3.8rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--slate-3);
+}
+
+.vapid-nav__settings-header-name {
+  line-height: 1.2;
+  text-transform: capitalize;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-left: -2.8rem;
+  padding: 0.2rem 0 0.2rem 2.8rem;
+  width: 100%;
+  height: 3.8rem;
+  overflow: hidden;
+  height: calc(100% + 1.2rem);
+  position: relative;
+  text-shadow: 0 0 2.4rem var(--blue-6);
+}
+
+.vapid-nav__settings-header-name::before {
+  content: "\f013";
+  font-family: 'fontawesome';
+  position: absolute;
+  color: var(--bold-blue-3);
+  font-size: 11.2rem;
+  top: -6.2rem;
+  z-index: -1;
+  mix-blend-mode: luminosity;
+  left: 0;
+  transform: rotate(42deg);
+  opacity: 0.12;
+}
+
+.vapid-nav__settings-header-name::after {
+  content: "\f013";
+  font-family: 'fontawesome';
+  position: absolute;
+  color: var(--bold-blue-3);
+  font-size: 11.2rem;
+  top: 0;
+  z-index: -1;
+  mix-blend-mode: luminosity;
+  left: 15.2rem;
+  transform: rotate(98deg);
+  opacity: 0.12;
+}
+
+.vapid-nav__page-header-name {
+  line-height: 1.2;
+  text-transform: capitalize;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-right: auto;
+  padding: 0.2rem 0.8rem 0.2rem 3.8rem;
+  background: white;
+  border: 1px solid var(--slate-3);
+  border-radius: 0.4rem;
+  width: 100%;
+  height: 3.8rem;
+  outline: none;
+  transition: border-color .18s ease-in-out, box-shadow .18s ease-in-out;
+}
+
+.vapid-nav__page-header-name:hover, .vapid-nav__page-header-name:focus, .vapid-nav__page-header-name:active {
+  border-color: var(--bold-blue-3);
+  box-shadow: var(--elevation-2);
+}
+
+.vapid-nav__page-header-url {
+  display: flex;
+  background: var(--blue-6);
+  border: 1px solid var(--slate-3);
+  color: var(--slate-1);
+  height: 2.8rem;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0 0 0 0.4rem;
+  overflow: hidden;
+  border-radius: 2.8rem;
+  font-weight: bold;
+  margin: 0.7rem 0 0; /* Yes, 7px. */
+  box-shadow: var(--elevation-2);
+  line-height: 1;
+  transition: box-shadow .18s ease-in-out, color .18s ease-in-out, border-color .18s ease-in-out;
+}
+
+.vapid-nav__page-header-url:hover, .vapid-nav__page-header-url:focus, .vapid-nav__page-header-url:active {
+  border-color: var(--bold-blue-3);
+}
+
+.vapid-nav__page-header-parent-slug:empty::before {
+  content: "\f0c1";
+  font-family: 'fontawesome';
+  transform: rotate(-16deg);
+  display: block;
+  font-size: 1.2rem;
+  left: -1px;
+  position: relative;
+}
+
+.vapid-nav__page-header-parent-slug {
+  display: inline-block;
+  padding: 0 0.8rem;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.vapid-nav__page-header-slug {
+  display: inline-block;
+  height: 100%;
+  width: 100%;
+  border: none;
+  background-color: white;
+  padding: 0 0.8rem;
+  outline: none;
+  border-left: 1px solid var(--slate-3);
+  font-family: var(--sans-stack);
+  text-overflow: ellipsis;
+  color: currentColor;
+}
+
+.vapid-nav__page-header-name::placeholder,
+.vapid-nav__page-header-slug::placeholder
+{
+  color: var(--slate-3);
+}
+
+.vapid-nav__page-header-url.vapid-nav__page-header-url--error {
+  color: var(--red-3);
+  border-color: var(--red-3);
+  box-shadow: 0 0 0 1px var(--red-3), var(--elevation-2)
+}
+
+.vapid-nav__page-header-url.vapid-nav__page-header-url--error {
+  color: var(--red-3);
+}
+
 .toast--success::before {
   content: "\f00c";
   font-family: 'fontawesome';
@@ -64,7 +225,7 @@
 .collection__preview-row:hover .collection__row-select {
   background-color: white;
   box-shadow: var(--elevation-2);
-  border: 1px solid var(--blue-3);
+  border: 1px solid var(--bold-blue-3);
   text-decoration: none;
 }
 
@@ -83,7 +244,7 @@
 }
 
 .collection__row-select:hover::after {
-  color: var(--blue);
+  color: var(--bold-blue-3);
 }
 
 .collection__preview-value {
@@ -130,7 +291,7 @@
   background: none;
   border: 3px dashed;
   justify-content: flex-start;
-  margin: 0 -0.8rem 0.4rem 1.2rem;
+  margin: -0.8rem -0.8rem 0.4rem 1.2rem;
   border-radius: 0.4rem;
   padding-left: 7.6rem;
   font-size: 1.6rem;

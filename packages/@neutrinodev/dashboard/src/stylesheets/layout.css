@@ -16,7 +16,8 @@ body.dashboard > div {
   z-index: 9999;
   background: var(--blue-6);
   display: flex;
-  border-bottom: 1px solid var(--slate-4);
+  border-bottom: 1px solid var(--slate-3);
+  box-shadow: var(--elevation-2);
 }
 
 .vapid-nav {
@@ -28,6 +29,10 @@ body.dashboard > div {
   -ms-scroll-snap-align: center;
   scroll-snap-align: center;
   padding-bottom: 5.8rem;
+}
+
+.vapid-nav--settings {
+  margin-bottom: 0 !important;
 }
 
 .vapid-nav--new .vapid-nav__back {
@@ -67,20 +72,20 @@ body.dashboard > div {
 
 
 .vapid-nav .vapid-nav__settings:hover {
-  background-color: var(--slate-4);
+  background-color: #4094F733;
 }
 
 .vapid-nav__settings::before {
   content: "\f013";
   font-family: 'fontawesome';
-  color: var(--blue);
+  color: var(--bold-blue-3);
   font-size: 1.8rem;
   top: 1px;
   position: relative;
 }
 
 .vapid-nav .button.vapid-nav__settings--active {
-  background-color: var(--blue);
+  background-color: var(--bold-blue-3);
 }
 
 .vapid-nav .button.vapid-nav__settings--active::before {
@@ -93,17 +98,19 @@ body.dashboard > div {
   top: 0;
   z-index: 9999;
   background: var(--blue-6);
-  border-bottom: 1px solid var(--slate-4);
+  border-bottom: 1px solid var(--slate-3);
   display: flex;
   padding: 0.8rem 0.8rem 0.8rem 0.8rem;
   justify-content: flex-start;
   align-items: center;
   flex: 0 0 auto;
   gap: 0.8rem;
+  box-shadow: var(--elevation-2);
+  margin-bottom: 1.4rem;
 }
 
 .vapid-nav__back {
-  color: var(--blue );
+  color: var(--bold-blue-3);
   border: none;
   font-size: 0;
   padding: 0;
@@ -117,14 +124,14 @@ body.dashboard > div {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-right: 0.8rem;
   cursor: pointer;
   background-color: transparent;
+  z-index: 2;
   transition: background-color .18s ease-in-out;
 }
 
 .vapid-nav__back:hover, .vapid-nav__back:active {
-  background-color: var(--slate-4);
+  background-color: #4094F733;
 }
 
 .vapid-nav__back::before {
@@ -165,7 +172,7 @@ body.dashboard > div {
 }
 
 .vapid-preview {
-  width: calc(100vw - var(--sidebar-width) - 1.2rem);
+  width: calc(100vw - var(--sidebar-width) - 1rem);
   height: calc(100vh - 1.2rem - 5.8rem);
   position: fixed;
   top: 1.2rem;
@@ -188,6 +195,8 @@ body.dashboard > div {
   z-index: 1000;
   pointer-events: none;
   opacity: 0;
+  width: 3.8rem;
+  height: 3.8rem;
   transition: opacity .18s ease-in-out;
 }
 

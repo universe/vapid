@@ -3,17 +3,24 @@ import './index.css';
 import { ComponentChildren } from 'preact';
 import { useContext,useState } from 'preact/hooks';
 
-import { WebsiteContext } from '../theme.js';
+import { DataContext } from "../../Data/index.js";
 
 interface IDeviceFrameProps {
   children?: ComponentChildren;
+  visible?: boolean;
 }
 
-export default function DeviceFrame({ children }: IDeviceFrameProps) {
+export default function DeviceFrame({ children, visible }: IDeviceFrameProps) {
   const [ previewLayout, setPreviewLayout ] = useState<'full' | 'desktop' | 'mobile'>('desktop');
-  const { theme } = useContext(WebsiteContext);
+  const { theme } = useContext(DataContext);
 
-  return <article class={`vapid-preview  ${previewLayout === 'full' ? 'vapid-preview--full-screen' : ''}`} id="preview-container">
+  if (!visible) {
+    return <article class={`vapid-preview  ${previewLayout === 'full' ? 'vapid-preview--full-screen' : ''}`} key="preview-container" id="preview-container">
+      {children}
+    </article>;
+  }
+
+  return <article class={`vapid-preview  ${previewLayout === 'full' ? 'vapid-preview--full-screen' : ''}`} key="preview-container" id="preview-container">
     <div id="preview-device" class={`device ${previewLayout === 'mobile' ? 'device-iphone-x' : ''}`}>
       <div class="device-frame">{children}</div>
       <div class="device-stripe" />

@@ -10,12 +10,12 @@ interface CollectionListProps {
   template: ITemplate | null;
   page: IRecord | null;
   collection: IRecord[];
-  theme: IWebsite;
+  theme: IWebsite | null;
   onChange: (order: number[]) => void | Promise<void>;
 }
 
 export default function CollectionList({ domain, template, page, collection, theme, onChange }: CollectionListProps) {
-  if (!template || !page) { return null; }
+  if (!template || !page || !theme) { return null; }
 
   const items = collection.map((record) => {
     if (record.deletedAt) { return null; }

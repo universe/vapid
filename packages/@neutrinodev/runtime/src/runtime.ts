@@ -63,11 +63,12 @@ function makeRecordData(page: IRecord, template: ITemplate, fieldKey: 'content' 
   return out;
 }
 
-export function makePageContext(isProduction: boolean, page: IRecord, records: Record<string, IRecord>, templates: ITemplate[], site: IWebsite): IPageContext {
+export function makePageContext(isProduction: boolean, page: IRecord, records: Record<string, IRecord>, templates: Record<string, ITemplate>, site: IWebsite): IPageContext {
   const recordsList = Object.values(records);
+  const templatesList = Object.values(templates);
   const children = childrenFor(page, recordsList);
   const parent = parentFor(page, recordsList);
-  const template = templateFor(page, templates);
+  const template = templateFor(page, templatesList);
   if (!template) { throw new Error(`Missing template for "${page.templateId}"`); }
   const content: IPageContent = { this: makeRecordData(page, template, 'content', children, parent) };
   const collection: Record<string, IRecordData[]> & IRecordData[] = [] as unknown as (Record<string, IRecordData[]> & IRecordData[]);
@@ -80,7 +81,7 @@ export function makePageContext(isProduction: boolean, page: IRecord, records: R
   const pageId = page.id;
   for (const page of recordsList.sort(sortRecords)) {
     if (page.deletedAt) { continue; }
-    const template = templateFor(page, templates);
+    const template = templateFor(page, templatesList);
     if (!template) { continue; }
     const children = childrenFor(page, recordsList);
     const parent = parentFor(page, recordsList);
@@ -102,7 +103,7 @@ export function makePageContext(isProduction: boolean, page: IRecord, records: R
   }
 
   // Ensure we create stub settings objects if they don't yet exist in our user generated records.
-  for (const template of templates) {
+  for (const template of templatesList) {
     if (template.type === PageType.SETTINGS && !content[template.name]) {
       content[template.name] = makeRecordData(stampRecord(template), template, 'content', [], null);
     }
@@ -221,18 +222,18 @@ export async function renderRecord(
   resolveComponent?: RendererComponentResolver,
   resolveHelper: HelperResolver = defaultResolveHelper,
 ): Promise<SimpleDocumentFragment | null>  {
-  if (!record) { return null; }
-  const renderedAst = siteData.hbs.pages[record.templateId];
+  if (!record || !siteData) { return null; }
+  const renderedAst = siteData?.hbs?.pages?.[record.templateId];
   if (!record || !renderedAst) { return null; }
   const renderTemplate: IParsedTemplate | null = {
     name: renderedAst.name,
     type: renderedAst.type,
     ast: renderedAst.ast,
-    templates: siteData.hbs.templates,
-    components: siteData.hbs.components,
-    stylesheets: siteData.hbs.stylesheets,
+    templates: siteData?.hbs?.templates || {},
+    components: siteData?.hbs?.components || {},
+    stylesheets: siteData?.hbs?.stylesheets || {},
   };
 
-  const context = makePageContext(isProduction, record, records, Object.values(siteData.hbs.templates), siteData);
+  const context = makePageContext(isProduction, record, records, siteData?.hbs?.templates || {}, siteData);
   return render(document, renderTemplate, context, resolveComponent, resolveHelper);
 }

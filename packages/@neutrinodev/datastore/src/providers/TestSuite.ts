@@ -26,16 +26,16 @@ export default function test(name: string, provider: IProvider, purge: () => Pro
       });
 
       it('Purge Function Works', async () => {
-        expect((await provider.getAllTemplates()).length).toEqual(0);
-        expect((await provider.getAllRecords()).length).toEqual(0);
+        expect(Object.values(await provider.getAllTemplates()).length).toEqual(0);
+        expect(Object.values(await provider.getAllRecords()).length).toEqual(0);
         const tmpl = stampTemplate({ name: 'test', type: PageType.COLLECTION });
         await provider.updateTemplate(tmpl);
         await provider.updateRecord(stampRecord(tmpl));
-        expect((await provider.getAllRecords()).length).toEqual(1);
-        expect((await provider.getAllTemplates()).length).toEqual(1);
+        expect(Object.values(await provider.getAllRecords()).length).toEqual(1);
+        expect(Object.values(await provider.getAllTemplates()).length).toEqual(1);
         await purge();
-        expect((await provider.getAllRecords()).length).toEqual(0);
-        expect((await provider.getAllTemplates()).length).toEqual(0);
+        expect(Object.values(await provider.getAllRecords()).length).toEqual(0);
+        expect(Object.values(await provider.getAllTemplates()).length).toEqual(0);
       });
     });
 
@@ -96,7 +96,7 @@ export default function test(name: string, provider: IProvider, purge: () => Pro
         await provider.updateTemplate(tmpl2);
         await provider.updateTemplate(tmpl3);
         await provider.updateTemplate(tmpl4);
-        expect((await provider.getAllTemplates()).sort(tmplSort)).toStrictEqual([ tmpl1, tmpl2, tmpl3, tmpl4 ].sort(tmplSort));
+        expect(Object.values(await provider.getAllTemplates()).sort(tmplSort)).toStrictEqual([ tmpl1, tmpl2, tmpl3, tmpl4 ].sort(tmplSort));
       });
 
       it('Update Template Creates New Template', async () => {
@@ -106,7 +106,7 @@ export default function test(name: string, provider: IProvider, purge: () => Pro
         await provider.updateTemplate(tmpl1);
         await provider.updateTemplate(tmpl2);
         const templates = await provider.getAllTemplates();
-        expect(templates.sort(tmplSort)).toStrictEqual([ tmpl1, tmpl2 ].sort(tmplSort));
+        expect(Object.values(templates).sort(tmplSort)).toStrictEqual([ tmpl1, tmpl2 ].sort(tmplSort));
       });
 
       it('Update Template Updates an Existing Template', async () => {
@@ -255,7 +255,7 @@ export default function test(name: string, provider: IProvider, purge: () => Pro
         await provider.updateRecord(rec2);
         await provider.updateRecord(rec3);
         await provider.updateRecord(rec4);
-        expect((await provider.getAllRecords()).sort(recordSort)).toStrictEqual([ rec1, rec2, rec3, rec4 ].sort(recordSort));
+        expect(Object.values(await provider.getAllRecords()).sort(recordSort)).toStrictEqual([ rec1, rec2, rec3, rec4 ].sort(recordSort));
       });
 
       it.skip('Update Template Updates an Existing Template', async () => {

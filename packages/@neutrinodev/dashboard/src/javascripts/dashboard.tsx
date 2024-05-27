@@ -7,21 +7,25 @@ import { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import Router from 'preact-router';
 
-import { DataAdapter } from './adapters/types.js';
-import DeviceFrame from './DeviceFrame/index.js';
+import {
+  DataAdapter,
+  DataContextProvider,
+  WebsiteRef,
+  WebsiteSDKProvider,
+} from './Data/index.js';
 import Editor from './Editor/index.js';
 import Preview from './Preview/index.js';
-import WebsiteData from './theme.js';
 
 interface IDashboardProps {
   adapter: DataAdapter | null;
   embedded?: boolean;
   children?: ComponentChildren; root: string;
+  sdk?: WebsiteRef;
   beforeDeploy?: () => Promise<boolean> | boolean;
   afterDeploy?: () => Promise<void> | void;
 }
 
-export function Dashboard({ embedded, adapter, children, root, beforeDeploy, afterDeploy }: IDashboardProps) {
+export function Dashboard({ adapter, sdk, embedded, children, root, beforeDeploy, afterDeploy }: IDashboardProps) {
   const [ localRecord, setLocalRecord ] = useState<IRecord | null>(null);
 
   useEffect(() => {
@@ -29,7 +33,10 @@ export function Dashboard({ embedded, adapter, children, root, beforeDeploy, aft
   }, [embedded]);
 
   if (!adapter) { return null; }
-  return <WebsiteData adapter={adapter}>
+
+  return <DataContextProvider adapter={adapter}>
+    <link rel="stylesheet" href="https://kit.fontawesome.com/05b8235ba3.css" crossorigin="anonymous" />
+    <WebsiteSDKProvider sdk={sdk} active={localRecord} />
     <Router>
       <Editor
         embedded={embedded || false}
@@ -42,13 +49,11 @@ export function Dashboard({ embedded, adapter, children, root, beforeDeploy, aft
         {children}
       </Editor>
     </Router>
-    <DeviceFrame>
-      <Preview record={localRecord} />
-    </DeviceFrame>
-  </WebsiteData>;
+    <Preview record={localRecord} />
+  </DataContextProvider>;
 }
 
-export { default as FirebaseAdapter } from './adapters/firebase.js';
+export { type IWebsiteSDK, type IWebsiteSDKMessage, DataAdapter, useWebsite } from './Data/index.js';
 export * from '@neutrinodev/core';
 export * from '@neutrinodev/runtime';
 export * as stdlib from '@neutrinodev/stdlib';

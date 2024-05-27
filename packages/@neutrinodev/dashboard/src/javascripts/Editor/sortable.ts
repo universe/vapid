@@ -1,14 +1,7 @@
 import { NAVIGATION_GROUP_ID } from '@neutrinodev/core';
 import sortable from 'html5sortable';
 
-import { DataAdapter } from './adapters/types.js';
-
-interface SortableUpdate {
-  id: string;
-  from: number;
-  to: number;
-  parentId: string | null;
-}
+import { DataAdapter } from '../Data/index.js';
 
 interface SortableEvent {
   detail: { 
@@ -18,7 +11,7 @@ interface SortableEvent {
   };
 }
 
-export function init(adapter: DataAdapter, onSort?: (update: SortableUpdate) => void) {
+export function init(adapter: DataAdapter) {
   const tbody = document.querySelector('.sortable.table tbody') as HTMLElement;
 
   if (tbody) {
@@ -59,11 +52,12 @@ export function init(adapter: DataAdapter, onSort?: (update: SortableUpdate) => 
         if (el.tagName.toLowerCase() === 'hr') { break; }
         if (el === item) { nav = true; }
       }
-
-      const update: SortableUpdate = { id, from, to, parentId: nav ? NAVIGATION_GROUP_ID : null };
-
-      onSort?.(update);
-      adapter.updateOrder(update);
+      adapter.updateOrder({
+        id,
+        from,
+        to,
+        parentId: nav ? NAVIGATION_GROUP_ID : null,
+      });
     });
   }
 }

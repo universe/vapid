@@ -86,8 +86,8 @@ export class Record implements IRecord {
       hasChildren: !!children.length,
       children: children.filter(r => r.parentId === record.id && !r.deletedAt).map(r => Record.getMetadata(currentUrl, r, [], record)),
       parent: parent ? Record.getMetadata(currentUrl, parent) : null,
-      content: JSON.parse(JSON.stringify(record.content)),
-      metadata: JSON.parse(JSON.stringify(record.metadata)),
+      content: structuredClone(record.content),
+      metadata: structuredClone(record.metadata),
     };
   }
 

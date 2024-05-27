@@ -17,6 +17,7 @@
   },
   "references": [
     { "path": "../core" },
+    { "path": "../embed" },
     { "path": "../runtime" }
   ]
 }

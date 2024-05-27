@@ -1,4 +1,4 @@
-import { IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, stampRecord,UploadResult } from '@neutrinodev/core';
+import { IRecord, NAVIGATION_GROUP_ID, PageType, stampRecord, UploadResult } from '@neutrinodev/core';
 import FirebaseProvider from '@neutrinodev/datastore/dist/src/providers/FireBaseProvider.js';
 import { IWebsite, renderRecord } from '@neutrinodev/runtime';
 import _createDocument from '@simple-dom/document';
@@ -8,7 +8,12 @@ import type { FirebaseApp } from 'firebase/app';
 import { User } from 'firebase/auth';
 import { getStorage, ref, uploadBytesResumable } from 'firebase/storage';
 
-import { DataAdapter, SortableUpdate } from "./types.js";
+export interface SortableUpdate {
+  id: string;
+  from: number;
+  to: number;
+  parentId: string | null;
+}
 
 const createDocument = _createDocument as unknown as typeof _createDocument.default;
 const Serializer = _Serializer as unknown as typeof _Serializer.default;
@@ -30,14 +35,13 @@ const DEFAULT_WELL_KNOWN_PAGES: Record<keyof typeof WELL_KNOWN_PAGES, string> = 
   404: '<html><body>Page not Found <a href="/">Take Me Home</a></body></html>',
 };
 
-export default class FirebaseAdapter extends DataAdapter {
+export class DataAdapter {
   private provider: FirebaseProvider;
   private domain: string;
   private app: FirebaseApp;
 
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   constructor(app: FirebaseApp, bucket: string, scope: string, env: Record<string, any> = {}, root = 'uploads') {
-    super();
     this.app = app;
     this.domain = bucket;
     this.provider = new FirebaseProvider({
@@ -52,6 +56,7 @@ export default class FirebaseAdapter extends DataAdapter {
         app,
       },
     });
+    this.provider.listen(() => this.trigger('change'));
   }
 
   #initPromise: Deferred | null = null;
@@ -68,49 +73,32 @@ export default class FirebaseAdapter extends DataAdapter {
     return this.#initPromise;
   }
 
-  getDomain(): string {
-    return this.domain;
-  }
-
-  currentUser(): User | null {
-    return this.provider.currentUser();
-  }
-
-  async signIn(username: string, password?: string): Promise<User | null> {
-    return this.provider.signIn(username, password);
-  }
-
-  private async getTemplateById(id?: string | null): Promise<ITemplate | null> {
-    if (!id) { return null; }
-    const siteData = await this.getTheme();
-    return siteData.hbs.templates[id] || null;
-  }
-
-  private async saveRecord(type: 'DELETE' | 'POST', body: IRecord) {
-    const db = this.provider;
+  private async validateRecord(body: IRecord) {
     const id = (typeof body.id === 'string' ? body.id : null);
     const parentId = (typeof body.parentId === 'string' ? body.parentId : null);
     if (!id) { throw new Error('Record ID is required.'); }
 
-    const isDelete = type === 'DELETE';
-    let record = await db.getRecordById(id);
-    let template = record?.templateId ? await this.getTemplateById(record?.templateId) : null;
+    const theme = await this.getTheme();
+    const templates = theme?.hbs?.templates || {};
+
+    let record = await this.provider.getRecordById(id);
+    let template = record?.templateId ? templates[record?.templateId] || null : null;
 
     try {
       if (!record) {
         const templateId = (typeof body.templateId === 'string' ? body.templateId : null);
         if (!templateId) { throw new Error('Template ID is required for new records.'); }
-        template = await this.getTemplateById(templateId);
+        template = templates[templateId] || null;
         if (!template) { throw new Error(`Could not find template "${templateId}".`); }
         if (template.type === PageType.COLLECTION && !parentId) { throw new Error(`Parent record ID is required.`); }
-        const parent = parentId ? await db.getRecordById(parentId) : null;
+        const parent = parentId ? await this.provider.getRecordById(parentId) : null;
         if (parentId !== NAVIGATION_GROUP_ID && parentId && !parent) { throw new Error(`Could not find parent record "${parentId}".`); }
         record = stampRecord(template, { parentId });
       }
       else {
         if (!template) { throw new Error(`Could not find template "${record?.templateId}".`); }
         if (template.type === PageType.COLLECTION && !parentId) { throw new Error(`Parent record ID is required.`); }
-        const parent = parentId ? await db.getRecordById(parentId) : null;
+        const parent = parentId ? await this.provider.getRecordById(parentId) : null;
         if (parentId !== NAVIGATION_GROUP_ID && parentId && !parent) { throw new Error(`Could not find parent record "${parentId}".`); }
       }
 
@@ -138,7 +126,6 @@ export default class FirebaseAdapter extends DataAdapter {
 
       // Ensure our slug doesn't contain additional slashes.
       if (record.slug) { record.slug = `${record.slug || ''}`.replace(/^\/+/, ''); }
-      await isDelete ? db.deleteRecord(record.id) : db.updateRecord(record, template.type);
       return record;
     }
     catch (err) {
@@ -147,6 +134,33 @@ export default class FirebaseAdapter extends DataAdapter {
     }
   }
 
+  // Provider Proxies
+  getDomain(): string { return this.domain; }
+  currentUser(): User | null { return this.provider.currentUser(); }
+  async signIn(username: string, password?: string): Promise<User | null> { return this.provider.signIn(username, password); }
+  async getAllRecords(): Promise<Record<string, IRecord>> { return this.provider.getAllRecords(); }
+  async getRecordById(recordId?: string | null): Promise<IRecord | null> { return recordId ? this.provider.getRecordById(recordId) : null; }
+  async getChildren(parentId: string): Promise<IRecord[]> { return this.provider.getChildren(parentId); }
+
+  async updateRecord(record: IRecord): Promise<IRecord> {
+    const res = await this.provider.updateRecord(await this.validateRecord(record));
+    this.trigger('change');
+    return res;
+  }
+
+  async deleteRecord(record: IRecord): Promise<IRecord> {
+    const res = await this.deleteRecord(await this.validateRecord(record));
+    this.trigger('change');
+    return res;
+  }
+
+  saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
+  saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
+  saveFile(file: File | string, type?: string, name?: string): AsyncIterableIterator<UploadResult> { 
+    return this.provider.saveFile(file as string, type as string, name as string);
+  }
+
+  // Theme Management
   private hasLocalTheme: boolean | null = null;
   private theme: IWebsite | null = null;
   async getTheme(): Promise<IWebsite> {
@@ -177,6 +191,11 @@ export default class FirebaseAdapter extends DataAdapter {
     meta.domain = meta.domain || this.domain;
     meta.media = meta.media || `https://${this.domain}`;
     data.meta = meta;
+
+    for (const tmpl of Object.values(data?.hbs?.templates || {})) {
+      this.provider.updateTemplate(tmpl);
+    }
+
     return this.theme = data;
   }
 
@@ -191,26 +210,13 @@ export default class FirebaseAdapter extends DataAdapter {
     return this.theme;
   }
 
-  async getAllRecords(): Promise<Record<string, IRecord>> {
-    const records = await this.provider.getAllRecords();
-    const out: Record<string, IRecord> = {};
-    for (const record of records) {
-      out[record.id] = record;
-    }
-    return out;
-  }
-
-  async updateRecord(record: IRecord): Promise<IRecord> {
-    return await this.saveRecord('POST', record);
-  }
-
   async updateOrder(update: SortableUpdate): Promise<void> {
-    const db = this.provider;
+    const siteData = await this.getTheme();
     try {
-      const foundRecord = await db.getRecordById(update.id);
+      const foundRecord = await this.provider.getRecordById(update.id);
       if (!foundRecord) { throw new Error('Record not found.'); }
 
-      const records: IRecord[] = update.parentId ? (await db.getChildren(update.parentId)).sort(sortRecords) : await db.getRecordsByType(PageType.PAGE);
+      const records: IRecord[] = update.parentId ? (await this.provider.getChildren(update.parentId)).sort(sortRecords) : await this.provider.getRecordsByType(PageType.PAGE);
       const newRecords: IRecord[] = records
         .filter(record => (record.id !== update.id && !record.deletedAt))
         .sort((a, b) => {
@@ -221,32 +227,24 @@ export default class FirebaseAdapter extends DataAdapter {
         });
       foundRecord.parentId = update.parentId;
       foundRecord && newRecords.splice(update.to, 0, foundRecord);
-      const siteData = await this.getTheme();
       const originalOrder = newRecords.map(record => record.order);
       for (let i=0; i < newRecords.length; i++) {
         if (originalOrder[i] === i) { continue; }
         const record = newRecords[i];
         const template = siteData.hbs.templates[record.templateId];
         record.order = i;
-        await db.updateRecord(record, template?.type);
+        await this.provider.updateRecord(record, template?.type);
       }
+      this.trigger('change');
     }
     catch {
       alert('Error: could not reorder records');
     }
   }
 
-  async deleteRecord(record: IRecord): Promise<void> {
-    await this.saveRecord('DELETE', record);
-  }
-
-  saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
-  saveFile(file: File, name?: string): AsyncIterableIterator<UploadResult>;
-  saveFile(file: File | string, type?: string, name?: string): AsyncIterableIterator<UploadResult> { 
-    return this.provider.saveFile(file as string, type as string, name as string);
-  }
-
+  // TODO: Move deploy to the providers.
   async deploy(website: IWebsite, records: Record<string, IRecord>) {
+    const allRecords = await this.getAllRecords();
     const bucket = this.provider.config?.database?.storage?.bucket || website.meta.domain;
     const storage = getStorage(this.app, `gs://${bucket}`);
     const discoveredDefaults = new Set(Object.keys(WELL_KNOWN_PAGES));
@@ -263,10 +261,10 @@ export default class FirebaseAdapter extends DataAdapter {
     for (const record of Object.values(records)) {
       if (record.templateId.endsWith('-settings') || record.deletedAt) { continue; }
       const document = createDocument();
-      const parent: IRecord | null = record.parentId ? records[record.parentId] : null;
+      const parent: IRecord | null = record.parentId ? allRecords[record.parentId] : null;
       const slug = `${[ parent?.slug, record.slug ].filter(Boolean).join('/')}`;
       discoveredDefaults.delete(slug);
-      const fragment = await renderRecord(true, document, record, website, records);
+      const fragment = await renderRecord(true, document, record, website, allRecords);
       const serializer = new Serializer({});
       const html = fragment ? serializer.serialize(fragment) : '';
       const blob = new Blob([html], { type : 'text/html' });
@@ -285,4 +283,12 @@ export default class FirebaseAdapter extends DataAdapter {
       uploadTask.on('state_changed', console.log, console.error, console.log);
     }
   }
+
+  // Simple Event System
+  #listeners = {
+    change: new Set<() => void>(),
+  }
+  on(event: 'change', cb: () => void) { this.#listeners[event].add(cb); }
+  off(event: 'change', cb: () => void) { this.#listeners[event].delete(cb); }
+  trigger(event: 'change') { [...this.#listeners[event]].map(cb => cb()); }
 }

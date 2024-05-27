@@ -1,9 +1,9 @@
 import { IProvider, IRecord, ITemplate, PageType, Template,UploadResult } from '@neutrinodev/core';
 import { IWebsiteMeta } from '@neutrinodev/runtime'; 
-import { md5 } from '@universe/util';
+import { Deferred, md5 } from '@universe/util';
 import file2md5 from 'file2md5';
 import { deleteApp, FirebaseApp, FirebaseOptions,initializeApp } from 'firebase/app';
-import { Auth, connectAuthEmulator, getAuth, signInWithCustomToken, signInWithEmailAndPassword, User } from 'firebase/auth';
+import { Auth, connectAuthEmulator, getAuth, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, User } from 'firebase/auth';
 import { 
   collection, 
   connectFirestoreEmulator, 
@@ -16,10 +16,8 @@ import {
   getDocs, 
   getFirestore,
   initializeFirestore,
-  query, 
-  QueryConstraint,
+  onSnapshot,
   setDoc, 
-  where,
 } from 'firebase/firestore';
 import { connectStorageEmulator, FirebaseStorage, getStorage, ref, uploadBytesResumable, uploadString } from "firebase/storage";
 import mime from 'mime';
@@ -62,12 +60,12 @@ function normalizeTemplate(doc: DocumentSnapshot<DocumentData> | undefined | nul
   return doc.data() as unknown as ITemplate || null;
 }
 
-type Deferred<T> = { promise: Promise<T>; resolve: (value: T) => void; reject: (err: Error) => void };
+type IDeferred<T> = { promise: Promise<T>; resolve: (value: T) => void; reject: (err: Error) => void };
 
-function createDeferred<T>(): Deferred<T> {
-  const d: Partial<Deferred<T>> = {};
+function createDeferred<T>(): IDeferred<T> {
+  const d: Partial<IDeferred<T>> = {};
   d.promise = new Promise((s, f) => { d.resolve = s; d.reject = f; });
-  return d as Deferred<T>;
+  return d as IDeferred<T>;
 }
 
 export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> {
@@ -77,10 +75,21 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
   private getTemplatesPath() { return `${this.getFirebasePrefix()}/templates`; }
   private getRecordsPath() { return `${this.getFirebasePrefix()}/records`; }
 
+  // Firebase Connections
   #firebase: FirebaseApp | null = null;
   #auth: Auth | null = null;
   #db: Firestore | null = null;
   #storage: FirebaseStorage | null = null;
+
+  // Firebase Watchers
+  #websiteWatcher: (() => void) | null = null;
+  #recordWatcher: (() => void) | null = null;
+  #templateWatcher: (() => void) | null = null;
+
+  // Cached Data
+  #metadata: IWebsiteMeta | Deferred<IWebsiteMeta> = new Deferred<IWebsiteMeta>();
+  #records: Record<string, IRecord> | Deferred<Record<string, IRecord>> = new Deferred<Record<string, IRecord>>();
+  #templates: Record<string, ITemplate> | Deferred<Record<string, ITemplate>> = new Deferred<Record<string, ITemplate>>();
 
   private getStorage() {
     if (this.#storage) { return this.#storage; }
@@ -142,21 +151,94 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
       logger.info(`Connecting Auth Emulator`);
       connectAuthEmulator(this.#auth, `http://${ENV.FIREBASE_AUTH_EMULATOR_HOST}`);
     }
+    onAuthStateChanged(this.#auth, user => {
+      if (!user || user?.isAnonymous) { return; }
+      this.watch();
+    });
     logger.info(`Firebase Provider Started`);
 
     if (dbConfig.username && dbConfig.password) {
       await this.signIn(dbConfig.username, dbConfig.password);
-    }
-
-    const db = this.getDatabase();
-    if (!(await getDoc(doc(db, this.getFirebasePrefix())))?.exists()) {
-      throw new Error(`Website "${this.config.domain}" does not exist.`);
     }
   }
 
   currentUser(): User | null {
     if (!this.#auth) { throw new Error(`Auth is Disconnected`); }
     return this.#auth.currentUser;
+  }
+
+  private async watch() {
+    const db = this.getDatabase();
+    if (!(await getDoc(doc(db, this.getFirebasePrefix())))?.exists()) {
+      throw new Error(`Website "${this.config.domain}" does not exist.`);
+    }
+
+    this.#websiteWatcher = onSnapshot(doc(db, this.getFirebasePrefix()), (res) => {
+      const data = res.data() || {} as Partial<IWebsiteMeta>;
+      const realm = this.config.database?.firestore?.scope?.split('/')?.[1] || null;
+      const out: IWebsiteMeta = {
+        name: data.name || this.config.name,
+        domain: data.domain || this.config.domain,
+        media: `https://${data.domain || this.config.domain}`,
+        theme: { name: 'neutrino', version: 'latest' },
+        env: { ...this.config.env, realm: this.config.env.realm || realm },
+      };
+      if (this.#metadata instanceof Deferred) { this.#metadata.resolve(out); }
+      this.#metadata = out;
+      this.trigger();
+    });
+
+    this.#templateWatcher = onSnapshot(collection(db, this.getTemplatesPath()), (data) => {
+      const templates = data.docs.map(doc => normalizeTemplate(doc)).filter(Boolean) as ITemplate[];
+      if (this.#templates instanceof Deferred) {
+        const out: Record<string, ITemplate> = {};
+        for (const template of templates) {
+          out[Template.id(template)] = template;
+        }
+        this.#templates.resolve(out);
+        this.#templates = out;
+      }
+      else {
+        for (const template of templates) {
+          this.#templates[Template.id(template)] = template;
+        }
+      }
+      this.trigger();
+    });
+
+    this.#recordWatcher = onSnapshot(collection(db, this.getRecordsPath()), (data) => {
+      const records = data.docs.map(doc => normalizeDocument(doc)).filter(Boolean) as IRecord[];
+      if (this.#records instanceof Deferred) {
+        const out: Record<string, IRecord> = {};
+        for (const record of records) {
+          out[record.id] = record;
+        }
+        this.#records.resolve(out);
+        this.#records = out;
+      }
+      else {
+        for (const record of records) {
+          this.#records[record.id] = record;
+        }
+      }
+      this.trigger();
+    });
+
+    // All of the deferrables will resolve on first snapshot!
+    await Promise.allSettled([
+      this.#metadata,
+      this.#records,
+      this.#templates,
+    ]);
+  }
+
+  private async unwatch() {
+    this.#websiteWatcher?.();
+    this.#templateWatcher?.();
+    this.#recordWatcher?.();
+    this.#metadata = new Deferred();
+    this.#templates = new Deferred();
+    this.#records = new Deferred();
   }
 
   async signIn(username: string, password?: string): Promise<User | null> {
@@ -174,6 +256,7 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
 
   async stop() {
     logger.info('Stopping FireBase Provider');
+    await this.unwatch();
     try {
       this.#firebase && await deleteApp(this.#firebase);
     }
@@ -194,83 +277,67 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
-  async getAllTemplates(): Promise<ITemplate[]> {
-    const db = this.getDatabase();
-    const data = await getDocs(collection(db, this.getTemplatesPath()));
-    return data.docs.map(doc => normalizeTemplate(doc)).filter(Boolean) as ITemplate[];
-  }
-
   async getMetadata(): Promise<IWebsiteMeta> {
-    const db = this.getDatabase();
-    const data = (await getDoc(doc(db, this.getFirebasePrefix())))?.data() || {} as Partial<IWebsiteMeta>;
-    const realm = this.config.database?.firestore?.scope?.split('/')?.[1] || null;
-    return {
-      name: data.name || this.config.name,
-      domain: data.domain || this.config.domain,
-      media: `https://${data.domain || this.config.domain}`,
-      theme: { name: 'neutrino', version: 'latest' },
-      env: { ...this.config.env, realm: this.config.env.realm || realm },
-    };
+    return structuredClone(this.#metadata);
   }
 
-  async getAllRecords(): Promise<IRecord[]> {
-    const db = this.getDatabase();
-    const data = await getDocs(collection(db, this.getRecordsPath()));
-    return data.docs.map(doc => normalizeDocument(doc)).filter(Boolean) as IRecord[];
+  async getAllTemplates(): Promise<Record<string, ITemplate>> {
+    return structuredClone(await this.#templates);
+  }
+
+  async getAllRecords(): Promise<Record<string, IRecord>> {
+    return structuredClone(await this.#records);
   }
 
   async getTemplateById(id: string): Promise<ITemplate | null> {
     if (!id) { return null; }
-    const db = this.getDatabase();
-    const data = await getDoc(doc(db, `${this.getTemplatesPath()}/${id}`));
-    return normalizeTemplate(data) || null;
+    const data = await this.#templates;
+    return data[id] || null;
   }
 
   async getTemplateByName(name: string, type: PageType): Promise<ITemplate | null> {
-    const db = this.getDatabase();
-    const data = await getDocs(query(collection(db, this.getTemplatesPath()), where('name', '==', name), where('type', '==', type)));
-    // TODO: Error if multiple results.
-    return normalizeTemplate(data.docs?.[0]) || null;
+    const data = await this.#templates;
+    for (const template of Object.values(data)) {
+      if (template.name === name && template.type === type) {
+        return template;
+      }
+    }
+    return null;
   }
 
   async getTemplatesByType(type: PageType): Promise<ITemplate[]> {
-    const db = this.getDatabase();
-    const data = await getDocs(query(collection(db, this.getTemplatesPath()), where('type', '==', type)));
-    return data.docs.map(doc => normalizeTemplate(doc)).filter(Boolean) as ITemplate[];
+    const data = await this.#templates;
+    return Object.values(data).filter(t => t?.type === type);
   }
 
   async getRecordById(id: string): Promise<IRecord | null> {
-    if (!id) { return null; }
-    const db = this.getDatabase();
-    const data = await getDoc(doc(db, `${this.getRecordsPath()}/${id}`));
-    return normalizeDocument(data);
+    const data = await this.#records;
+    return data[id] || null;
   }
 
   async getRecordBySlug(slug: string, parentId?: string | null): Promise<IRecord | null> {
-    const db = this.getDatabase();
-    const filter = [ where('slug', '==', slug), parentId !== undefined ? where('parentId', '==', parentId) : undefined ].filter(Boolean) as QueryConstraint[];
-    const data = await getDocs(query(collection(db, this.getRecordsPath()), ...filter));
-    // TODO: Error if multiple results.
-    return normalizeDocument(data.docs?.[0]);
+    const data = await this.#records;
+    for (const record of Object.values(data)) {
+      if (parentId ? record.parentId === parentId : true && record.slug === slug) {
+        return record;
+      }
+    }
+    return null;
   }
 
   async getRecordsByType(type: PageType, parentId?: string | null): Promise<IRecord[]> {
-    const db = this.getDatabase();
-    const filter = [ where('_type', '==', type), parentId !== undefined ? where('parentId', '==', parentId) : undefined ].filter(Boolean) as QueryConstraint[];
-    const data = await getDocs(query(collection(db, this.getRecordsPath()), ...filter));
-    return data.docs.map(doc => normalizeDocument(doc)).filter(Boolean) as IRecord[];
+    const data = await this.#records;
+    return Object.values(data).filter(t => t?.templateId.endsWith(type) && (parentId ? t?.parentId === parentId : true));
   }
 
-  async getRecordsByTemplateId(id: string): Promise<IRecord[]> {
-    const db = this.getDatabase();
-    const data = await getDocs(query(collection(db, this.getRecordsPath()), where('templateId', '==', id)));
-    return data.docs.map(doc => normalizeDocument(doc)).filter(Boolean) as IRecord[];
+  async getRecordsByTemplateId(templateId: string): Promise<IRecord[]> {
+    const data = await this.#records;
+    return Object.values(data).filter(t => t?.templateId === templateId);
   }
 
-  async getChildren(id: string): Promise<IRecord[]> {
-    const db = this.getDatabase();
-    const data = await getDocs(query(collection(db, this.getRecordsPath()), where('parentId', '==', id)));
-    return data.docs.map(doc => normalizeDocument(doc)).filter(Boolean) as IRecord[];
+  async getChildren(parentId: string): Promise<IRecord[]> {
+    const data = await this.#records;
+    return Object.values(data).filter(t => t?.parentId === parentId);
   }
 
   /**

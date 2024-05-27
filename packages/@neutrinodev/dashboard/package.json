@@ -51,6 +51,7 @@
   "devDependencies": {
     "@neutrinodev/cli": "1.0.0-beta.0",
     "@neutrinodev/core": "1.0.0-beta.0",
+    "@neutrinodev/embed": "1.0.0-beta.0",
     "@neutrinodev/runtime": "1.0.0-beta.0",
     "@universe/aether": "^0.15.2",
     "@universe/util": "^1.1.2",

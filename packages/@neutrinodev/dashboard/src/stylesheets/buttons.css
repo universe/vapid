@@ -12,7 +12,7 @@
   border-radius: 2px;
   white-space: nowrap;
   cursor: pointer;
-  background-color: var(--blue-3);
+  background-color: var(--bold-blue-3);
   border-radius: 4px;
 
   outline: none;
@@ -36,14 +36,14 @@
 }
 
 .button.basic {
-  color: var(--blue-3);
-  border: 1px solid var(--blue-3);
+  color: var(--bold-blue-3);
+  border: 1px solid var(--bold-blue-3);
   background: white;
 }
 
 .button.basic:hover {
   color: white;
-  background: var(--blue-3);
+  background: var(--bold-blue-3);
 }
 
 .button.orange {

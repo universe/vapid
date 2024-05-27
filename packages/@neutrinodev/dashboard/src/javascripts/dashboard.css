@@ -18,10 +18,10 @@
   position: fixed;
   top: 0;
   left: 0;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-wrap: nowrap;
-  overflow-x: auto;
+  overflow-x: hidden;
   z-index: 998;
   --webkit-overflow-scrolling: auto;
   --webkit-scroll-snap-stop: always;
@@ -43,11 +43,8 @@
 }
 
 .vapid-menu--embedded .vapid-nav__back {
-  display: none;
-}
-
-.vapid-menu--embedded .vapid-nav__heading {
-  padding-left: 1.8rem;
+  opacity: 0.33;
+  pointer-events: none;
 }
 
 .preview-controls {
@@ -152,7 +149,7 @@
 }
 
 .dashboard__loading {
-  color: var(--blue-3);
+  color: var(--bold-blue-3);
   display: flex;
   justify-content: center;
   align-items: center;

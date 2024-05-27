@@ -10,19 +10,27 @@ import {
   stampRecord,
   Template,
 } from "@neutrinodev/core";
-import { IWebsite,  renderRecord, update } from "@neutrinodev/runtime";
+import { renderRecord, update } from "@neutrinodev/runtime";
 import type { SimpleDocument, SimpleNode } from '@simple-dom/interface';
 import { toTitleCase } from "@universe/util";
 import { ComponentChildren } from "preact";
 import { createPortal } from "preact/compat";
-import { useEffect, useState } from "preact/hooks";
+import { useContext, useEffect, useState } from "preact/hooks";
 
 import CollectionImage from '../../images/collection.svg';
 import PageImage from '../../images/page.svg';
 import SettingsImage from '../../images/settings.svg';
-import { DataAdapter } from "../adapters/types.js";
-import RocketButton from '../RocketButton/index.js';
-import { collectionFor, scrollToEdit,templateFor } from '../utils.js';
+import { DataContext } from "../Data/index.js";
+import RocketButton from './RocketButton/index.js';
+
+export function scrollToEdit() {
+  const el = document.getElementById('vapid-menu') as HTMLElement;
+  el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
+}
+
+export function scrollToNav() {
+  document.getElementById('vapid-menu')?.scrollTo({ left: 0, behavior: 'smooth' });
+}
 
 const NAV_ICONS = {
   [PageType.PAGE]: PageImage,
@@ -48,44 +56,37 @@ function navLink(page: IRecord | null = null, template: ITemplate | null = null,
 
 export interface IMenuProps {
   children: ComponentChildren;
-  isLocal: boolean;
-  theme: IWebsite;
-  adapter: DataAdapter;
-  templates: ITemplate[];
-  records: Record<string, IRecord>;
   pageId: string;
   templateName: string | null;
   templateType: string | null;
-  beforeDeploy?: () => Promise<boolean> | boolean;
-  afterDeploy?: () => Promise<void> | void;
+  onDeploy?: () => Promise<void> | void;
 }
 
 export default function Menu({
   children,
-  beforeDeploy,
-  afterDeploy,
-  isLocal,
-  theme,
-  adapter,
-  templates,
-  records,
+  onDeploy,
   pageId,
   templateName,
   templateType,
 }: IMenuProps) {
+
+  const { theme, records, templates, collectionFor, templateFor } = useContext(DataContext);
   const [ pageTemplatesOpen, setPageTemplatesOpen ] = useState(false);
 
   const recordsList = Object.values(records || {}).sort(sortRecords);
+  const templatesList = Object.values(templates || {});
 
   useEffect(() => {
     (async() => {
-      for (const template of templates) {
+      if (!theme) { return; }
+      for (const template of templatesList) {
         // If is a component, settings page, or collection with a renderable base page, skip.
         if (
           template.type === PageType.COMPONENT || 
           template.type === PageType.SETTINGS || 
-          (template.type === PageType.COLLECTION && theme.hbs.pages[`${template.name}-page`])
+          (template.type === PageType.COLLECTION && theme?.hbs?.pages[`${template.name}-page`])
         ) { continue; }
+
         // Grab our preview iframe documents.
         const doc = (document.getElementById(`template-${template.name}-preview`) as HTMLIFrameElement).contentDocument;
         if (!doc) { return; }
@@ -100,7 +101,7 @@ export default function Menu({
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templates]);
+  }, [ templates, records ]);
 
   useEffect(() => {
     (document.getElementById(`vapid-preview-scratch`) as HTMLIFrameElement)?.classList?.toggle('visible', pageTemplatesOpen);
@@ -108,13 +109,10 @@ export default function Menu({
 
   return <section class="sidebar vapid-nav">
     <header class="vapid-outlet">
-      {children || <h2 class="heading">{theme.meta.name}</h2>}
+      {children || <h2 class="heading">{theme?.meta?.name}</h2>}
     </header>
     <nav class="vapid-nav">
       <div class="item">
-        {isLocal ? <button id="add-page" class="sidebar__add-page" onClick={() => { adapter?.deployTheme('neutrino', 'latest'); }}>
-          Save Template
-        </button> : null}
         <button id="add-page" class="sidebar__add-page" onClick={() => { setPageTemplatesOpen(true); }}>
           + Add a Page
         </button>
@@ -122,8 +120,8 @@ export default function Menu({
           {recordsList.map((page) => page.parentId === NAVIGATION_GROUP_ID
             ? navLink(
               page,
-              templateFor(page, templates),
-              collectionFor(templateFor(page, templates), templates),
+              templateFor(page),
+              collectionFor(templateFor(page)),
               pageId,
             )
             : null,
@@ -131,8 +129,8 @@ export default function Menu({
           <hr class="sidebar__divider" />
           {recordsList.map((page) => {
             if (page.parentId) { return null; }
-            const tmpl = templateFor(page, templates);
-            const collection = collectionFor(tmpl, templates);
+            const tmpl = templateFor(page);
+            const collection = collectionFor(tmpl);
             if (!tmpl || tmpl?.type !== PageType.PAGE) { return null; }
             return navLink(page, tmpl, collection, pageId);
           })}
@@ -142,7 +140,7 @@ export default function Menu({
       <div class="item">
         <div class="header">Settings</div>
         <div class="menu">
-          {templates.sort(sortTemplatesAlphabetical).map((tmpl) => {
+          {templatesList.sort(sortTemplatesAlphabetical).map((tmpl) => {
             if (tmpl?.type !== PageType.SETTINGS) { return null; }
             if (!Object.keys(tmpl?.fields).length) { return null; }
             return navLink(null, tmpl, null, `${templateName}-${templateType}`);
@@ -154,10 +152,13 @@ export default function Menu({
     <section class="vapid-nav__controls">
       <RocketButton
         onClick={async (reset: () => void) => {
-          const res = await beforeDeploy?.();
-          if (!res) { reset(); return; }
-          await adapter?.deploy(theme, records);
-          afterDeploy?.();
+          if (!theme) { return; }
+          try {
+            await onDeploy?.();
+          }
+          catch {
+            reset();
+          }
           setTimeout(() => reset(), 6000);
         }}
       />
@@ -167,7 +168,7 @@ export default function Menu({
         <h2 class="page-templates__header">Select a Page Template</h2>
         <button class="page-templates__close" onClick={() => setPageTemplatesOpen(false)}>Cancel</button>
         <ul class="page-templates__list">
-          {templates.sort((a, b) => {
+          {templatesList.sort((a, b) => {
             if (a.name === INDEX_PAGE_ID) return -1;
             if (b.name === INDEX_PAGE_ID) return 1;
             return a.name > b.name ? 1 : -1;
@@ -190,12 +191,12 @@ export default function Menu({
                   // Grab our preview iframe documents.
                   const el = (document.getElementById(`vapid-preview-scratch`) as HTMLIFrameElement);
                   const doc = el?.contentDocument;
-                  if (!doc) { return; }
+                  if (!doc || !theme) { return; }
                   el.classList.add('over');
 
                   let tmpl: ITemplate | null = template;
-                  if (template.type === PageType.PAGE && !theme.hbs.pages[`${template.name}-page`] && theme.hbs.pages[`${template.name}-collection`]) {
-                    tmpl = templates.find(t => (t.name === template.name && t.type === PageType.COLLECTION)) || null;
+                  if (template.type === PageType.PAGE && !theme?.hbs?.pages[`${template.name}-page`] && theme?.hbs?.pages[`${template.name}-collection`]) {
+                    tmpl = templatesList.find(t => (t.name === template.name && t.type === PageType.COLLECTION)) || null;
                   }
 
                   if (!tmpl) {
@@ -221,7 +222,7 @@ export default function Menu({
                   }
                 }}
               >
-                <iframe class="page-templates__preview" id={`template-${template.name}-preview`} />
+                <iframe id={`template-${template.name}-preview`} class="page-templates__preview" />
                 {template.name === INDEX_PAGE_ID ? 'Home Page' : toTitleCase(template.name)}
               </a>
             </li>;
