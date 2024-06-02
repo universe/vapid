@@ -1,8 +1,7 @@
-import { IProvider, IRecord, ITemplate, PageType, Template,UploadResult } from '@neutrinodev/core';
-import { IWebsiteMeta } from '@neutrinodev/runtime'; 
+import { FileHeaders, IProvider, IRecord, IWebsite, PageType, UploadResult } from '@neutrinodev/core';
 import { Deferred, md5 } from '@universe/util';
 import file2md5 from 'file2md5';
-import { deleteApp, FirebaseApp, FirebaseOptions,initializeApp } from 'firebase/app';
+import { deleteApp, FirebaseApp, FirebaseOptions, initializeApp } from 'firebase/app';
 import { Auth, connectAuthEmulator, getAuth, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, User } from 'firebase/auth';
 import { 
   collection, 
@@ -10,7 +9,7 @@ import {
   deleteDoc, 
   doc, 
   DocumentData, 
-  DocumentSnapshot, 
+  DocumentSnapshot,
   Firestore, 
   getDoc, 
   getDocs, 
@@ -28,23 +27,20 @@ const ENV = globalThis?.process?.env || {};
 const DEFAULT_STORAGE_ROOT = 'uploads';
 
 export interface FireBaseStorageConfig {
-  bucket?: string;
+  bucket: string;
   root?: string;
 }
 
 export interface FireBaseFirestoreConfig {
-  scope?: string;
+  scope: string;
 }
 
 export interface FireBaseProviderConfig {
-  type: 'firebase';
   app?: FirebaseApp | null;
   projectId?: string;
   config?: FirebaseOptions;
-  firestore?: FireBaseFirestoreConfig;
-  storage?: FireBaseStorageConfig;
-  username?: string;
-  password?: string;
+  firestore: FireBaseFirestoreConfig;
+  storage: FireBaseStorageConfig;
 }
 
 function normalizeDocument(doc: DocumentSnapshot<DocumentData> | undefined | null): IRecord | null {
@@ -55,11 +51,6 @@ function normalizeDocument(doc: DocumentSnapshot<DocumentData> | undefined | nul
   return (data as unknown as IRecord) || null;
 }
 
-function normalizeTemplate(doc: DocumentSnapshot<DocumentData> | undefined | null): ITemplate | null {
-  if (!doc) { return null; }
-  return doc.data() as unknown as ITemplate || null;
-}
-
 type IDeferred<T> = { promise: Promise<T>; resolve: (value: T) => void; reject: (err: Error) => void };
 
 function createDeferred<T>(): IDeferred<T> {
@@ -68,12 +59,17 @@ function createDeferred<T>(): IDeferred<T> {
   return d as IDeferred<T>;
 }
 
-export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> {
-  private getFirebasePrefix() {
-    return this.config.database?.firestore?.scope || `websites/${this.config.domain || 'default'}`;
+export default class FireBaseProvider extends IProvider {
+  private config: FireBaseProviderConfig;
+  constructor(config: FireBaseProviderConfig) {
+    super();
+    this.config = config;
   }
-  private getTemplatesPath() { return `${this.getFirebasePrefix()}/templates`; }
-  private getRecordsPath() { return `${this.getFirebasePrefix()}/records`; }
+
+  private getFirestorePrefix() {
+    return this.config?.firestore?.scope || 'websites/default';
+  }
+  private getRecordsPath() { return `${this.getFirestorePrefix()}/records`; }
 
   // Firebase Connections
   #firebase: FirebaseApp | null = null;
@@ -84,16 +80,14 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
   // Firebase Watchers
   #websiteWatcher: (() => void) | null = null;
   #recordWatcher: (() => void) | null = null;
-  #templateWatcher: (() => void) | null = null;
 
   // Cached Data
-  #metadata: IWebsiteMeta | Deferred<IWebsiteMeta> = new Deferred<IWebsiteMeta>();
+  #metadata: IWebsite | Deferred<IWebsite> = new Deferred<IWebsite>();
   #records: Record<string, IRecord> | Deferred<Record<string, IRecord>> = new Deferred<Record<string, IRecord>>();
-  #templates: Record<string, ITemplate> | Deferred<Record<string, ITemplate>> = new Deferred<Record<string, ITemplate>>();
 
   private getStorage() {
     if (this.#storage) { return this.#storage; }
-    this.#storage = this.#firebase ? getStorage(this.#firebase, `gs://${this.config.domain}`) : null;
+    this.#storage = this.#firebase ? getStorage(this.#firebase, `gs://${this.config.storage.bucket}`) : null;
     if (!this.#storage) { throw new Error('Problem connecting to file storage'); }
     if (ENV.FIREBASE_STORAGE_EMULATOR_HOST) {
       logger.info(`Connecting Firebase Storage Emulator`);
@@ -123,7 +117,7 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
 
   async start() {
     logger.info(`Starting FireBase Provider`);
-    const dbConfig = this.config.database;
+    const dbConfig = this.config;
     if (dbConfig.app) {
       this.#firebase = dbConfig.app;
     }
@@ -156,10 +150,6 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
       this.watch();
     });
     logger.info(`Firebase Provider Started`);
-
-    if (dbConfig.username && dbConfig.password) {
-      await this.signIn(dbConfig.username, dbConfig.password);
-    }
   }
 
   currentUser(): User | null {
@@ -169,41 +159,22 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
 
   private async watch() {
     const db = this.getDatabase();
-    if (!(await getDoc(doc(db, this.getFirebasePrefix())))?.exists()) {
-      throw new Error(`Website "${this.config.domain}" does not exist.`);
+    if (!(await getDoc(doc(db, this.getFirestorePrefix())))?.exists()) {
+      throw new Error(`Website "${this.getFirestorePrefix()}" does not exist.`);
     }
 
-    this.#websiteWatcher = onSnapshot(doc(db, this.getFirebasePrefix()), (res) => {
-      const data = res.data() || {} as Partial<IWebsiteMeta>;
-      const realm = this.config.database?.firestore?.scope?.split('/')?.[1] || null;
-      const out: IWebsiteMeta = {
-        name: data.name || this.config.name,
-        domain: data.domain || this.config.domain,
-        media: `https://${data.domain || this.config.domain}`,
-        theme: { name: 'neutrino', version: 'latest' },
-        env: { ...this.config.env, realm: this.config.env.realm || realm },
+    this.#websiteWatcher = onSnapshot(doc(db, this.getFirestorePrefix()), (res) => {
+      const data = res.data() || {} as Partial<IWebsite>;
+      const out: IWebsite = {
+        name: data.name || '',
+        domain: data.domain || '',
+        media: `https://${data.domain}`,
+        theme: data.theme || { name: 'neutrino', version: 'latest' },
+        env: data.env || {},
       };
       if (this.#metadata instanceof Deferred) { this.#metadata.resolve(out); }
       this.#metadata = out;
-      this.trigger();
-    });
-
-    this.#templateWatcher = onSnapshot(collection(db, this.getTemplatesPath()), (data) => {
-      const templates = data.docs.map(doc => normalizeTemplate(doc)).filter(Boolean) as ITemplate[];
-      if (this.#templates instanceof Deferred) {
-        const out: Record<string, ITemplate> = {};
-        for (const template of templates) {
-          out[Template.id(template)] = template;
-        }
-        this.#templates.resolve(out);
-        this.#templates = out;
-      }
-      else {
-        for (const template of templates) {
-          this.#templates[Template.id(template)] = template;
-        }
-      }
-      this.trigger();
+      this.trigger('website');
     });
 
     this.#recordWatcher = onSnapshot(collection(db, this.getRecordsPath()), (data) => {
@@ -221,23 +192,20 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
           this.#records[record.id] = record;
         }
       }
-      this.trigger();
+      this.trigger('records');
     });
 
     // All of the deferrables will resolve on first snapshot!
     await Promise.allSettled([
       this.#metadata,
       this.#records,
-      this.#templates,
     ]);
   }
 
   private async unwatch() {
     this.#websiteWatcher?.();
-    this.#templateWatcher?.();
     this.#recordWatcher?.();
     this.#metadata = new Deferred();
-    this.#templates = new Deferred();
     this.#records = new Deferred();
   }
 
@@ -267,47 +235,20 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
 
   async purge() {
     const db = this.getDatabase();
-    const templates = await getDocs(collection(db, this.getTemplatesPath()));
     const records = await getDocs(collection(db, this.getRecordsPath()));
     const work = [];
-    for (const tmpl of templates.docs) { work.push(deleteDoc(tmpl.ref)); }
     for (const record of records.docs) { work.push(deleteDoc(record.ref)); }
     await Promise.all(work);
     logger.info('Database Purged');
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
-  async getMetadata(): Promise<IWebsiteMeta> {
-    return structuredClone(this.#metadata);
-  }
-
-  async getAllTemplates(): Promise<Record<string, ITemplate>> {
-    return structuredClone(await this.#templates);
+  async getWebsite(): Promise<IWebsite> {
+    return structuredClone(await this.#metadata);
   }
 
   async getAllRecords(): Promise<Record<string, IRecord>> {
     return structuredClone(await this.#records);
-  }
-
-  async getTemplateById(id: string): Promise<ITemplate | null> {
-    if (!id) { return null; }
-    const data = await this.#templates;
-    return data[id] || null;
-  }
-
-  async getTemplateByName(name: string, type: PageType): Promise<ITemplate | null> {
-    const data = await this.#templates;
-    for (const template of Object.values(data)) {
-      if (template.name === name && template.type === type) {
-        return template;
-      }
-    }
-    return null;
-  }
-
-  async getTemplatesByType(type: PageType): Promise<ITemplate[]> {
-    const data = await this.#templates;
-    return Object.values(data).filter(t => t?.type === type);
   }
 
   async getRecordById(id: string): Promise<IRecord | null> {
@@ -344,39 +285,10 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
    * Update a section's attributes
    * Primarily used by the Vapid module when rebuilding the site
    */
-  async updateTemplate(update: ITemplate): Promise<ITemplate> {
+  async updateRecord(update: IRecord): Promise<IRecord> {
     const db = this.getDatabase();
-    await setDoc(doc(db, `${this.getTemplatesPath()}/${Template.id(update)}`), update);
+    await setDoc(doc(db, `${this.getRecordsPath()}/${update.id}`), { ...update });
     return update;
-  }
-
-  /**
-   * Update a section's attributes
-   * Primarily used by the Vapid module when rebuilding the site
-   */
-  async updateRecord(update: IRecord, type?: PageType): Promise<IRecord> {
-    const db = this.getDatabase();
-    if (!type) {
-      const template = await this.getTemplateById(update.templateId);
-      if (!template) {
-        try {
-          throw new Error(`Error creating record. Unknown template id "${update.templateId}"`);
-        }
-        catch (err) {
-          logger.error(err);
-          throw err;
-        }
-      }
-      type = template.type;
-    }
-
-    await setDoc(doc(db, `${this.getRecordsPath()}/${update.id}`), { ...update, _type: type });
-    return update;
-  }
-
-  async deleteTemplate(templateId: string): Promise<void> {
-    const db = this.getDatabase();
-    await deleteDoc(doc(db, `${this.getTemplatesPath()}/${templateId}`));
   }
 
   async deleteRecord(recordId: string): Promise<void> {
@@ -385,7 +297,8 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
   }
 
   async mediaUrl(name?: string): Promise<string> {
-    return `https://${this.config.domain}/${name || ''}`.replace(/\/$/, '');
+    const site = await this.getWebsite();
+    return `https://${site.domain}/${name || ''}`.replace(/\/$/, '');
   }
 
   saveFile(file: string, type: string, name: string): AsyncIterableIterator<UploadResult>;
@@ -394,7 +307,7 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
     yield { status: 'pending', progress: 0 };
     const storage = this.getStorage();
     const hash = file instanceof File ? await file2md5(file) : md5(file.toString());
-    const filePath = `${this.config?.database?.storage?.root || DEFAULT_STORAGE_ROOT}/${hash}`;
+    const filePath = `${this.config?.storage?.root || DEFAULT_STORAGE_ROOT}/${hash}`;
     const fileRef = ref(storage, filePath);
     const mimeType = name ? type : (file as File).type;
     name = name || type;
@@ -423,6 +336,32 @@ export default class FireBaseProvider extends IProvider<FireBaseProviderConfig> 
       },
       (error) => deferred.resolve({ status: 'error', message: error.message }),
       () => deferred.resolve({ status: 'success', url }),
+    );
+
+    while (true) {
+      const res = await deferred.promise;
+      yield res;
+      if (res.status !== 'pending' && res.status !== 'paused') return;
+    }
+  }
+
+  async * deployFile(path: string, blob: Blob, headers: FileHeaders): AsyncIterableIterator<UploadResult> {
+    yield { status: 'pending', progress: 0 };
+    const storage = this.getStorage();
+    const fileRef = ref(storage, path);
+    const uploadTask = uploadBytesResumable(fileRef, blob, headers);
+    let deferred = createDeferred<UploadResult>();
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        const prevDeferred = deferred;
+        deferred = createDeferred<UploadResult>();
+        if (snapshot.state === 'paused') prevDeferred.resolve({ status: 'paused', progress });
+        if (snapshot.state === 'running') prevDeferred.resolve({ status: 'pending', progress });
+      },
+      (error) => deferred.resolve({ status: 'error', message: error.message }),
+      () => deferred.resolve({ status: 'success', url: `https://${this.config.storage.bucket}/${path}` }),
     );
 
     while (true) {

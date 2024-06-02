@@ -1,6 +1,6 @@
 {
   "name": "@neutrinodev/dashboard",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.5",
   "license": "MIT",
   "description": "A template-driven content management system",
   "repository": "universe/vapid",
@@ -49,10 +49,10 @@
     "preact": "^10"
   },
   "devDependencies": {
-    "@neutrinodev/cli": "1.0.0-beta.0",
-    "@neutrinodev/core": "1.0.0-beta.0",
-    "@neutrinodev/embed": "1.0.0-beta.0",
-    "@neutrinodev/runtime": "1.0.0-beta.0",
+    "@neutrinodev/cli": "1.0.0-beta.5",
+    "@neutrinodev/core": "1.0.0-beta.5",
+    "@neutrinodev/embed": "1.0.0-beta.5",
+    "@neutrinodev/runtime": "1.0.0-beta.5",
     "@universe/aether": "^0.15.2",
     "@universe/util": "^1.1.2",
     "colorthief": "^2.3.2",

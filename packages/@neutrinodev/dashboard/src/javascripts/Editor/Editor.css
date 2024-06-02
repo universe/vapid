@@ -1,0 +1,115 @@
+.sidebar__deploy-theme {
+  --timer: 1;
+  position: fixed;
+  z-index: 9999999;
+  background: var(--black);
+  border: none;
+  color: white;
+  padding: 0 2.8rem;
+  height: 4.8rem;
+  font-weight: bold;
+  border-radius: 0.4rem;
+  display: flex;
+  flex-flow: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.2rem;
+  bottom: 0.4rem;
+  right: 0.4rem;
+  overflow: hidden;
+  box-shadow: var(--elevation-4);
+  min-width: 16.2rem;
+  transition: opacity .18s ease-in-out, transform .18s ease-in-out, font-size .18s ease-in-out, color .18s ease-in-out;
+}
+
+.sidebar__deploy-theme:hover {
+  cursor: pointer;
+  transform: scale(1.025);
+}
+
+.sidebar__deploy-theme::before,
+.sidebar__deploy-theme::after {
+  content: "\f121 \00a0 Dev Mode";
+  font-family: 'Jost', 'fontawesome';
+  margin-right: 0.8rem;
+  color: var(--green-4);
+  line-height: 1;
+  font-size: 1rem;
+  text-transform: uppercase;
+  margin: -0.2rem 0 0;
+  opacity: 1;
+  transition: all .18s ease-in-out;
+}
+
+.sidebar__deploy-theme .matrix-background  {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  opacity: 0;
+  transform: scale(2);
+  transition: opacity .28s ease-in-out, transform .28s ease-in-out;
+}
+
+.sidebar__deploy-theme--success,
+.sidebar__deploy-theme--error,
+.sidebar__deploy-theme--loading {
+  font-size: 0;
+  color: transparent;
+}
+
+.sidebar__deploy-theme--success::before,
+.sidebar__deploy-theme--success::after,
+.sidebar__deploy-theme--error::before,
+.sidebar__deploy-theme--error::after,
+.sidebar__deploy-theme--loading::before,
+.sidebar__deploy-theme--loading::after {
+  color: white;
+  font-family: monospace;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  margin: 0 0 -2px;
+  opacity: 0;
+}
+
+.sidebar__deploy-theme::after {
+  content: "Success!";
+  position: absolute;
+  top: 50%;
+  opacity: 0;
+  transform: translateY(calc(-50% - 0.8rem));
+}
+
+.sidebar__deploy-theme--success::after,
+.sidebar__deploy-theme--error::after,
+.sidebar__deploy-theme--loading::after {
+  transform: translateY(-50%);
+  opacity: 1;
+}
+
+.sidebar__deploy-theme--loading::after {
+  content: "Deploying";
+  color: white;
+}
+
+.sidebar__deploy-theme--success::after {
+  content: "Success!";
+  color: var(--green-5);
+}
+
+.sidebar__deploy-theme--error::after {
+  content: "Error";
+  color: var(--red-4);
+}
+
+.sidebar__deploy-theme--loading .matrix-background {
+  opacity: 1;
+  transform: none;
+}
+
+
+body:not(.neutrino--dev-mode) .sidebar__deploy-theme,
+.vapid-preview--full-screen ~ .sidebar__deploy-theme {
+  opacity: 0;
+  pointer-events: none;
+}

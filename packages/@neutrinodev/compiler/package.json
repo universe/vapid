@@ -1,6 +1,6 @@
 {
   "name": "@neutrinodev/compiler",
-  "version": "1.0.0-beta.0",
+  "version": "1.0.0-beta.5",
   "license": "MIT",
   "description": "A template-driven content management system",
   "repository": "universe/vapid",
@@ -37,9 +37,9 @@
   "dependencies": {
     "@cannery/hoist": "^0.8.0",
     "@glimmer/syntax": "0.83.1",
-    "@neutrinodev/core": "1.0.0-beta.0",
-    "@neutrinodev/runtime": "1.0.0-beta.0",
-    "@neutrinodev/stdlib": "1.0.0-beta.0",
+    "@neutrinodev/core": "1.0.0-beta.5",
+    "@neutrinodev/runtime": "1.0.0-beta.5",
+    "@neutrinodev/stdlib": "1.0.0-beta.5",
     "@simple-dom/serializer": "^1.4.0",
     "@universe/util": "^1.1.2",
     "autoprefixer": "^10.3.0",

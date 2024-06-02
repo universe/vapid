@@ -9,13 +9,10 @@ export type {
   GlimmerTemplate,
   IPageContext,
   IParsedTemplate,
-  IParsedTemplates,
   IStylesheet,
   ITemplateAst,
-  IWebsite,
-  IWebsiteMeta,
+  ITheme,
   RendererComponentResolver,
-  RuntimeHelper,
 } from './types.js';
 export { default as update } from './update.js';
-export { Record, Template } from '@neutrinodev/core';
+export { IWebsite, Record, RuntimeHelper, Template } from '@neutrinodev/core';

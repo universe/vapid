@@ -12,7 +12,7 @@ interface IDeviceFrameProps {
 
 export default function DeviceFrame({ children, visible }: IDeviceFrameProps) {
   const [ previewLayout, setPreviewLayout ] = useState<'full' | 'desktop' | 'mobile'>('desktop');
-  const { theme } = useContext(DataContext);
+  const { website } = useContext(DataContext);
 
   if (!visible) {
     return <article class={`vapid-preview  ${previewLayout === 'full' ? 'vapid-preview--full-screen' : ''}`} key="preview-container" id="preview-container">
@@ -48,7 +48,7 @@ export default function DeviceFrame({ children, visible }: IDeviceFrameProps) {
             Desktop
           </button>
         </li>
-        <li><a href={`https://${theme?.meta?.domain}`} target="_blank" class="preview-controls__button preview-controls__button--breakout" rel="noreferrer">Breakout</a></li>
+        <li><a href={`https://${website?.domain}`} target="_blank" class="preview-controls__button preview-controls__button--breakout" rel="noreferrer">Breakout</a></li>
       </ul>
       <button class="preview-controls__exit preview-controls__button" onClick={() => setPreviewLayout('desktop')}>Exit</button>
     </nav>

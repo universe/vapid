@@ -169,7 +169,6 @@
   color: var(--slate-2);
   text-transform: none;
   line-height: 1;
-  margin-top: 0.4rem;
 }
 .form .field.required label:after,
 .form .fields.required label:after {

@@ -70,7 +70,7 @@ export default function Menu({
   templateType,
 }: IMenuProps) {
 
-  const { theme, records, templates, collectionFor, templateFor } = useContext(DataContext);
+  const { theme, website, records, templates, collectionFor, templateFor } = useContext(DataContext);
   const [ pageTemplatesOpen, setPageTemplatesOpen ] = useState(false);
 
   const recordsList = Object.values(records || {}).sort(sortRecords);
@@ -78,13 +78,13 @@ export default function Menu({
 
   useEffect(() => {
     (async() => {
-      if (!theme) { return; }
+      if (!theme || !website) { return; }
       for (const template of templatesList) {
         // If is a component, settings page, or collection with a renderable base page, skip.
         if (
           template.type === PageType.COMPONENT || 
           template.type === PageType.SETTINGS || 
-          (template.type === PageType.COLLECTION && theme?.hbs?.pages[`${template.name}-page`])
+          (template.type === PageType.COLLECTION && theme?.pages[`${template.name}-page`])
         ) { continue; }
 
         // Grab our preview iframe documents.
@@ -93,7 +93,7 @@ export default function Menu({
   
         // Render the site into our hidden scratch document.
         /* eslint-disable-next-line */
-        const fragment = await renderRecord(false, doc as unknown as SimpleDocument, stampRecord(template), theme, records) as unknown as DocumentFragment;
+        const fragment = await renderRecord(false, doc as unknown as SimpleDocument, stampRecord(template), website, theme, records) as unknown as DocumentFragment;
         if (fragment) {
           update(fragment.children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
           doc.children[0].querySelector('body')?.setAttribute('neutrino-preview', 'true');
@@ -109,7 +109,7 @@ export default function Menu({
 
   return <section class="sidebar vapid-nav">
     <header class="vapid-outlet">
-      {children || <h2 class="heading">{theme?.meta?.name}</h2>}
+      {children || <h2 class="heading">{website?.name}</h2>}
     </header>
     <nav class="vapid-nav">
       <div class="item">
@@ -191,11 +191,11 @@ export default function Menu({
                   // Grab our preview iframe documents.
                   const el = (document.getElementById(`vapid-preview-scratch`) as HTMLIFrameElement);
                   const doc = el?.contentDocument;
-                  if (!doc || !theme) { return; }
+                  if (!doc || !theme || !website) { return; }
                   el.classList.add('over');
 
                   let tmpl: ITemplate | null = template;
-                  if (template.type === PageType.PAGE && !theme?.hbs?.pages[`${template.name}-page`] && theme?.hbs?.pages[`${template.name}-collection`]) {
+                  if (template.type === PageType.PAGE && !theme?.pages[`${template.name}-page`] && theme?.pages[`${template.name}-collection`]) {
                     tmpl = templatesList.find(t => (t.name === template.name && t.type === PageType.COLLECTION)) || null;
                   }
 
@@ -208,7 +208,7 @@ export default function Menu({
 
                   // Render the site into our hidden scratch document.
                   /* eslint-disable-next-line */
-                  const fragment = await renderRecord(false, doc as unknown as SimpleDocument, stampRecord(tmpl), theme, records) as unknown as DocumentFragment;
+                  const fragment = await renderRecord(false, doc as unknown as SimpleDocument, stampRecord(tmpl), website, theme, records) as unknown as DocumentFragment;
                   if (!el.classList.contains('over')) { return; }
                   if (fragment) {
                     // eslint-disable-next-line max-len

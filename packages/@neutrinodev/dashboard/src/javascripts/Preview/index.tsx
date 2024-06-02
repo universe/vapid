@@ -1,5 +1,5 @@
 import { IRecord } from '@neutrinodev/core';
-import { IWebsite, renderRecord, update } from '@neutrinodev/runtime';
+import { renderRecord, update } from '@neutrinodev/runtime';
 import type { SimpleDocument, SimpleNode } from '@simple-dom/interface';
 import Spinner from '@universe/aether/components/Spinner';
 import { useContext, useEffect } from 'preact/hooks';
@@ -32,19 +32,18 @@ document.addEventListener('focusout', focusFieldPreview);
 
 export default function Preview({ record, frame }: PreviewProps) {
 
-  const { theme, records, loading } = useContext(DataContext);
+  const { theme, website, records, loading } = useContext(DataContext);
 
   // If first render and we haven't found an AST match (e.g. loading a settings page), render the home page instead.
   useEffect(() => {
-    const siteUpdate = structuredClone(theme) as IWebsite;
     const recordsUpdate = structuredClone(records) as Record<string, IRecord>;
     record && (recordsUpdate[record.id] = record);
     const recordsList = Object.values(recordsUpdate);
     let renderedRecord = record;
-    if (!renderedRecord || (isFirstRender && !siteUpdate.hbs.pages[renderedRecord.templateId])) {
+    if (!renderedRecord || (isFirstRender && !theme?.pages[renderedRecord.templateId])) {
       renderedRecord = recordsList.find(r => r.templateId === 'index-page') || null;
     }
-    if (!renderedRecord || !theme?.hbs?.pages?.[renderedRecord.templateId]) {
+    if (!renderedRecord || !theme?.pages?.[renderedRecord.templateId]) {
       renderedRecord = prevRender;
     }
     prevRender = renderedRecord;
@@ -53,11 +52,11 @@ export default function Preview({ record, frame }: PreviewProps) {
 
       // Grab our preview iframe documents.
       const doc = (document.getElementById('vapid-preview') as HTMLIFrameElement).contentDocument;
-      if (!renderedRecord || !doc) { return; }
+      if (!website || !theme || !renderedRecord || !doc) { return; }
 
       // Render the site into our hidden scratch document.
       /* eslint-disable-next-line */
-      const fragment = await renderRecord(false, doc as unknown as SimpleDocument, renderedRecord, siteUpdate, recordsUpdate) as unknown as DocumentFragment;
+      const fragment = await renderRecord(false, doc as unknown as SimpleDocument, renderedRecord, website, theme, recordsUpdate) as unknown as DocumentFragment;
       if (fragment) {
         update(fragment.children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
       }
@@ -70,7 +69,7 @@ export default function Preview({ record, frame }: PreviewProps) {
       }
       isFirstRender = false;
     });
-  }, [ theme, record, records ]);
+  }, [ website, theme, record, records ]);
 
   return <DeviceFrame visible={frame !== false}>
     <Spinner size="large" className={`vapid-preview__loading vapid-preview--${typeof loading === 'string' ? 'error' : (loading ? 'loading' : 'success')}`} />

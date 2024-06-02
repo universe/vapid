@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "wsrun -s build",
+    "publish-all": "wsrun -s publish --access public --otp ",
     "test": "wsrun -s test",
     "lint": "eslint '**/*.ts' '**/*.tsx'",
     "lint:fix": "eslint '**/*.ts' '**/*.tsx' --fix",

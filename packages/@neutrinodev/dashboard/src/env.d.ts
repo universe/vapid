@@ -1,7 +1,8 @@
 interface ImportMetaEnv {
   readonly API_URL: string;
-  readonly THEME_URL: string;
   readonly STRIPE_TOKEN: string;
+  readonly THEME_URL: string;
+  readonly THEME_DEV_SERVER: string;
 }
 
 interface ImportMeta {

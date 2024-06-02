@@ -8,7 +8,7 @@ export default defineConfig({
   root: './src',
   base: 'https://website.universe.app/',
   envDir: path.join(__dirname),
-  envPrefix: [ 'API_URL', 'THEME_URL', 'STRIPE_TOKEN' ],
+  envPrefix: [ 'API_URL', 'THEME_URL', 'THEME_DEV_SERVER', 'STRIPE_TOKEN' ],
   resolve: {
     dedupe: [ 'preaact', 'preact/hooks', 'preact/compat', 'quill' ],
     alias: [

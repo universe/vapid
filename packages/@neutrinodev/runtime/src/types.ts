@@ -1,10 +1,8 @@
 import type { ASTv1 } from '@glimmer/syntax';
-import type { IRecordData, ITemplate, IWebsiteMeta, PageType, RuntimeHelper,SerializedRecord } from '@neutrinodev/core';
+import type { IRecordData, ITemplate, IWebsite, PageType, SerializedRecord } from '@neutrinodev/core';
 
 export type RendererComponentResolver = (name: string) => GlimmerTemplate;
 export type GlimmerTemplate = ASTv1.Template;
-
-export { IWebsiteMeta, RuntimeHelper };
 
 export interface ITemplateAst {
   name: string;
@@ -27,16 +25,13 @@ export interface IParsedTemplate {
   stylesheets: Record<string, IStylesheet>
 }
 
-export interface IParsedTemplates {
+export interface ITheme {
+  name: string;
+  version: string;
   templates: Record<string, ITemplate>;
   pages: Record<string, ITemplateAst>;
   components: Record<string, ITemplateAst>;
   stylesheets: Record<string, IStylesheet>;
-}
-
-export interface IWebsite {
-  meta: IWebsiteMeta;
-  hbs: IParsedTemplates;
 }
 
 export interface IRenderEnv {
@@ -48,7 +43,7 @@ export type IPageContent = { ['this']: IRecordData } & Record<string, IRecordDat
 
 export interface IPageContext {
   env: IRenderEnv;
-  site: IWebsiteMeta;
+  site: IWebsite;
   content: IPageContent,
   meta: IRecordData;
   page: SerializedRecord | null;

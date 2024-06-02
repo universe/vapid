@@ -1,0 +1,43 @@
+.form__page-fieldset {
+  display: flex;
+  flex-flow: row;
+  gap: 0.4rem;
+  margin-bottom: 1.8rem;
+  position: relative;
+}
+
+.form__page-fieldset::after {
+  content: "\f86c";
+  font-family: 'fontawesome';
+  position: absolute;
+  bottom: -2px;
+  height: 0px;
+  width: 100%;
+  text-align: center;
+  color: var(--slate-4);
+  line-height: 0;
+  font-size: 1.6rem;
+}
+
+.form .form__page-fieldset .field label {
+  font-size: 0;
+  margin: 0 0.2rem 0.2rem;
+}
+
+.form .form__page-fieldset .field small {
+  font-size: 1rem;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.form .form__page-fieldset .field input[type=date] {
+  font-size: 1.3rem;
+  padding: 0rem 0.8rem;
+  font-family: var(--serif-stack);
+  font-variant-numeric: tabular-nums;
+  height: 3.2rem;
+}
+
+.form__metadata-fieldset, .form__content-fieldset {
+  display: contents;
+}

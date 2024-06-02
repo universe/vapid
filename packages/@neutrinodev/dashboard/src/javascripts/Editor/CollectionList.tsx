@@ -10,12 +10,12 @@ interface CollectionListProps {
   template: ITemplate | null;
   page: IRecord | null;
   collection: IRecord[];
-  theme: IWebsite | null;
+  website: IWebsite | null;
   onChange: (order: number[]) => void | Promise<void>;
 }
 
-export default function CollectionList({ domain, template, page, collection, theme, onChange }: CollectionListProps) {
-  if (!template || !page || !theme) { return null; }
+export default function CollectionList({ domain, template, page, collection, website, onChange }: CollectionListProps) {
+  if (!template || !page || !website) { return null; }
 
   const items = collection.map((record) => {
     if (record.deletedAt) { return null; }
@@ -34,8 +34,8 @@ export default function CollectionList({ domain, template, page, collection, the
                 templateId: record.templateId,
                 record: null,
                 records: [],
-                media: theme.meta.media,
-                website: theme.meta,
+                media: website.media,
+                website,
               },
             );
             return directive?.preview(record?.content?.[column] as unknown as never) || null;
@@ -53,8 +53,8 @@ export default function CollectionList({ domain, template, page, collection, the
               templateId: record.templateId,
               record: null,
               records: [],
-              media: theme.meta.media,
-              website: theme.meta,
+              media: website?.media,
+              website,
             },
           );
           const rendered = directive?.preview(record?.content?.[column] as unknown as never) || null;

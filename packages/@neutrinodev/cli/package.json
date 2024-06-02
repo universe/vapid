@@ -1,9 +1,9 @@
 {
   "name": "@neutrinodev/cli",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.5",
   "license": "MIT",
   "description": "A template-driven content management system",
-  "repository": "universe/vapid",
+  "repository": "universe/neutrino",
   "author": "Adam Miller <adam@universe.app>",
   "source": "lib/index.ts",
   "main": "dist/index.js",
@@ -37,6 +37,9 @@
   "dependencies": {
     "@fastify/cors": "^8.0.0",
     "@fastify/static": "^6.4.0",
+    "@neutrinodev/runtime": "1.0.0-beta.5",
+    "@neutrinodev/compiler": "1.0.0-beta.5",
+    "@universe/util": "^1.2.2",
     "commander": "^2.12.2",
     "css-loader": "^3.0.0",
     "dotenv": "^10.0.0",
@@ -47,10 +50,10 @@
     "pino-pretty": "^9.4.0",
     "simple-dom": "^1.4.0"
   },
+
   "devDependencies": {
     "@jest/globals": "^28.1.1",
-    "@neutrinodev/runner": "1.0.0-beta.0",
-    "@neutrinodev/runtime": "1.0.0-beta.0",
+    "@neutrinodev/runner": "1.0.0-beta.5",
     "@types/livereload": "^0.9.0",
     "@types/pino": "^6.3.9",
     "@types/update-notifier": "^5.1.0",

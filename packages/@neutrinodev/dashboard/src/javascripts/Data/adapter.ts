@@ -1,6 +1,6 @@
-import { IRecord, NAVIGATION_GROUP_ID, PageType, stampRecord, UploadResult } from '@neutrinodev/core';
+import { FileHeaders, IProvider, IRecord, ITemplate, IWebsite, NAVIGATION_GROUP_ID, PageType, stampRecord, UploadResult } from '@neutrinodev/core';
 import FirebaseProvider from '@neutrinodev/datastore/dist/src/providers/FireBaseProvider.js';
-import { IWebsite, renderRecord } from '@neutrinodev/runtime';
+import { ITheme, renderRecord } from '@neutrinodev/runtime';
 import _createDocument from '@simple-dom/document';
 import _Serializer from '@simple-dom/serializer';
 import { Deferred } from '@universe/util';
@@ -35,42 +35,101 @@ const DEFAULT_WELL_KNOWN_PAGES: Record<keyof typeof WELL_KNOWN_PAGES, string> = 
   404: '<html><body>Page not Found <a href="/">Take Me Home</a></body></html>',
 };
 
-export class DataAdapter {
+async function logUpload(iter: AsyncIterableIterator<UploadResult>): Promise<void> {
+  for await (const progress of iter) {
+    console.log(progress);
+  }
+}
+
+async function gzipBlob(blob: Blob): Promise<Blob> {
+  return new Response(blob.stream().pipeThrough(new CompressionStream("gzip"))).blob();
+}
+
+export class DataAdapter extends IProvider {
   private provider: FirebaseProvider;
   private domain: string;
   private app: FirebaseApp;
 
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  constructor(app: FirebaseApp, bucket: string, scope: string, env: Record<string, any> = {}, root = 'uploads') {
+  constructor(app: FirebaseApp, bucket: string, scope: string, root = 'uploads') {
+    super();
     this.app = app;
     this.domain = bucket;
     this.provider = new FirebaseProvider({
-      name: 'Neutrino',
-      domain: bucket,
-      env,
-      database: {
-        type: 'firebase',
-        firestore: { scope },
-        storage: { bucket, root },
-        projectId: app?.options.projectId,
-        app,
-      },
+      app,
+      projectId: app?.options.projectId,
+      firestore: { scope },
+      storage: { bucket, root },
     });
-    this.provider.listen(() => this.trigger('change'));
+    this.provider.on('website', () => this.trigger('website'));
+    this.provider.on('records', () => this.trigger('records'));
   }
 
   #initPromise: Deferred | null = null;
-  async init(): Promise<void> {
+  async start(): Promise<void> {
     if (this.#initPromise) { return this.#initPromise; }
     this.#initPromise = new Deferred();
     try {
       await this.provider.start();
-      this.#initPromise.resolve();
+      console.info('Started Provider');
     }
     catch (err) {
       this.#initPromise.reject(err);
     }
+
+    // Attempt to bind to a livereload port to get site template updates in dev mode.
+    try {
+      await await new Promise<ITheme>((resolve, reject) => {
+        const ws = new WebSocket(import.meta.env.THEME_DEV_SERVER);
+        ws.onopen = () => {
+          console.info('Using Local Theme Server');
+          document.body.classList.add('neutrino--dev-mode');
+        };
+        ws.onclose = () => {
+          document.body.classList.remove('neutrino--dev-mode');
+          reject();
+        };
+        ws.onmessage = async(evt) => {
+          const { command, data } = JSON.parse(evt.data) as { command: string; data: ITheme; };
+          console.log(`[WebSocket ${command}]`, data);
+          switch (command) {
+            case 'update': {
+              this.#theme = data;
+              this.trigger('theme');
+              resolve(this.#theme);
+            }
+          }
+        };
+      });
+    }
+    catch {
+      try {
+        const site = await this.getWebsite();
+        const name = site?.theme?.name || 'neutrino';
+        const version = site?.theme?.version || 'latest';
+        const theme: ITheme = await (await fetch(`${import.meta.env.THEME_URL}/${name}/${name}@${version}.json?${Math.floor(Math.random() * 100000)}`)).json();
+        console.info('Using Production Theme Server');
+        if (this.#theme instanceof Deferred) { this.#theme.resolve(theme); }
+        this.#theme = theme;
+      }
+      catch (err) {
+        if (this.#theme instanceof Deferred) {
+          this.#theme.reject(err);
+          this.#initPromise.reject(err);
+          return this.#initPromise;
+        }
+      }
+    }
+
+    this.#initPromise.resolve();
+    this.trigger('website');
+    this.trigger('theme');
+    this.trigger('records');
     return this.#initPromise;
+  }
+
+  stop() {
+    return this.provider.stop();
   }
 
   private async validateRecord(body: IRecord) {
@@ -79,7 +138,7 @@ export class DataAdapter {
     if (!id) { throw new Error('Record ID is required.'); }
 
     const theme = await this.getTheme();
-    const templates = theme?.hbs?.templates || {};
+    const templates = theme?.templates || {};
 
     let record = await this.provider.getRecordById(id);
     let template = record?.templateId ? templates[record?.templateId] || null : null;
@@ -137,10 +196,20 @@ export class DataAdapter {
   // Provider Proxies
   getDomain(): string { return this.domain; }
   currentUser(): User | null { return this.provider.currentUser(); }
+  async mediaUrl(): Promise<string> { return this.provider.mediaUrl(); }
   async signIn(username: string, password?: string): Promise<User | null> { return this.provider.signIn(username, password); }
   async getAllRecords(): Promise<Record<string, IRecord>> { return this.provider.getAllRecords(); }
   async getRecordById(recordId?: string | null): Promise<IRecord | null> { return recordId ? this.provider.getRecordById(recordId) : null; }
+  async getRecordBySlug(slug: string): Promise<IRecord | null> { return this.provider.getRecordBySlug(slug); }
+  async getRecordsByType(type: PageType, parentId?: string): Promise<IRecord[]> { return this.provider.getRecordsByType(type, parentId); }
+  async getRecordsByTemplateId(templateId: string): Promise<IRecord[]> { return this.provider.getRecordsByTemplateId(templateId); }
   async getChildren(parentId: string): Promise<IRecord[]> { return this.provider.getChildren(parentId); }
+  async getWebsite(): Promise<IWebsite> {
+    const meta = await this.provider.getWebsite();
+    meta.domain = meta.domain || this.domain;
+    meta.media = meta.media || `https://${this.domain}`;
+    return meta;
+  }
 
   async updateRecord(record: IRecord): Promise<IRecord> {
     const res = await this.provider.updateRecord(await this.validateRecord(record));
@@ -148,8 +217,9 @@ export class DataAdapter {
     return res;
   }
 
-  async deleteRecord(record: IRecord): Promise<IRecord> {
-    const res = await this.deleteRecord(await this.validateRecord(record));
+  async deleteRecord(recordId: string | IRecord): Promise<void> {
+    if (typeof recordId !== 'string') { recordId = recordId.id; }
+    const res = await this.provider.deleteRecord(recordId);
     this.trigger('change');
     return res;
   }
@@ -160,58 +230,59 @@ export class DataAdapter {
     return this.provider.saveFile(file as string, type as string, name as string);
   }
 
-  // Theme Management
-  private hasLocalTheme: boolean | null = null;
-  private theme: IWebsite | null = null;
-  async getTheme(): Promise<IWebsite> {
-    if (this.theme) { return this.theme; }
-
-    const meta = await this.provider.getMetadata();
-    const name = meta?.theme?.name || 'neutrino';
-    const version = meta?.theme?.version || 'latest';
-
-    let data: IWebsite | null = null;
-    // Test if the local theme server has a theme of this name and version.
-    if (this.hasLocalTheme === true || this.hasLocalTheme === null) {
-      try {
-        data = await (await fetch(`http://localhost:1776/api/data/themes/${name}/${name}@${version}.json`)).json();
-        this.hasLocalTheme = Object.hasOwnProperty.call(data, 'meta') && Object.hasOwnProperty.call(data, 'hbs');
-      }
-      catch {
-        this.hasLocalTheme = false;
-      }
-    }
-
-    if (this.hasLocalTheme === false) {
-      data = await (await fetch(`${import.meta.env.THEME_URL}/${name}/${name}@${version}.json?1`)).json();
-    }
-
-    if (!data) { throw new Error('Error fetching website theme.'); }
-
-    meta.domain = meta.domain || this.domain;
-    meta.media = meta.media || `https://${this.domain}`;
-    data.meta = meta;
-
-    for (const tmpl of Object.values(data?.hbs?.templates || {})) {
-      this.provider.updateTemplate(tmpl);
-    }
-
-    return this.theme = data;
+  deployFile(filePath: string, blob: Blob, headers: FileHeaders): AsyncIterableIterator<UploadResult> {
+    return this.provider.deployFile(filePath, blob, headers);
   }
 
-  async deployTheme(name: string, version: string): Promise<IWebsite> {
-    if (!this.theme) { throw new Error('Missing Theme.'); }
-    const blob = new Blob([JSON.stringify(this.theme)], { type: "application/json" });
-    const slug = `themes/${name}/${name}@${version}.json`;
-    const storage = getStorage(this.app, `gs://${'website.universe.app'}`);
+  // Theme Management
+  #theme: ITheme | Deferred<ITheme> = new Deferred<ITheme>();
+  async getTheme(): Promise<ITheme> { return this.#theme; }
+  async deployTheme(name: string, version: string): Promise<ITheme> {
+    if (!this.#theme) { throw new Error('Missing Theme.'); }
+    const themeUrl = new URL(import.meta.env.THEME_URL);
+    const slug = [ themeUrl.pathname.slice(1).trim(), `${name}/${name}@${version}.json` ].filter(Boolean).join('/');
+    const storage = getStorage(this.app, `gs://${themeUrl.hostname}`);
     const fileRef = ref(storage, slug);
-    const uploadTask = uploadBytesResumable(fileRef, blob, { contentType: "application/json", cacheControl: 'public,max-age=0' });
+    const blob = await gzipBlob(new Blob([JSON.stringify(this.#theme)], { type: "application/json" }));
+    const uploadTask = uploadBytesResumable(fileRef, blob, {
+      contentType: "application/json",
+      cacheControl: 'public,max-age=0',
+      contentEncoding: 'gzip',
+      customMetadata: {
+        realm: this.domain.replace('.campaign.win', '.universe.app'),
+      },
+    });
     await new Promise<void>((resolve, reject) => uploadTask.on('state_changed', console.log, reject, resolve));
-    return this.theme;
+    return structuredClone(await this.#theme);
+  }
+
+  async getAllTemplates(): Promise<Record<string, ITemplate>> {
+    const theme = await this.#theme;
+    return structuredClone(theme.templates);
+  }
+
+  async getTemplateById(id: string): Promise<ITemplate | null> {
+    if (!id) { return null; }
+    const data = await this.#theme;
+    return data?.templates?.[id] || null;
+  }
+
+  async getTemplateByName(name: string, type: PageType): Promise<ITemplate | null> {
+    const theme = await this.#theme;
+    for (const template of Object.values(theme?.templates || {})) {
+      if (template.name === name && template.type === type) {
+        return template;
+      }
+    }
+    return null;
+  }
+
+  async getTemplatesByType(type: PageType): Promise<ITemplate[]> {
+    const theme = await this.#theme;
+    return Object.values(theme?.templates || {}).filter(t => t?.type === type);
   }
 
   async updateOrder(update: SortableUpdate): Promise<void> {
-    const siteData = await this.getTheme();
     try {
       const foundRecord = await this.provider.getRecordById(update.id);
       if (!foundRecord) { throw new Error('Record not found.'); }
@@ -231,9 +302,8 @@ export class DataAdapter {
       for (let i=0; i < newRecords.length; i++) {
         if (originalOrder[i] === i) { continue; }
         const record = newRecords[i];
-        const template = siteData.hbs.templates[record.templateId];
         record.order = i;
-        await this.provider.updateRecord(record, template?.type);
+        await this.provider.updateRecord(record);
       }
       this.trigger('change');
     }
@@ -242,53 +312,41 @@ export class DataAdapter {
     }
   }
 
-  // TODO: Move deploy to the providers.
-  async deploy(website: IWebsite, records: Record<string, IRecord>) {
+  async deploy(record?: IRecord) {
+    const website = await this.getWebsite();
+    const theme = await this.getTheme();
     const allRecords = await this.getAllRecords();
-    const bucket = this.provider.config?.database?.storage?.bucket || website.meta.domain;
-    const storage = getStorage(this.app, `gs://${bucket}`);
     const discoveredDefaults = new Set(Object.keys(WELL_KNOWN_PAGES));
 
-    // Deploy Stylesheets
-    for (const stylesheet of Object.values(website.hbs.stylesheets)) {
-      const fileRef = ref(storage, stylesheet.path);
-      const blob = new Blob([stylesheet.content], { type : 'text/css' });
-      const uploadTask = uploadBytesResumable(fileRef, blob, { contentType: 'text/css', cacheControl: 'public,max-age=0' });
-      uploadTask.on('state_changed', console.log, console.error, console.log);
+    // Deploy Stylesheets First
+    for (const stylesheet of Object.values(theme.stylesheets)) {
+      const blob = await gzipBlob(new Blob([stylesheet.content], { type : 'text/css' }));
+      logUpload(this.provider.deployFile(stylesheet.path, blob, { contentType: 'text/css', cacheControl: 'public,max-age=0', contentEncoding: 'gzip' }));
     }
 
     // For every record that isn't a settings page, render the page and upload.
-    for (const record of Object.values(records)) {
+    const toUpload = record ? [record] : Object.values(allRecords);
+    for (const record of toUpload) {
       if (record.templateId.endsWith('-settings') || record.deletedAt) { continue; }
       const document = createDocument();
       const parent: IRecord | null = record.parentId ? allRecords[record.parentId] : null;
       const slug = `${[ parent?.slug, record.slug ].filter(Boolean).join('/')}`;
       discoveredDefaults.delete(slug);
-      const fragment = await renderRecord(true, document, record, website, allRecords);
+      const fragment = await renderRecord(true, document, record, website, theme, allRecords);
       const serializer = new Serializer({});
       const html = fragment ? serializer.serialize(fragment) : '';
-      const blob = new Blob([html], { type : 'text/html' });
-      const fileRef = ref(storage, `${WELL_KNOWN_PAGES[slug] || slug}`);
-      const uploadTask = uploadBytesResumable(fileRef, blob, { contentType: 'text/html', cacheControl: 'public,max-age=0' });
-      uploadTask.on('state_changed', console.log, console.error, console.log);
+      const blob = await gzipBlob(new Blob([html], { type : 'text/html' }));
+      logUpload(this.provider.deployFile(`${WELL_KNOWN_PAGES[slug] || slug}`, blob, { contentType: 'text/html', cacheControl: 'public,max-age=0', contentEncoding: 'gzip' }));
     }
 
     // Upload any default well known pages if the user hasn't provided them for us already.
-    for (const slug of discoveredDefaults) {
-      const html = DEFAULT_WELL_KNOWN_PAGES[slug];
-      if (!html) { continue; }
-      const blob = new Blob([html], { type : 'text/html' });
-      const fileRef = ref(storage, `${WELL_KNOWN_PAGES[slug] || slug}`);
-      const uploadTask = uploadBytesResumable(fileRef, blob, { contentType: 'text/html', cacheControl: 'public,max-age=0' });
-      uploadTask.on('state_changed', console.log, console.error, console.log);
+    if (!record) {
+      for (const slug of discoveredDefaults) {
+        const html = DEFAULT_WELL_KNOWN_PAGES[slug];
+        if (!html) { continue; }
+        const blob = await gzipBlob((new Blob([html], { type : 'text/html' })));
+        logUpload(this.provider.deployFile(`${WELL_KNOWN_PAGES[slug] || slug}`, blob, { contentType: 'text/html', cacheControl: 'public,max-age=0', contentEncoding: 'gzip' }));
+      }
     }
   }
-
-  // Simple Event System
-  #listeners = {
-    change: new Set<() => void>(),
-  }
-  on(event: 'change', cb: () => void) { this.#listeners[event].add(cb); }
-  off(event: 'change', cb: () => void) { this.#listeners[event].delete(cb); }
-  trigger(event: 'change') { [...this.#listeners[event]].map(cb => cb()); }
 }

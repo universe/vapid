@@ -1,3 +1,4 @@
+import type { Json } from '@universe/util';
 import livereload from 'livereload';
 import pino from 'pino';
 
@@ -16,6 +17,7 @@ const logger = pino({ transport: { target: 'pino-pretty', options: { colorize: t
 export default class Watcher {
 
   paths: string[];
+  onConnection: () => Json | Promise<Json>;
   server: ReturnType<typeof livereload.createServer> | null = null;
   callback: (() => void) | null = null;
 
@@ -23,8 +25,9 @@ export default class Watcher {
    * @param {string|array} [paths=[]] - one or more paths to watch
    * @return {Watcher}
    */
-  constructor(paths: string | string[] = []) {
+  constructor(paths: string | string[] = [], onConnection?: () => Json | Promise<Json>) {
     this.paths = Array.isArray(paths) ? paths : [paths];
+    this.onConnection = onConnection || (() => ({}));
   }
 
   /**
@@ -55,6 +58,7 @@ export default class Watcher {
     this.server.watcher.on('add', this.handleEvent.bind(this));
     this.server.watcher.on('change', this.handleEvent.bind(this));
     this.server.watcher.on('unlink', this.handleEvent.bind(this));
+    this.server.server.on('connection', async socket => socket?.send(JSON.stringify(await this.onConnection())));
     logger.info(`Watching for changes in ${this.paths} on port "1777".`);
   }
 

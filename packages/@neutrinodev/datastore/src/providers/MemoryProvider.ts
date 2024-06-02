@@ -1,4 +1,4 @@
-import { INDEX_PAGE_ID, IProvider, IRecord, ITemplate, IWebsiteMeta, PageType, POJONeutrinoValue, Template, UploadResult } from '@neutrinodev/core';
+import { FileHeaders, INDEX_PAGE_ID, IProvider, IRecord, ITemplate, IWebsite, PageType, POJONeutrinoValue, Template, UploadResult } from '@neutrinodev/core';
 import { uuid } from '@universe/util';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -13,7 +13,6 @@ let MAX_ID = 1;
 const getNextId = () => `${++MAX_ID}`;
 
 export interface MemoryProviderConfig {
-  type: 'memory';
   path?: string;
 }
 
@@ -24,31 +23,32 @@ interface SerializedMemoryProvider {
 
 const DB_NAME = 'data.json';
 
-export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
-
+export default class MemoryProvider extends IProvider {
   private workingDirectory: string = tmp.dirSync().name;
   private records: Record<string, IRecord> = {};
   private templates: Record<string, ITemplate> = {};
   private staticServer: http.Server | null = null;
   private env: Record<string, POJONeutrinoValue> = {};
 
+  constructor(config?: Partial<MemoryProviderConfig>) {
+    super();
+    this.workingDirectory = config?.path || this.workingDirectory;
+  }
+
   async start() {
     logger.info('Starting Memory Provider');
-    if (this.config.database.path) {
-      this.workingDirectory = this.config.database.path;
-      try {
-        const data = JSON.parse(fs.readFileSync(path.join(this.workingDirectory, DB_NAME), 'utf8')) as SerializedMemoryProvider;
-        for (const template of Object.values(data.templates)) {
-          this.templates[Template.id(template)] = template;
-        }
-        for (const record of Object.values(data.records)) {
-          const template = await this.getTemplateById(record.templateId);
-          MAX_ID = Math.max(parseInt(record.id, 10), MAX_ID);
-          template && (this.records[record.id] = record);
-        }
+    try {
+      const data = JSON.parse(fs.readFileSync(path.join(this.workingDirectory, DB_NAME), 'utf8')) as SerializedMemoryProvider;
+      for (const template of Object.values(data.templates)) {
+        this.templates[Template.id(template)] = template;
       }
-      catch { 1; }
+      for (const record of Object.values(data.records)) {
+        const template = await this.getTemplateById(record.templateId);
+        MAX_ID = Math.max(parseInt(record.id, 10), MAX_ID);
+        template && (this.records[record.id] = record);
+      }
     }
+    catch { 1; }
 
     const server = this.staticServer || http.createServer((request, response) => serve(request, response, {
       public: this.workingDirectory,
@@ -83,7 +83,7 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
   }
 
   // TODO: Implement.
-  async getMetadata(): Promise<IWebsiteMeta> {
+  async getWebsite(): Promise<IWebsite> {
     return {
       name: 'Site',
       domain: '',
@@ -236,6 +236,15 @@ export default class MemoryProvider extends IProvider<MemoryProviderConfig> {
     const hashName = `${hash}${ext}`;
     const imagePath = path.join(this.workingDirectory, hashName);
     fs.renameSync(savePath, imagePath);
+    yield { status: 'success', url: imagePath };
     return hashName;
+  }
+
+  async * deployFile(filePath: string, file: Blob, _headers: FileHeaders): AsyncIterableIterator<UploadResult> {
+    yield { status: 'pending', progress: 0 };
+    const savePath = path.join(this.workingDirectory, filePath);
+    fs.writeFileSync(savePath, file);
+    yield { status: 'success', url: savePath };
+    return savePath;
   }
 }

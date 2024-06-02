@@ -75,14 +75,13 @@ export function WebsiteSDKProvider({ active, sdk }: IWebsiteSDKProviderProps) {
       if (!adapterRef.current) { throw new Error('Invalid data adapter.'); }
       if (!activeRef.current) { throw new Error('No page selected.'); }
       if (!themeRef.current) { throw new Error('No active theme.'); }
-      await adapterRef.current.deploy(themeRef.current, { [activeRef.current.id]: activeRef.current });
+      await adapterRef.current.deploy(activeRef.current);
     };
 
     sdk.current.deployAll = async() => {
       if (!adapterRef.current) { throw new Error('Invalid data adapter.'); }
       if (!themeRef.current) { throw new Error('No active theme.'); }
-      const records = await adapterRef.current.getAllRecords();
-      await adapterRef.current.deploy(themeRef.current, records);
+      await adapterRef.current.deploy();
     };
   }, [ sdk, adapterRef, themeRef, activeRef ]);
 

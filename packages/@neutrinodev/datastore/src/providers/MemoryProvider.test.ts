@@ -1,10 +1,5 @@
 import MemoryProvider from './MemoryProvider.js';
 import TestSuite from './TestSuite.js';
 
-const provider = new MemoryProvider({
-  name: 'Test',
-  domain: 'vapid.test',
-  database: { type: 'memory' },
-  env: {},
-});
+const provider = new MemoryProvider();
 TestSuite('Memory Provider', provider, provider.purge.bind(provider));

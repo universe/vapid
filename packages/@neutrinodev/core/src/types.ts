@@ -7,16 +7,16 @@ import { POJONeutrinoValue } from './helpers.js';
 
 export const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 10);
 
-export interface IWebsiteTheme {
+export interface IThemeConfig {
   name: string;
   version: string;
 }
 
-export interface IWebsiteMeta {
+export interface IWebsite {
   name: string;
   domain: string;
   media: string;
-  theme: IWebsiteTheme;
+  theme: IThemeConfig;
   env: Record<string, POJONeutrinoValue>;
 }
 

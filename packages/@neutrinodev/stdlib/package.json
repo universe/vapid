@@ -1,6 +1,6 @@
 {
   "name": "@neutrinodev/stdlib",
-  "version": "1.0.0-beta.0",
+  "version": "1.0.0-beta.5",
   "license": "MIT",
   "description": "A template-driven content management system",
   "repository": "universe/vapid",
@@ -48,7 +48,7 @@
     "dist"
   ],
   "dependencies": {
-    "@neutrinodev/core": "^1.0.0-beta.0"
+    "@neutrinodev/core": "^1.0.0-beta.5"
   },
   "peerDependencies": {
     "preact": "^10.19.3"

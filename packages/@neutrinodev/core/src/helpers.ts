@@ -2,7 +2,7 @@ import type { SimpleDocumentFragment } from '@simple-dom/interface';
 import { Json } from '@universe/util';
 import type { ComponentChildren } from 'preact';
 
-import { IField, IWebsiteMeta, SerializedRecord } from './types.js';
+import { IField, IWebsite, SerializedRecord } from './types.js';
 
 /**
  * Directive Options Base Interface
@@ -66,7 +66,7 @@ export interface NeutrinoHelperOptions {
 export interface DirectiveMeta {
   templateId: string | null;
   media: string;
-  website: IWebsiteMeta;
+  website: IWebsite;
   records: SerializedRecord[];
   record: SerializedRecord | null;
 }

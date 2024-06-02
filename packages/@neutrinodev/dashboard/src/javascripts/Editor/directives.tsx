@@ -1,3 +1,5 @@
+import "./directives.css";
+
 import { BaseHelper, DirectiveField, DirectiveMeta, IField, IRecord } from '@neutrinodev/core';
 import { IPageContext, resolveHelper, UnknownHelper } from '@neutrinodev/runtime';
 import { toTitleCase } from '@universe/util';
@@ -67,5 +69,5 @@ export function renderFields(
       </div>,
     );
   }
-  return out;
+  return <fieldset class={`form__${type}-fieldset`}>{out}</fieldset>;
 }

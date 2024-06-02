@@ -5,7 +5,7 @@ import { makePageContext, Template } from '@neutrinodev/runtime';
 import { Json, toTitleCase } from '@universe/util';
 import { Fragment } from 'preact';
 import { useContext,useEffect, useState } from 'preact/hooks';
-import { Router } from 'preact-router';
+import { route, Router } from 'preact-router';
 
 import { DataContext } from "../Data/index.js";
 import CollectionList from './CollectionList.js';
@@ -24,7 +24,7 @@ interface EditorProps {
 }
 
 export default function Page({ isNewRecord, template, record, parent, onChange, onSave, onCancel }: EditorProps) {
-  const { domain, theme, templates, records, templateFor } = useContext(DataContext);
+  const { domain, website, templates, records, templateFor } = useContext(DataContext);
 
   const [ metaOpen, setMetaOpen ] = useState(0);
   const [ isDirty, setIsDirty ] = useState(false);
@@ -67,7 +67,7 @@ export default function Page({ isNewRecord, template, record, parent, onChange, 
   if (!template) { return <div>404</div>; }
 
   const current = record || parent;
-  const context = (current && theme) ? makePageContext(false, current, records, templates, theme) : null;
+  const context = (current && website) ? makePageContext(false, current, records, templates, website) : null;
 
   // Generate all renderable fields for page metadata, theme metadata, and page content.
   /* eslint-disable max-len */
@@ -84,15 +84,11 @@ export default function Page({ isNewRecord, template, record, parent, onChange, 
     <nav class={`vapid-nav__heading vapid-nav--${template.type} vapid-nav--${isNewRecord || isDirty ? 'new' : record?.id}`}>
       <button type="button" class="vapid-nav__back" onClick={(evt) => {
         evt.preventDefault();
-        if ((record?.parentId && record?.parentId !== NAVIGATION_GROUP_ID && parentTemplate) || (record && isDirty)) {
-          if (window.confirm('Are you sure you want to discard your changes?')) {
-            onCancel(record);
-            setIsDirty(false);
-            scrollToNav();
-          }
-        }
-        else {
-          scrollToNav();
+        const isChild = (record?.parentId && record?.parentId !== NAVIGATION_GROUP_ID && parentTemplate);
+        if (record && (!isDirty || (isDirty && window.confirm('Are you sure you want to discard your changes?')))) {
+          onCancel(record);
+          setIsDirty(false);
+          isChild ? route(`/collection/${childrenTemplate.name}/${parent?.slug || ''}`) : scrollToNav();
         }
       }}>Cancel</button>
       {template.type === PageType.SETTINGS 
@@ -107,7 +103,7 @@ export default function Page({ isNewRecord, template, record, parent, onChange, 
             }}
           />
           <fieldset class={`vapid-nav__page-header-url vapid-nav__page-header-url--${slugError ? 'error' : 'ok'}`}>
-            <span class="vapid-nav__page-header-parent-slug">{(current?.templateId?.endsWith('collection') && parent?.slug) ? `/${parent?.slug}/` : null}</span>
+            <span class="vapid-nav__page-header-parent-slug">{(current?.templateId?.endsWith('collection') && parent?.slug) ? `/${parent?.slug}` : null}</span>
             <input
               class="vapid-nav__page-header-slug"
               placeholder="Page URL"
@@ -170,7 +166,7 @@ export default function Page({ isNewRecord, template, record, parent, onChange, 
       <section class="content">
         {/* eslint-disable max-len */}
         {((parent?.id == record?.id && template.type === PageType.COLLECTION) || (template.type === PageType.PAGE && !Object.values(parentTemplate?.fields || {}).length) && collectionRecords) ?
-          <CollectionList domain={domain} page={parent || record} template={childrenTemplate} collection={collectionRecords} theme={theme} onChange={async (order) => {
+          <CollectionList domain={domain} page={parent || record} template={childrenTemplate} collection={collectionRecords} website={website} onChange={async (order) => {
             if (!order) { return; }
             return attemptWithToast(async () => {
               const working = structuredClone([...collectionRecords]);

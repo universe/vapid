@@ -6,12 +6,13 @@ import pino from 'pino';
 import { default as updateNotifier } from 'update-notifier';
 
 import pkg from '../package.json' assert { type: 'json' };
-import VapidServer from './runners/VapidServer/index.js';
+import Server from './runners/Server/index.js';
 
 declare global {
   /* eslint-disable-next-line @typescript-eslint/no-namespace */
   namespace NodeJS {
     interface ProcessEnv {
+      PORT: string;
       NODE_ENV: 'development' | 'production' | 'test';
       TEMPLATES_PATH: string;
       FIRESTORE_EMULATOR_HOST: string;
@@ -23,14 +24,14 @@ declare global {
 
 const logger = pino({ transport: { target: 'pino-pretty', options: { colorize: true } } });
 
-function withVapid(command: (vapid: VapidServer) => void) {
+function withServer(command: (server: Server) => void) {
   return async(target: string | program.Command) => {
     try {
       const cwd = target instanceof program.Command ? process.cwd() : target;
       process.env.TEMPLATES_PATH = path.join(cwd, 'www');
-      const vapid = new VapidServer(cwd);
+      const server = new Server(cwd);
       updateNotifier({ pkg }).notify({ isGlobal: true });
-      await command(vapid);
+      await command(server);
     }
     catch (err) {
       // TODO: Deployer throws err.message, handle better
@@ -42,9 +43,9 @@ function withVapid(command: (vapid: VapidServer) => void) {
 }
 
 /**
- * version - prints the current Vapid version number
+ * version - prints the current Neutrino version number
  */
-program.version(`Vapid ${pkg.version}`, '-v, --version');
+program.version(`Neutrino ${pkg.version}`, '-v, --version');
 
 /**
  * new - copies the generator files to target directory
@@ -60,7 +61,7 @@ program
     logger.info('Site created.');
     logger.info([
       'To start the server now, run:',
-      `  vapid start`,
+      `  neutrino start`,
     ]);
   });
 
@@ -72,10 +73,10 @@ program
 program
   .command('start')
   .description('start the server')
-  .action(withVapid(async(vapid: VapidServer) => {
-    logger.info(`Starting the ${vapid.env} server...`);
-    await vapid.start();
-    logger.info(`View your website at localhost:${vapid.config.port}`);
+  .action(withServer(async(server: Server) => {
+    logger.info(`Starting the server...`);
+    await server.start();
+    logger.info(`View your website at localhost:${server.port}`);
     logger.info('Ctrl + C to quit');
   }));
 

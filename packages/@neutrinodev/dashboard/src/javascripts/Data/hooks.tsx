@@ -1,5 +1,5 @@
 import { BaseHelper, IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, Template } from '@neutrinodev/core';
-import { IWebsite } from '@neutrinodev/runtime';
+import { ITheme, IWebsite } from '@neutrinodev/runtime';
 import { ComponentChildren, createContext } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 
@@ -7,9 +7,9 @@ import { DataAdapter } from './adapter.js';
 
 export const DataContext = createContext<{
   adapter: DataAdapter | null;
-  theme: IWebsite | null;
+  website: IWebsite | null;
+  theme: ITheme | null;
   domain: string;
-  isLocal: boolean;
 
   loading: boolean | string;
   records: Record<string, IRecord>;
@@ -27,9 +27,9 @@ export const DataContext = createContext<{
   getRecord: (slug?: string | null, parentSlug?: string | null, templateId?: string | null) => IRecord | null;
 }>({
   adapter: null,
+  website: null,
   theme: null,
   domain: '',
-  isLocal: false,
 
   loading: true,
   records: {},
@@ -105,82 +105,47 @@ function getRecord(records: Record<string, IRecord> = {}, slug: string | null = 
 }
 
 export function DataContextProvider({ adapter, children }: { adapter: DataAdapter, children: ComponentChildren }) {
-  const [ theme, setTheme ] = useState<IWebsite | null>(null);
+  const [ website, setWebsite ] = useState<IWebsite | null>(null);
+  const [ theme, setTheme ] = useState<ITheme | null>(null);
   const [ records, setRecords ] = useState<Record<string, IRecord>>({});
   const [ loading, setLoading ] = useState<boolean | string>(true);
-  const [ isLocal, setIsLocal ] = useState<boolean>(false);
 
   useEffect(() => {
-    const cb = () => adapter.getAllRecords().then(setRecords);
-    adapter.on('change', cb);
-    return () => adapter.off('change', cb);
-  }, [adapter]);
-
-  // Once we have an adapter initialized, fetch our site data.
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      if (!adapter) { return; }
-      try {
-        await adapter?.init();
-        BaseHelper.registerFileHandler(adapter.saveFile.bind(adapter));
-      }
-      catch (err) {
-        console.error(err);
+    setLoading(true);
+    BaseHelper.registerFileHandler(adapter.saveFile.bind(adapter));
+    const websiteCallback = () => adapter.getWebsite().then(setWebsite);
+    const themeCallback = () => adapter.getTheme().then(setTheme);
+    const recordsCallback = () => adapter.getAllRecords().then(setRecords);
+    adapter.on('website', websiteCallback);
+    adapter.on('theme', themeCallback);
+    adapter.on('records', recordsCallback);
+    adapter.start()
+      .then(() => {
+        setLoading(false);
+        websiteCallback();
+        themeCallback();
+        recordsCallback();
+      })
+      .catch(err => {
         setLoading("Error Connecting to Database");
-        return;
-      }
-
-      // Attempt to bind to a livereload port to get site template updates in dev mode.
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const ws = new WebSocket(`ws://localhost:1777/livereload`);
-          ws.onopen = () => { setIsLocal(true); resolve(); };
-          ws.onclose = () => { reject(); };
-          ws.onmessage = (evt) => {
-            const { command, data } = JSON.parse(evt.data) as { command: string; data: IWebsite; };
-            console.log(`[WebSocket ${command}]`, data);
-            switch (command) {
-              case 'update': setTheme({ ...data });
-            }
-          };
-        });
-      }
-
-      // If a local theme server connection can't be made, fetch from prod.
-      catch {
-        try {
-          setTheme(await adapter.getTheme());
-        }
-        catch (err) {
-          console.error(err);
-          setLoading("Error Loading Site Theme");
-          return;
-        }
-      }
-
-      try {
-        setRecords(await adapter.getAllRecords());
-      }
-      catch (err) {
         console.error(err);
-        setLoading("Error Loading Site Content");
-        return;
-      }
-
-      setLoading(false);
-    })();
+      });
+    return () => {
+      adapter.off('website', websiteCallback);
+      adapter.off('theme', themeCallback);
+      adapter.off('records', recordsCallback);
+    };
   }, [adapter]);
 
-  const templates = theme?.hbs?.templates || {};
+  const templates = theme?.templates || {};
   const domain = adapter.getDomain();
 
   return <DataContext.Provider
     value={{
       adapter,
+      website,
       theme,
       loading,
-      isLocal,
 
       domain,
       records,

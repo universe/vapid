@@ -4,7 +4,7 @@ interface HighlightElement {
 export default function highlight() {
   if ((window as unknown as HighlightElement).__HIGHLIGHT__) { return; }
   (window as unknown as HighlightElement).__HIGHLIGHT__ = true;
-  console.log('START');
+
   const marker = document.getElementById('editor-marker') || document.createElement('div');
   marker.id = 'editor-marker';
   marker.classList.add('editor-marker');

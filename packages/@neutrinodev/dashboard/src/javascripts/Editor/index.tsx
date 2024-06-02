@@ -1,3 +1,5 @@
+import "./Editor.css";
+
 import { INDEX_PAGE_ID, IRecord, PageType, Record as DBRecord, sortRecords, stampRecord, Template } from '@neutrinodev/core';
 import Spinner from '@universe/aether/components/Spinner';
 import { ComponentChildren, Fragment } from "preact";
@@ -50,9 +52,9 @@ export default function Editor(params: RouteParts) {
   const {
     adapter,
     theme,
+    website,
     records,
     templates,
-    isLocal,
     findTemplate,
     getRecord,
     settingFor,
@@ -84,7 +86,9 @@ export default function Editor(params: RouteParts) {
     if (templateType === PageType.SETTINGS) {
       record = settingFor(template) || (drafts[Template.id(template)] = drafts[Template.id(template)] || stampRecord(template));
     }
-    else if (templateType === PageType.PAGE) { record = getRecord(pageId, null, Template.id(template)); }
+    else if (templateType === PageType.PAGE) {
+      record = getRecord(pageId, null, Template.id(template));
+    }
     else if (templateType === PageType.COLLECTION) {
       record = getRecord(collectionId, pageId, Template.id(template));
       parent = getRecord(pageId, null, `${template.name}-${PageType.PAGE}`);
@@ -96,16 +100,14 @@ export default function Editor(params: RouteParts) {
     }
   }
 
-  useEffect(() => { onChange(structuredClone(record || parent)); }, [ record?.id, parent?.id ]);
+  // When our URL discovered record changes, inform the parent of our new working object.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { onChange(structuredClone(record || parent)); }, [ onChange, record?.id, parent?.id ]);
 
-  if (!theme || !adapter) return <div class="dashboard__loading"><Spinner size="large" /></div>;
+  if (!theme || !website || !adapter) return <div class="dashboard__loading"><Spinner size="large" /></div>;
   if (!template) return <div class="dashboard__loading">404</div>;
 
   return <Fragment>
-
-    {isLocal ? <button id="add-page" class="sidebar__add-page" onClick={() => { adapter?.deployTheme('neutrino', 'latest'); }}>
-      Save Template
-    </button> : null}
     <menu class={`vapid-menu vapid-menu--${embedded ? 'embedded' : 'standalone'}`} id="vapid-menu">
       {!embedded ? <Menu
         pageId={pageId || INDEX_PAGE_ID}
@@ -114,7 +116,7 @@ export default function Editor(params: RouteParts) {
         onDeploy={async() => {
           const res = await beforeDeploy?.();
           if (res === false) { throw new Error('beforeDeploy hook blocked site deploy'); }
-          await adapter?.deploy(theme, records);
+          await adapter?.deploy();
           await afterDeploy?.();
         }}
       >
@@ -129,7 +131,7 @@ export default function Editor(params: RouteParts) {
           parent={parent}
           onCancel={() => {
             delete drafts[draftKey];
-            onChange(structuredClone(record));
+            onChange(structuredClone(active));
             route(`/${template.type}/${template.name}/${(parent || record)?.slug || ''}`);
           }}
           onChange={record => {

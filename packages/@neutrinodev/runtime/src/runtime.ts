@@ -2,10 +2,12 @@ import {
   IRecord, 
   IRecordData, 
   ITemplate, 
+  IWebsite,
   nanoid,
   NAVIGATION_GROUP_ID, 
   PageType, Record as DBRecord, 
   RECORD_META, 
+  RuntimeHelper,
   SerializedRecord, 
   sortRecords, 
   stampRecord, 
@@ -16,7 +18,7 @@ import type { Json } from '@universe/util';
 
 import { HelperResolver, resolveHelper as defaultResolveHelper } from './helpers.js';
 import { IRenderCollections, IRenderPageContext, render as rawRender } from './renderer.js';
-import { IPageContent, IPageContext, IParsedTemplate, ITemplateAst, IWebsite, RendererComponentResolver, RuntimeHelper } from './types.js';
+import { IPageContent, IPageContext, IParsedTemplate, ITemplateAst, ITheme, RendererComponentResolver } from './types.js';
 
 export * from './helpers.js';
 export * from './types.js';
@@ -25,7 +27,6 @@ function templateFor(page: IRecord, templates: ITemplate[]): ITemplate | null {
   for (const template of templates) {
     if (page.templateId === Template.id(template)) { return template; }
   }
-  console.error(`Missing template for ${page.slug}`);
   return null;
 }
 
@@ -111,7 +112,7 @@ export function makePageContext(isProduction: boolean, page: IRecord, records: R
 
   return {
     env: { isProd: isProduction, isDev: !isProduction },
-    site: site.meta,
+    site,
     meta,
     content,
     page: content.this[RECORD_META],
@@ -217,23 +218,24 @@ export async function renderRecord(
   isProduction: boolean,
   document: Document | SimpleDocument, 
   record: IRecord, 
-  siteData: IWebsite,
+  website: IWebsite,
+  theme: ITheme,
   records: Record<string, IRecord>,
   resolveComponent?: RendererComponentResolver,
   resolveHelper: HelperResolver = defaultResolveHelper,
 ): Promise<SimpleDocumentFragment | null>  {
-  if (!record || !siteData) { return null; }
-  const renderedAst = siteData?.hbs?.pages?.[record.templateId];
+  if (!record || !website) { return null; }
+  const renderedAst = theme?.pages?.[record.templateId];
   if (!record || !renderedAst) { return null; }
   const renderTemplate: IParsedTemplate | null = {
     name: renderedAst.name,
     type: renderedAst.type,
     ast: renderedAst.ast,
-    templates: siteData?.hbs?.templates || {},
-    components: siteData?.hbs?.components || {},
-    stylesheets: siteData?.hbs?.stylesheets || {},
+    templates: theme?.templates || {},
+    components: theme?.components || {},
+    stylesheets: theme?.stylesheets || {},
   };
 
-  const context = makePageContext(isProduction, record, records, siteData?.hbs?.templates || {}, siteData);
+  const context = makePageContext(isProduction, record, records, theme?.templates || {}, website);
   return render(document, renderTemplate, context, resolveComponent, resolveHelper);
 }

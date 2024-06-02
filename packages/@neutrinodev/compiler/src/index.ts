@@ -11,11 +11,10 @@ import {
   HelperResolver,
   IPageContext,
   IParsedTemplate,
-  IParsedTemplates,
   IStylesheet,
   ITemplateAst,
+  ITheme,
   render,
-  resolveHelper,
 } from '@neutrinodev/runtime';
 import Serializer from '@simple-dom/serializer';
 import autoprefixer from 'autoprefixer';
@@ -43,7 +42,7 @@ export class TemplateCompiler {
    */
   constructor(customResolveComponent: ComponentResolver = () => null, customResolveHelper: HelperResolver = () => null) {
     this.resolveComponent = customResolveComponent;
-    this.resolveHelper = (name: string) => resolveHelper(name) || customResolveHelper(name);
+    this.resolveHelper = customResolveHelper;
   }
 
   private resolveComponentAst(name: string): GlimmerTemplate {
@@ -71,7 +70,7 @@ export class TemplateCompiler {
     return parse(name, type, html, this.resolveComponent, this.resolveHelper);
   }
 
-  async parse(root: string): Promise<IParsedTemplates> {
+  async parse(root: string): Promise<ITheme> {
     const templates: Record<string, ITemplate> = {};
     const pages: Record<string, ITemplateAst> = {};
     const components: Record<string, ITemplateAst> = {};
@@ -141,6 +140,8 @@ export class TemplateCompiler {
       }
     }
     return {
+      name: '',
+      version: '',
       templates,
       pages,
       components,
