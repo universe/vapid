@@ -22,7 +22,7 @@ const adapter = new DataAdapter(app, 'neutrino.dev', `websites/neutrino.dev`);
 // Run it async to let the adapter connect emulators first.
 // This allows the in-report `docs` project to work out of the box.
 // TODO: We need a more robust dev mode emulation!
-if (import.meta.FIRESTORE_EMULATOR_HOST) {
+if (import.meta.env.FIRESTORE_EMULATOR_HOST) {
   setTimeout(async () => {
     try { await createUserWithEmailAndPassword(getAuth(app), 'test@user.com', 'password'); }
     catch { 1; }

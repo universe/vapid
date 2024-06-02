@@ -131,7 +131,8 @@ export default function Editor(params: RouteParts) {
           parent={parent}
           onCancel={() => {
             delete drafts[draftKey];
-            onChange(structuredClone(active));
+            const prev = Object.values(records).find(r => r.id === active?.id);
+            onChange(structuredClone(prev || null));
             route(`/${template.type}/${template.name}/${(parent || record)?.slug || ''}`);
           }}
           onChange={record => {
