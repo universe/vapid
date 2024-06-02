@@ -4,6 +4,7 @@ import { ComponentChildren } from 'preact';
 import { useContext,useState } from 'preact/hooks';
 
 import { DataContext } from "../../Data/index.js";
+import ThemeDeployButton from "../ThemeDeployButton/index.js";
 
 interface IDeviceFrameProps {
   children?: ComponentChildren;
@@ -12,7 +13,7 @@ interface IDeviceFrameProps {
 
 export default function DeviceFrame({ children, visible }: IDeviceFrameProps) {
   const [ previewLayout, setPreviewLayout ] = useState<'full' | 'desktop' | 'mobile'>('desktop');
-  const { website } = useContext(DataContext);
+  const { adapter, website } = useContext(DataContext);
 
   if (!visible) {
     return <article class={`vapid-preview  ${previewLayout === 'full' ? 'vapid-preview--full-screen' : ''}`} key="preview-container" id="preview-container">
@@ -49,6 +50,7 @@ export default function DeviceFrame({ children, visible }: IDeviceFrameProps) {
           </button>
         </li>
         <li><a href={`https://${website?.domain}`} target="_blank" class="preview-controls__button preview-controls__button--breakout" rel="noreferrer">Breakout</a></li>
+        <ThemeDeployButton adapter={adapter} />
       </ul>
       <button class="preview-controls__exit preview-controls__button" onClick={() => setPreviewLayout('desktop')}>Exit</button>
     </nav>

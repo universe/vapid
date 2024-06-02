@@ -23,7 +23,7 @@ import mime from 'mime';
 import pino from 'pino';
 
 const logger = pino({ transport: { target: 'pino-pretty', options: { colorize: true } } });
-const ENV = globalThis?.process?.env || {};
+const ENV = import.meta.env || globalThis?.process?.env || {};
 const DEFAULT_STORAGE_ROOT = 'uploads';
 
 export interface FireBaseStorageConfig {
@@ -162,7 +162,6 @@ export default class FireBaseProvider extends IProvider {
     if (!(await getDoc(doc(db, this.getFirestorePrefix())))?.exists()) {
       throw new Error(`Website "${this.getFirestorePrefix()}" does not exist.`);
     }
-
     this.#websiteWatcher = onSnapshot(doc(db, this.getFirestorePrefix()), (res) => {
       const data = res.data() || {} as Partial<IWebsite>;
       const out: IWebsite = {
@@ -175,6 +174,9 @@ export default class FireBaseProvider extends IProvider {
       if (this.#metadata instanceof Deferred) { this.#metadata.resolve(out); }
       this.#metadata = out;
       this.trigger('website');
+    }, () => {
+      this.trigger('website');
+      throw new Error('Error Reading Website Config');
     });
 
     this.#recordWatcher = onSnapshot(collection(db, this.getRecordsPath()), (data) => {

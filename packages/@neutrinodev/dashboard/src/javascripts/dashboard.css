@@ -1,3 +1,156 @@
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-overflow-scrolling: touch;
+  text-rendering: optimizeLegibility;
+  outline: none;
+  box-sizing: border-box;
+  font-variant: tabular-nums;
+}
+
+@font-face {
+  font-family: "fontawesome";
+  src: url("/fonts/fontawesome/fa-solid-900.woff2");
+}
+
+@font-face {
+  font-family: "Jost";
+  font-weight: 200;
+  src: url("/fonts/Jost/Jost-200-Thin.otf");
+}
+
+@font-face {
+  font-family: "Jost";
+  font-weight: 400;
+  src: url("/fonts/Jost/Jost-400-Book.otf");
+}
+
+@font-face {
+  font-family: "Jost";
+  font-weight: 600;
+  src: url("/fonts/Jost/Jost-600-Semi.otf");
+}
+
+@font-face {
+  font-family: "ArcherPro";
+  src: url("/fonts/ArcherPro/ArcherPro-Semibold.otf");
+}
+
+body {
+
+  /* stylelint-disable color-no-hex,value-keyword-case */
+  /* TODO: Remove these and update blue color ramp. */
+  --slate-0: #0a0b0c;
+  --slate-1: #3e4449;
+  --slate-2: #74818c;
+  --slate-3: #a6b6c4;
+  --slate-4: #c9d7e3;
+  --slate-5: #e3eaf0;
+  --slate-6: #fbfcfd;
+  --purple-0: #08080d;
+  --purple-1: #23253f;
+  --purple-2: #373a5e;
+  --purple-3: #5f6188;
+  --purple-4: #8a8baf;
+  --purple-5: #bdbdd4;
+  --purple-6: #f7f8fd;
+  --blue-0: #070a10;
+  --blue-1: #142b45;
+  --blue-2: #0f4c7f;
+  --blue-3: #2e71b2;
+  --blue-4: #6e9ad3;
+  --blue-5: #b2c7e8;
+  --blue-6: #f3f6fb;
+  --teal-0: #060c0d;
+  --teal-1: #0b3336;
+  --teal-2: #005c62;
+  --teal-3: #04858d;
+  --teal-4: #5dadb3;
+  --teal-5: #a9d2d5;
+  --teal-6: #f2f8f8;
+  --green-0: #060e08;
+  --green-1: #0b3921;
+  --green-2: #006737;
+  --green-3: #059456;
+  --financial-green: #4BBD6B;
+  --green-4: #5eba83;
+  --green-5: #aadaba;
+  --green-6: #f2f9f4;
+  --gold-0: #141008;
+  --gold-1: #5d471c;
+  --gold-2: #b0832a;
+  --gold-3: #eeb545;
+  --gold-4: #ffd377;
+  --gold-5: #ffe7b5;
+  --gold-6: #fffbf4;
+  --orange-0: #160c04;
+  --orange-1: #633107;
+  --orange-2: #ba5700;
+  --orange-3: #ff8000;
+  --orange-4: #ffaa51;
+  --orange-5: #ffd1a0;
+  --orange-6: #fff8f1;
+  --red-0: #150707;
+  --red-1: #59131e;
+  --red-2: #a50032;
+  --red-3: #e4264f;
+  --red-4: #ff6e7b;
+  --red-5: #ffb3b5;
+  --red-6: #fff4f3;
+  --pink-0: #15080f;
+  --pink-1: #600e41;
+  --pink-2: #b40077;
+  --pink-3: #f700a8;
+  --pink-4: #ff6bca;
+  --pink-5: #ffb5e3;
+  --pink-6: #fff4fa;
+  --white: var(--purple-6);
+  --black: var(--purple-0); /* #2C2C31; */
+  --light-gray: rgb(0 0 0 / 10%);
+  --gray: rgb(0 0 0 / 55%);
+  --very-light-red: var(--red-6);
+  --light-red: var(--red-5); /* #e995a7; */
+  --red: var(--red-3);
+  --dark-red: var(--red-1);
+  --pink: var(--pink-3);
+  --orange: var(--orange-3);
+  --very-light-yellow: var(--gold-6);
+  --light-yellow: var(--gold-4);
+  --yellow: var(--gold-3);
+  --green: var(--green-3);
+  --purple: var(--purple-2);
+  --dark-purple: var(--purple-1);
+  --light-blue: var(--slate-3);
+  --very-light-blue: var(--blue-6);
+  --blue: var(--blue-3);
+  --dark-blue: var(--blue-1);
+
+  /* TODO: Remove these and update color ramps. */
+  --bright-blue-2: #CBE0FB;
+  --bright-blue-3: #D5E5FB;
+  --bright-blue-4: #D1E8FF;
+  --bright-blue-5: #DDEEFF;
+  --bold-blue-3: #4094F7;
+  --bright-fuschia-3:  #FF337D;
+  --bright-coral-3: #ff5665;
+  --bright-orange-3: #ff7e21;
+  --bright-tangerine-3: #ff9a29;
+  --bright-dandelion-3: #ffc000;
+  --bright-lime-3: #6fc700;
+  --bright-teal-3: #07b1c9;
+  --bright-denim-3: #0b7fc5;
+  --bright-purple-3: #9150dc;
+  --muted-purple-1: #64428c;
+  --muted-indigo-1: #4a4e8d;
+
+  /* Elevation Values */
+  --elevation-0: 0 0 0 1px rgb(0 0 0 / 8%);
+  --elevation-2: 0 0 0 1px rgb(0 0 0 / 1%), 0 2px 3px rgb(0 0 0 / 10%);
+  --elevation-4: 0 0 0 1px rgb(0 0 0 / 1%), 0 4px 6px rgb(0 0 0 / 10%);
+  --elevation-6: 0 0 0 1px rgb(0 0 0 / 1%), 0 6px 9px rgb(0 0 0 / 10%);
+  --elevation-12: 0 0 0 1px rgb(0 0 0 / 1%), 0 12px 18px 1px rgb(0 0 0 / 10%);
+
+}
+
 .login__scrim {
   width: 100vw !important;
 }

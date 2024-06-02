@@ -32,7 +32,7 @@ document.addEventListener('focusout', focusFieldPreview);
 
 export default function Preview({ record, frame }: PreviewProps) {
 
-  const { theme, website, records, loading } = useContext(DataContext);
+  const { loading, records, theme, website } = useContext(DataContext);
 
   // If first render and we haven't found an AST match (e.g. loading a settings page), render the home page instead.
   useEffect(() => {

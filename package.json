@@ -48,7 +48,7 @@
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-react": "^7.23.2",
     "eslint-plugin-simple-import-sort": "^7.0.0",
-    "firebase-tools": "^11.1.0",
+    "firebase-tools": "^13",
     "husky": "^3.0.9",
     "mocha": "^10.4.0",
     "patch-package": "6.5.1",

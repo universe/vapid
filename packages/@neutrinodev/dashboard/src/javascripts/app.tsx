@@ -1,4 +1,6 @@
 import { initializeApp } from 'firebase/app';
+import { createUserWithEmailAndPassword,getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getFirestore, setDoc } from 'firebase/firestore';
 import { render } from 'preact';
 
 import { Dashboard, DataAdapter } from './dashboard.js';
@@ -15,6 +17,19 @@ const UNIVERSE_APP_CONFIG = {
 
 const app = initializeApp(UNIVERSE_APP_CONFIG, 'vapid');
 const adapter = new DataAdapter(app, 'neutrino.dev', `websites/neutrino.dev`);
+
+// If we're emulating, set up our default fuxture.
+// Run it async to let the adapter connect emulators first.
+// This allows the in-report `docs` project to work out of the box.
+// TODO: We need a more robust dev mode emulation!
+if (import.meta.FIRESTORE_EMULATOR_HOST) {
+  setTimeout(async () => {
+    try { await createUserWithEmailAndPassword(getAuth(app), 'test@user.com', 'password'); }
+    catch { 1; }
+    await setDoc(doc(getFirestore(app), 'websites/neutrino.dev'), { domain: 'neutrino.app' }, { merge: true });
+    await signInWithEmailAndPassword(getAuth(app), 'test@user.com', 'password');
+  }, 1000);
+}
 
 function App() {
   return <Dashboard root="/" adapter={adapter} />;

@@ -4,6 +4,7 @@
   gap: 0.4rem;
   margin-bottom: 1.8rem;
   position: relative;
+  border: none;
 }
 
 .form__page-fieldset::after {
