@@ -317,11 +317,11 @@ export class DataAdapter extends IProvider {
     const theme = await this.getTheme();
     const allRecords = await this.getAllRecords();
     const discoveredDefaults = new Set(Object.keys(WELL_KNOWN_PAGES));
-
+    const promises: Promise<void>[] = [];
     // Deploy Stylesheets First
     for (const stylesheet of Object.values(theme.stylesheets)) {
       const blob = await gzipBlob(new Blob([stylesheet.content], { type : 'text/css' }));
-      logUpload(this.provider.deployFile(stylesheet.path, blob, { contentType: 'text/css', cacheControl: 'public,max-age=0', contentEncoding: 'gzip' }));
+      promises.push(logUpload(this.provider.deployFile(stylesheet.path, blob, { contentType: 'text/css', cacheControl: 'public,max-age=0', contentEncoding: 'gzip' })));
     }
 
     // For every record that isn't a settings page, render the page and upload.
@@ -336,7 +336,9 @@ export class DataAdapter extends IProvider {
       const serializer = new Serializer({});
       const html = fragment ? serializer.serialize(fragment) : '';
       const blob = await gzipBlob(new Blob([html], { type : 'text/html' }));
-      logUpload(this.provider.deployFile(`${WELL_KNOWN_PAGES[slug] || slug}`, blob, { contentType: 'text/html', cacheControl: 'public,max-age=0', contentEncoding: 'gzip' }));
+      promises.push(
+        logUpload(this.provider.deployFile(`${WELL_KNOWN_PAGES[slug] || slug}`, blob, { contentType: 'text/html', cacheControl: 'public,max-age=0', contentEncoding: 'gzip' })),
+      );
     }
 
     // Upload any default well known pages if the user hasn't provided them for us already.
@@ -345,8 +347,12 @@ export class DataAdapter extends IProvider {
         const html = DEFAULT_WELL_KNOWN_PAGES[slug];
         if (!html) { continue; }
         const blob = await gzipBlob((new Blob([html], { type : 'text/html' })));
-        logUpload(this.provider.deployFile(`${WELL_KNOWN_PAGES[slug] || slug}`, blob, { contentType: 'text/html', cacheControl: 'public,max-age=0', contentEncoding: 'gzip' }));
+        promises.push(
+          logUpload(this.provider.deployFile(`${WELL_KNOWN_PAGES[slug] || slug}`, blob, { contentType: 'text/html', cacheControl: 'public,max-age=0', contentEncoding: 'gzip' })),
+        );
       }
     }
+
+    await Promise.allSettled(promises);
   }
 }
