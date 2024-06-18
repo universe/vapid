@@ -19,7 +19,7 @@ interface RouteParts {
   path?: string;
   id?: string;
   url?: string;
-  templateType?: PageType;
+  templateType?: PageType | 'record';
   templateName?: string;
   pageId?: string;
   collectionId?: string;
@@ -37,16 +37,18 @@ export default function Editor(params: RouteParts) {
     embedded,
     active,
 
+    // Hooks
+    onChange,
+    beforeDeploy,
+    afterDeploy,
+  } = params;
+
+  let {
     // URL Props
     templateName,
     templateType,
     pageId,
     collectionId,
-
-    // Hooks
-    onChange,
-    beforeDeploy,
-    afterDeploy,
   } = params;
 
   const {
@@ -72,8 +74,22 @@ export default function Editor(params: RouteParts) {
   }, [ adapter, templateName, templateType, pageId, collectionId, records ]);
 
   const recordsList = Object.values(records || {}).sort(sortRecords);
-  const permalinks: Record<string, string> = {};
-  for (const record of recordsList) { permalinks[DBRecord.permalink(record)] = record.id; }
+  const permalinks: Record<string, IRecord> = {};
+  for (const record of recordsList) { permalinks[DBRecord.permalink(record)] = permalinks[record.id] = record; }
+
+  // If this is an embedded record referenced by record ID, nab our correct "fully qualified" url information.
+  if (templateType === 'record') {
+    const record = templateName ? (permalinks[templateName] || null) : null;
+    const parent = record?.parentId ? (permalinks[record.parentId || ''] || null) : null;
+    const template = record ? (templates[record.templateId || ''] || null) : null;
+    if (!templateName || !record || !template) { templateType = templateType = undefined; }
+    else {
+      templateType = template.type;
+      templateName = template.name;
+      pageId = parent?.slug || record?.slug;
+      parent?.slug && (collectionId = record?.slug);
+    }
+  }
 
   const isNewRecord = pageId === 'new' || collectionId === 'new';
   const template = (!templateType && !templateName) ? findTemplate(PageType.PAGE, INDEX_PAGE_ID) : findTemplate(templateType, templateName);
@@ -137,7 +153,7 @@ export default function Editor(params: RouteParts) {
           }}
           onChange={record => {
             record.slug = record.slug || INDEX_PAGE_ID;
-            const slugId = permalinks[DBRecord.permalink(record)];
+            const slugId = permalinks[DBRecord.permalink(record)]?.id;
             if ((slugId && slugId !== record.id) || /[^A-Za-z0-9-_.~]/.test(record.slug) || record.slug === 'new') {
               record.slug = `__error__/${record.slug}`;
             }

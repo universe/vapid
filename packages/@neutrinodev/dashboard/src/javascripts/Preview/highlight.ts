@@ -62,7 +62,8 @@ export default function highlight() {
   `;
   
   let timeout: NodeJS.Timeout | null = null;
-  
+  let scrollToElement: boolean = false;
+
   const INITIAL_BOUNDS = { x: Infinity, y: Infinity, xMin: Infinity, xMax: -Infinity, yMin: Infinity, yMax: -Infinity };
   const bounds = { x: 0, y: 0, xMin: 0, xMax: 0, yMin: 0, yMax: 0 };
   let selector: string | null = null;
@@ -115,9 +116,13 @@ export default function highlight() {
       width: ${(bounds.xMax - bounds.xMin) + PAD + PAD}px;
       height: ${(bounds.yMax - bounds.yMin) + PAD + PAD};
     `);
-    if (scrolledElement !== container) {
+    if (scrolledElement !== container && scrollToElement) {
+      scrollToElement = false;
       scrolledElement = container as HTMLElement;
-      setTimeout(() => container && elementArr(container)[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 240);
+      const top = bounds.y - PAD - 18;
+      setTimeout(() => {
+        document.scrollingElement?.scrollBy({ behavior: 'smooth', top });
+      }, 120);
     }
     window.requestAnimationFrame(positionMarker);
   });
@@ -159,6 +164,7 @@ export default function highlight() {
     }
   
     prevSelector = selector = `[data-neutrino-${data.target}]`;
+    scrollToElement = true;
     return;
   }, false);
   
