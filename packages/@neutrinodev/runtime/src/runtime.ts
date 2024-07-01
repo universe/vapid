@@ -186,6 +186,7 @@ export async function render(
   resolveHelper: HelperResolver = defaultResolveHelper,
 ) {
   const context: Record<string, Json | Record<string, RuntimeHelper> | Record<string, RuntimeHelper>[]> = {};
+
   for (const [ recordName, record ] of Object.entries(data.content)) {
     if (!record) { continue; }
     const out = Array.isArray(record) ?
@@ -195,7 +196,12 @@ export async function render(
   }
 
   const renderData: IRenderPageContext = { 
-    ...data,
+    env: data.env,
+    site: data.site,
+    page: data.page,
+    pages: data.pages,
+    navigation: data.navigation,
+    meta: (await makeRenderRecord(data.meta, tmpl.templates, data)) as Record<string, RuntimeHelper>,
     collection: [] as unknown as IRenderCollections,
     props: {},
     component: { id: nanoid() },

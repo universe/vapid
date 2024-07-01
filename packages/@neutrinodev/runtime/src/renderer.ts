@@ -366,8 +366,9 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
 
 export type IRenderValue = NeutrinoValue | ((params: [Record<string, NeutrinoValue>[]], hash: UnknonwValueHash) => Record<string, NeutrinoValue>[])
 export type IRenderCollections = Record<string, Record<string, IRenderValue>[] | Record<string, IRenderValue>>;
-export type IRenderPageContext = Omit<Omit<IPageContext, 'content'>, 'collection'> & { 
+export type IRenderPageContext = Omit<Omit<Omit<IPageContext, 'content'>, 'collection'>, 'meta'> & { 
   collection: IRenderCollections;
+  meta: Record<string, NeutrinoValue>;
   props: Record<string, NeutrinoValue>;
   component: { id: string; };
 };

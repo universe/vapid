@@ -4,6 +4,9 @@
   flex-flow: column;
   flex-grow: 1;
   transition: border 0.18s ease-in-out;
+  max-height: calc(100% - 7.6rem);
+  overflow: auto;
+  padding-top: 1.4rem;
 }
 
 .form:hover,
@@ -104,7 +107,7 @@
   flex-grow: 1;
   position: relative;
   z-index: 1;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .form .field.submit,
@@ -122,6 +125,7 @@
 	align-items: center;
 	margin: 0;
 	border: none;
+  flex: 0 0 auto;
 }
 .form .field.inline,
 .form .fields.inline {

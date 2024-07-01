@@ -164,7 +164,7 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
 
     return <div class="previewable">
       {(progress !== 0 && progress !== 100) ? <progress class="image-directive__progress" min="0" max="100" value={progress}> {progress}% </progress> : null}
-      {src === TRANSPARENT_PIXEL ? <input type="file" name={name} accept="image/*" aria-describedby={`help-${name}`} onInput={() => directive.onInput.call(directive, setTmpImg, setProgress)} /> : null}
+      {src === TRANSPARENT_PIXEL ? <input type="file" name={name} accept="image/*" aria-describedby={`help-${name}`} onInput={(evt) => directive.onInput.call(directive, setTmpImg, setProgress, evt)} /> : null}
       <input type="hidden" name={`${name}[src]`} value={value.current?.src || ''} aria-describedby={`help-${name}`} />
       <div class={`preview ${src === TRANSPARENT_PIXEL && !tmpImg ? 'image-directive__empty-preview' : ''}`} >
         <img
