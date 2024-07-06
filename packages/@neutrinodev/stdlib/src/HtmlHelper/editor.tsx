@@ -75,9 +75,11 @@ const options = {
       [{ font: [ 'sans', 'serif', 'monospace' ] }],
       [{ header: [ 1, 2, 3, 4, 5, 6, false ] }],
       [{ color: [
+        'var(--gray-0)',
         'var(--primary-1)', 'var(--cta-1)','var(--gray-1)', undefined, undefined, undefined, undefined,
         'var(--primary-5)', 'var(--cta-5)', 'var(--gray-5)', undefined, undefined, undefined, undefined,
         'var(--primary-9)', 'var(--cta-9)', 'var(--gray-9)', undefined, undefined, undefined, undefined,
+        'var(--gray-10)',
       ] }, 'bold', 'italic', 'underline' ],
       [ 'link', 'blockquote', 'code-block' ],
       [{ align: [] }, { list: 'ordered' }, { list: 'bullet' }],

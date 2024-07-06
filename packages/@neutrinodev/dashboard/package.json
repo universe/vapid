@@ -25,6 +25,7 @@
     "deploy": "yarn build && hoist up dist",
     "watch": "watch 'yarn build' './src' --wait=1"
   },
+
   "engines": {
     "node": ">=12.0.0"
   },
@@ -49,12 +50,20 @@
     "preact": "^10"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^7.18.2",
     "@neutrinodev/cli": "1.0.0-beta.6",
     "@neutrinodev/core": "1.0.0-beta.6",
     "@neutrinodev/embed": "1.0.0-beta.6",
     "@neutrinodev/runtime": "1.0.0-beta.6",
+    "@preact/preset-vite": "^2.3.0",
+    "@stripe/react-stripe-js": "^1.16.2",
+    "@stripe/stripe-js": "^1.46.0",
+    "@types/colorthief": "link:../../../types-local/colorthief",
+    "@types/html-escaper": "^3.0.0",
+    "@types/html5sortable": "link:../../../types-local/html5sortable",
     "@universe/aether": "^0.15.2",
     "@universe/util": "^1.1.2",
+    "@vitejs/plugin-basic-ssl": "^0.1.2",
     "colorthief": "^2.3.2",
     "file2md5": "^1.3.0",
     "html5sortable": "^0.13.2",
@@ -65,14 +74,6 @@
     "react-spring": "^9.5.2",
     "react-text-transition": "^3.0.2",
     "react-with-gesture": "^4.0.8",
-    "@babel/plugin-proposal-decorators": "^7.18.2",
-    "@preact/preset-vite": "^2.3.0",
-    "@stripe/react-stripe-js": "^1.16.2",
-    "@stripe/stripe-js": "^1.46.0",
-    "@types/colorthief": "link:../../../types-local/colorthief",
-    "@types/html-escaper": "^3.0.0",
-    "@types/html5sortable": "link:../../../types-local/html5sortable",
-    "@vitejs/plugin-basic-ssl": "^0.1.2",
     "simple-dom": "^1.4.0"
   }
 }

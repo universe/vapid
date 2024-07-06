@@ -73,12 +73,14 @@ export class Record implements IRecord {
     currentUrl = currentUrl === INDEX_PAGE_ID ? '/' : currentUrl;
     return {
       id: record.id,
+      parentId: parent?.id || null,
       templateId: record.templateId,
       name: record.name || toTitleCase(record.templateId),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       deletedAt: record.deletedAt || null,
       slug: record.slug,
+      parentSlug: parent?.slug || null,
       permalink,
       isNavigation: Record.isNavigation(record),
       isActive: currentUrl === permalink || currentUrl.startsWith(`${permalink}/`),

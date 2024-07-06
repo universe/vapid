@@ -168,8 +168,8 @@ export default class LinkHelper extends ValueHelper<ILinkValue> {
   async data(value: ILinkValue | null = this.default) {
     const page = value?.recordId ? this.meta.records.find(p => p.id === value.recordId) : null;
     return {
-      toString() { return value?.url || page?.slug || ''; },
-      url: value?.url || page?.slug,
+      toString() { return value?.url || `/${page?.slug || ''}`; },
+      url: value?.url || `/${page?.slug || ''}`,
       name: value?.name || page?.name || value?.url,
       description: value?.description || null,
       title: value?.title || null,

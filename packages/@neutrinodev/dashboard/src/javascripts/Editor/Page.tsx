@@ -152,10 +152,11 @@ export default function Page({ isNewRecord, template, record, parent, onChange, 
         {metaFields}
         {!isNewRecord && template.type !== PageType.SETTINGS ? <button
           type="button"
+          disabled={slugError}
           class="metadata__delete floated left basic red button"
           onClick={async () => {
             await attemptWithToast(async (): Promise<void> => {
-              if (!record) { return; }
+              if (!record || slugError) { return; }
               const update = structuredClone(record);
               update.deletedAt = Date.now();
               await onSave(update);
@@ -186,7 +187,8 @@ export default function Page({ isNewRecord, template, record, parent, onChange, 
         {/* eslint-enable max-len */}
       </section>
       <nav class="submit field" style="overflow: hidden;">
-        <input class="button floated right" type="submit" value="Save Draft" onClick={async() => {
+        <input class="button floated right" disabled={slugError} type="submit" value="Save Draft" onClick={async() => {
+          if (slugError) { return; }
           await attemptWithToast(async () => {
             record && await onSave(record);
             setIsDirty(false);

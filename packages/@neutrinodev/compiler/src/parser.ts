@@ -54,7 +54,7 @@ function parseExpression(node:
     }
   }
 
-  const context = (path as ASTv1.PathExpression)?.original.indexOf('this') === 0 ? 'this' : '';
+  const context = (path as ASTv1.PathExpression)?.original?.indexOf?.('this') === 0 ? 'this' : '';
   const key = (path as ASTv1.PathExpression).parts.length === 1 
     ? (path as ASTv1.PathExpression).parts[0] 
     : (path as ASTv1.PathExpression).parts.slice(1).join('.');

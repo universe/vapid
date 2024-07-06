@@ -71,7 +71,9 @@ export interface IRecord {
 
 export interface SerializedRecord {
   id: string;
+  parentId: string | null;
   slug: string | null;
+  parentSlug: string | null;
   templateId: string;
   name: string;
   createdAt: number;

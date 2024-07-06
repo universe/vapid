@@ -24,7 +24,8 @@
   text-decoration: none;
 }
 
-.button.disabled {
+.button.disabled,
+.button[disabled] {
   background: var(--grey);
   cursor: default;
 }
