@@ -98,6 +98,7 @@
   border-width: 3px;
   box-shadow: var(--elevation-2);
   position: relative;
+  top: -1px;
 }
 
 .palette__color--5::before, .palette__cta--5::before {
@@ -114,9 +115,9 @@
   position: absolute;
   position: absolute;
   top: 100%;
-  left: -1px;
+  left: -3px;
   height: 1.8rem;
-  right: -1px;
+  right: -3px;
   border: none;
   background: var(--black);
   border-radius: 0 0 4px 4px;

@@ -78,9 +78,10 @@ function resolveValue(
     case 'StringLiteral':
     case 'NumberLiteral':
     case 'BooleanLiteral':
+      return node.value;
     case 'UndefinedLiteral':
     case 'NullLiteral':
-      return `${node.value}`;
+      return null;
     case 'PathExpression': {
       let obj = node.this ? ctx['this'] : (node.data ? data : ctx);
       for (const part of node.parts) {
@@ -130,7 +131,7 @@ let UNIQUE_ID = 0;
 function applyDebugAttrExpr(type: DebugContainerType, el: SimpleElement, expr: ASTv1.Expression) {
   if (expr.type === 'SubExpression') { applyDebugAttr(type, el, expr); }
   if (expr.type === 'PathExpression') {
-    el.setAttribute(`data-neutrino-${expr?.original?.replace('@', 'at-')?.replace('.', '-')}`, type);
+    el.setAttribute(`data-neutrino-${expr?.original?.replaceAll('@', 'at-')?.replace('.', '-')}`, type);
     el.setAttribute('data-neutrino', type);
     el.setAttribute('data-neutrino-id', `${UNIQUE_ID++}`);
   }

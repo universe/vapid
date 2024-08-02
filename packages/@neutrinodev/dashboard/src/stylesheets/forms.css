@@ -333,6 +333,10 @@
   display: none;
 }
 
+.form .field__collection {
+  height: 7.2rem
+}
+
 .form .field__collection select {
   -webkit-appearance: none;
   appearance: none;

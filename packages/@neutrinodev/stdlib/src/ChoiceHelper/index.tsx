@@ -1,7 +1,6 @@
 import './index.css';
 
 import { DirectiveField, DirectiveMeta, DirectiveProps,ValueHelper } from '@neutrinodev/core';
-import { toSnakeCase, toTitleCase } from '@universe/util';
 import { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import ReactTags, { ClassNames, Tag } from 'react-tag-autocomplete';
@@ -17,7 +16,7 @@ import ReactTags, { ClassNames, Tag } from 'react-tag-autocomplete';
  * @todo Needs a better parser that takes into account quotes, escaped chars etc
  */
  function possibilities(str = '') {
-  return str?.split ? str.split(',').map(p => p.trim()).map(p => toSnakeCase(p)).filter(Boolean) : [];
+  return str?.split ? str.split(',').map(p => p.trim()).filter(Boolean) : [];
 }
 
 interface ChoiceOptions {
@@ -54,7 +53,7 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
   }
 
   preview(value: string[] = []) {
-    return Array.from(value).filter(value => Boolean(value?.trim())).map(toTitleCase).join(', ');
+    return Array.from(value).filter(value => Boolean(value?.trim())).join(', ');
   }
 
   async data(value: string[] = []) {
@@ -92,10 +91,11 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
       values = values.filter(value => Boolean(value?.trim()));
     }
 
+    const lowerValues = values.map(v => v.toLowerCase());
     const inputs: JSX.Element[] = [];
     for (const val of this.possibilities) {
-      const checked = !!values.includes(val);
-      const id = this.possibilities.length === 1 ? `content[${name}]` : `${name}[${toSnakeCase(val)}]`;
+      const checked = !!lowerValues.includes(val?.toLowerCase());
+      const id = this.possibilities.length === 1 ? `content[${name}]` : `${name}[${val}]`;
       inputs.push(<fieldset className="checkbox__fieldset">
         <input
           type="checkbox"
@@ -106,11 +106,11 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
           required={!!this.options.required}
           onChange={evt => {
             const set = new Set(values);
-            (evt.target as HTMLInputElement).checked ? set.add(toSnakeCase(val)) : set.delete(toSnakeCase(val));
+            (evt.target as HTMLInputElement).checked ? set.add(val) : set.delete(val);
             this.update([...set]);
           }}
         />
-        <label htmlFor={id}>{toTitleCase(val)}</label>
+        <label htmlFor={id}>{val}</label>
       </fieldset>);
     }
     return <div
@@ -124,23 +124,24 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
   private radio(name: string, value = this.default) {
     let values: string[] = Array.isArray(value) ? value : [value];
     values = values.filter(value => Boolean(value?.trim()));
+    const lowerValues = values.map(v => v.toLowerCase());
 
     const inputs: JSX.Element[] = [];
     for (const val of this.possibilities) {
-      const checked = !!values.includes(val);
-      const id = `${name}[${toSnakeCase(val)}]`;
+      const checked = !!lowerValues.includes(val?.toLowerCase());
+      const id = `${name}[${val}]`;
       inputs.push(<fieldset className="checkbox__fieldset">
         <input
           type="radio"
           id={id}
           name={name}
-          value={toSnakeCase(val)}
+          value={val}
           aria-describedby={`help-${name}`}
           checked={checked}
           required={!!this.options.required}
-          onChange={_ => { this.update([toSnakeCase(val)]); }}
+          onChange={_ => { this.update([val]); }}
         />
-        <label htmlFor={id}>{toTitleCase(val)}</label>
+        <label htmlFor={id}>{val}</label>
       </fieldset>);
     }
     return <div className={`ui checkbox radio ${this.possibilities.length > 1 ? 'checkbox--multiple' : 'checkbox--single'}`}>
@@ -152,7 +153,7 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
     const { placeholder, required } = this.options;
     let values = Array.isArray(value) ? value : String(value || '').split(',');
     values = values.filter(value => Boolean(value?.trim()));
-
+    const lowerValues = values.map(v => v.toLowerCase());
     return <select
       placeholder={this.options.placeholder}
       name={name}
@@ -166,8 +167,8 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
     >
       {(!required || (required && this.default)) ? <option value={`${this.default || ''}`}>{placeholder || '---'}</option> : null}
       {this.possibilities.map((p) => {
-        const selected = values.includes(p) ? 'selected' : '';
-        return <option key={p} value={p} selected={!!selected}>{toTitleCase(p)}</option>;
+        const selected = lowerValues.includes(p?.toLowerCase()) ? 'selected' : '';
+        return <option key={p} value={p} selected={!!selected}>{p}</option>;
       })}
     </select>;
   }
@@ -179,22 +180,22 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
     values = values.filter(value => Boolean(value?.trim()));
 
     const existing = new Set(values);
-    const tags = values.map((id) => ({ id, name: toTitleCase(id) }));
-    const suggestions = this.possibilities.map((id) => ( values.includes(id) ? null : { id, name: toTitleCase(id) })).filter(Boolean) as Tag[];
+    const tags = values.map((id) => ({ id, name: id }));
+    const suggestions = this.possibilities.map((id) => ( values.includes(id) ? null : { id, name: id })).filter(Boolean) as Tag[];
 
     for (const record of this.meta.records) {
       if (record.templateId !== this.meta.record?.templateId) { continue; }
       const otherVal = record.content[this.key];
       if (Array.isArray(otherVal)) {
         for (const other of otherVal) {
-          if (typeof other !== 'string' || existing.has(toSnakeCase(other))) { continue; }
-          suggestions.unshift({ id: toSnakeCase(other), name: toTitleCase(other) });
+          if (typeof other !== 'string' || existing.has(other)) { continue; }
+          suggestions.unshift({ id: other, name: other });
         }
       }
     }
 
     if (typeof localCustom === 'string' && this.options.custom) {
-      suggestions.unshift({ id: toSnakeCase(localCustom), name: toTitleCase(localCustom) });
+      suggestions.unshift({ id: localCustom, name: localCustom });
     }
 
     // eslint-disable-next-line
@@ -208,7 +209,7 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
       suggestions={suggestions}
       placeholderText={this.options.custom ? (this.possibilities.length ? 'Select or create a value' : 'Add a value') : 'Select a value'}
       onInput={setCustom}
-      onAddition={tag => { this.update([ ...values, toSnakeCase(`${tag.name}`) ]); setCustom(''); /* Must be name for custom tag additions */ }}
+      onAddition={tag => { this.update([ ...values, `${tag.name}` ]); setCustom(''); /* Must be name for custom tag additions */ }}
       onDelete={idx => {
         const update = values.slice();
         update.splice(idx, 1);
