@@ -42,6 +42,10 @@
   font-size: 1.4rem;
 }
 
+.sidebar .menu .item:focus-within {
+  z-index: 9;
+}
+
 .sidebar .menu .item img {
   position: absolute;
   top: 50%;
@@ -141,7 +145,7 @@
   margin-top: 3.2rem;
 }
 
-.menu.sortable a:not(.sortable-dragging)::before {
+.menu.sortable a:not(.sortable-dragging):not(.active)::before {
   content: "";
   background: var(--grey-lighter);
   position: absolute;

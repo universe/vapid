@@ -13,15 +13,16 @@ import {
   stampRecord, 
   Template,
 } from '@neutrinodev/core';
-import type { SimpleDocument, SimpleDocumentFragment } from '@simple-dom/interface';
+import type { SimpleDocument } from '@simple-dom/interface';
 import type { Json } from '@universe/util';
 
 import { HelperResolver, resolveHelper as defaultResolveHelper } from './helpers.js';
-import { IRenderCollections, IRenderPageContext, render as rawRender } from './renderer.js';
+import { IRenderCollections, IRenderPageContext, IRenderResult, render as rawRender } from './renderer.js';
 import { IPageContent, IPageContext, IParsedTemplate, ITemplateAst, ITheme, RendererComponentResolver } from './types.js';
 
 export * from './helpers.js';
 export * from './types.js';
+export { IRenderResult };
 
 function templateFor(page: IRecord, templates: ITemplate[]): ITemplate | null {
   for (const template of templates) {
@@ -194,7 +195,7 @@ export async function render(
   data: IPageContext,
   resolveComponent?: RendererComponentResolver,
   resolveHelper: HelperResolver = defaultResolveHelper,
-) {
+): Promise<IRenderResult> {
   const context: Record<string, Json | Record<string, RuntimeHelper> | Record<string, RuntimeHelper>[]> = {};
 
   for (const [ recordName, record ] of Object.entries(data.content)) {
@@ -239,7 +240,7 @@ export async function renderRecord(
   records: Record<string, IRecord>,
   resolveComponent?: RendererComponentResolver,
   resolveHelper: HelperResolver = defaultResolveHelper,
-): Promise<SimpleDocumentFragment | null>  {
+): Promise<IRenderResult | null>  {
   if (!record || !website) { return null; }
   const renderedAst = theme?.pages?.[record.templateId];
   if (!record || !renderedAst) { return null; }

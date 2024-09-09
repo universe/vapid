@@ -9,6 +9,7 @@ import { IField, INDEX_PAGE_ID, ITemplate, PageType, templateId } from '../types
 export class Template implements ITemplate {
   name: string;
   sortable: boolean;
+  anchors: boolean;
   options: Record<string, POJONeutrinoValue>;
   fields: Record<string, IField | undefined>;
   metadata: Record<string, IField | undefined>;
@@ -17,10 +18,11 @@ export class Template implements ITemplate {
   constructor(data: ITemplate) {
     this.type = data.type;
     this.name = data.name;
-    this.options = data.options;
-    this.sortable = data.sortable;
-    this.fields = data.fields;
-    this.metadata = data.metadata;
+    this.sortable = !!data.sortable;
+    this.anchors = !!data.anchors;
+    this.options = data.options || {};
+    this.fields = data.fields || {};
+    this.metadata = data.metadata || {};
   }
 
   get id(): string {
@@ -168,6 +170,7 @@ export class Template implements ITemplate {
       name: this.name,
       type: this.type,
       sortable: this.sortable,
+      anchors: this.anchors,
       fields: this.fields,
       metadata: this.metadata,
       options: this.options,

@@ -1,7 +1,7 @@
 import { Json, toTitleCase } from "@universe/util";
 import pluralize from 'pluralize';
 
-import { INDEX_PAGE_ID, IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, SerializedRecord } from '../types.js';
+import { IAnchor, INDEX_PAGE_ID, IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, SerializedRecord } from '../types.js';
 import { Template } from './Template.js';
 
 export class Record implements IRecord {
@@ -20,6 +20,7 @@ export class Record implements IRecord {
   deletedAt: number | null;
 
   content: Json;
+  anchors: { [key: string]: IAnchor | undefined };
   metadata: Json;
 
   constructor(data: IRecord, template: Template, parent: Record | null) {
@@ -36,8 +37,9 @@ export class Record implements IRecord {
     this.deletedAt = data.deletedAt || null;
     this.order = data.order;
 
-    this.content = data.content;
-    this.metadata = data.metadata;
+    this.content = data.content || {};
+    this.anchors = data.anchors || {};
+    this.metadata = data.metadata || {};
   }
 
   set name(name: string) { this.#name = name; }
@@ -88,13 +90,10 @@ export class Record implements IRecord {
       hasChildren: !!children.length,
       children: children.filter(r => r.parentId === record.id && !r.deletedAt).map(r => Record.getMetadata(currentUrl, r, [], record)),
       parent: parent ? Record.getMetadata(currentUrl, parent) : null,
-      content: structuredClone(record.content),
-      metadata: structuredClone(record.metadata),
+      anchors: Object.values(record.anchors || {}).filter(a => a && a.visible) as IAnchor[],
+      content: { ...record.content },
+      metadata: { ...record.metadata },
     };
-  }
-
-  async getMetadata(currentUrl: string, children: IRecord[] = [], parent: IRecord | null = null): Promise<SerializedRecord> {
-    return Record.getMetadata(currentUrl, this, children, parent);
   }
 
   toJSON(): IRecord {
@@ -110,8 +109,9 @@ export class Record implements IRecord {
       updatedAt: this.updatedAt,
       deletedAt: this.deletedAt,
 
-      metadata: this.metadata,
       content: this.content,
+      anchors: this.anchors,
+      metadata: this.metadata,
     };
   }
 }

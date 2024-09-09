@@ -20,6 +20,13 @@
           {{~#each @navigation as |page|~}}
             <li class="nav__item">
               <a href="{{page.permalink}}" class="nav__link {{if page.isActive 'active'}}">{{page.name}}</a>
+              <ul class="nav__sub-menu">
+                {{#each page.anchors as |anchor|}}
+                  <li>
+                    <a href="#{{anchor.slug}}" class="nav__sub-link {{if page.isActive 'active'}}">{{anchor.name}}</a>
+                  </li>
+                {{/each}}
+              </ul>
               {{#if page.hasChildren}}
                 <ul class="nav__sub-menu">
                   {{#each page.children as |record|}}

@@ -1,7 +1,7 @@
 import "./directives.css";
 
-import { BaseHelper, DirectiveField, DirectiveMeta, IField, IRecord } from '@neutrinodev/core';
-import { IPageContext, resolveHelper, UnknownHelper } from '@neutrinodev/runtime';
+import { BaseHelper, DirectiveField, DirectiveMeta, IField, IRecord, ITemplate, Template } from '@neutrinodev/core';
+import { IPageContext, IRenderResult, ITheme, resolveHelper, UnknownHelper } from '@neutrinodev/runtime';
 import { toTitleCase } from '@universe/util';
 import { ComponentChildren, createElement } from 'preact';
 
@@ -19,17 +19,22 @@ export function findDirective(type: 'page' | 'metadata' | 'content', domain: str
 export type DirectiveChangeCallback = Parameters<BaseHelper<unknown, NonNullable<unknown>>['onChange']>[0]
 
 export function renderFields(
+  theme: ITheme | null,
   domain: string,
   type: 'page' | 'metadata' | 'content',
   fields: IField[],
   record: IRecord,
   context: IPageContext,
   onChange: DirectiveChangeCallback,
+  template: ITemplate,
+  result: IRenderResult | null = null,
 ): ComponentChildren {
   const out: ComponentChildren[] = [];
   for (const field of fields.sort((f1, f2) => ((f1.priority ?? Infinity) > (f2.priority ?? Infinity) ? 1 : -1))) {
     if (!field) { continue; }
     if (type === 'page' && (field.key === 'name' || field.key === 'slug')) { continue; }
+    const id = Template.id(template);
+    if (!!theme?.pages[id] && result && !result.keys?.includes(field.key)) { continue; }
     const directive = findDirective(type, domain, field.key, field, {
       templateId: record.templateId,
       record: context.page,

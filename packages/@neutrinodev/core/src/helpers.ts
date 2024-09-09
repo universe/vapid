@@ -49,14 +49,6 @@ export interface ParsedExpr {
   type: string;
 }
 
-/**
- * Attempts to cast value to the correct type
- */
-function coerceType(val: string | number | boolean): string | number | boolean | null {
-  try { return JSON.parse(val as string); }
-  catch (err) { return val; }
-}
-
 export interface NeutrinoHelperOptions {
   fragment?: SimpleDocumentFragment;
   block?: (blockParams?: NeutrinoValue[], data?: Record<string, NeutrinoValue>) => SimpleDocumentFragment;
@@ -131,7 +123,7 @@ export abstract class BaseHelper<DirectiveType, Options extends object = object>
     this.#onChange = ((_name: string, _value: DirectiveType) => void 0);
     // Separate options and attributes, discarding ones that aren't explicity specified
     for (const [ key, value ] of Object.entries(options)) {
-      (this.options as {[key: string]: unknown})[key] = coerceType(value);
+      (this.options as {[key: string]: unknown})[key] = value;
     }
     this.options.type = field?.type || options.type || this.options.type;
     this.input = this.input.bind(this);

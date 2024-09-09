@@ -1,5 +1,5 @@
 import { IRecord } from '@neutrinodev/core';
-import { renderRecord, update } from '@neutrinodev/runtime';
+import { IRenderResult, renderRecord, update } from '@neutrinodev/runtime';
 import type { SimpleDocument, SimpleNode } from '@simple-dom/interface';
 import Spinner from '@universe/aether/components/Spinner';
 import { useContext, useEffect } from 'preact/hooks';
@@ -13,11 +13,7 @@ let queuedRender = 0;
 
 interface PreviewProps {
   record: IRecord | null;
-  frame?: boolean;
-  templateName?: string;
-  templateType?: string;
-  pageId?: string;
-  collectionId?: string;
+  onChange: (result: IRenderResult) => void;
 }
 let prevRender: IRecord | null = null;
 
@@ -30,7 +26,7 @@ function focusFieldPreview(evt: Event): void {
 document.addEventListener('focusin', focusFieldPreview);
 document.addEventListener('focusout', focusFieldPreview);
 
-export default function Preview({ record, frame }: PreviewProps) {
+export default function Preview({ record, onChange }: PreviewProps) {
 
   const { loading, records, theme, website } = useContext(DataContext);
 
@@ -55,10 +51,10 @@ export default function Preview({ record, frame }: PreviewProps) {
       if (!website || !theme || !renderedRecord || !doc) { return; }
 
       // Render the site into our hidden scratch document.
-      /* eslint-disable-next-line */
-      const fragment = await renderRecord(false, doc as unknown as SimpleDocument, renderedRecord, website, theme, recordsUpdate) as unknown as DocumentFragment;
-      if (fragment) {
-        update(fragment.children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
+      const result = await renderRecord(false, doc as unknown as SimpleDocument, renderedRecord, website, theme, recordsUpdate);
+      if (result?.document) {
+        update((result.document as unknown as DocumentFragment).children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
+        onChange?.(result);
       }
 
       // If it's our first render, inject our client side preview app script.
@@ -71,7 +67,7 @@ export default function Preview({ record, frame }: PreviewProps) {
     });
   }, [ website, theme, record, records ]);
 
-  return <DeviceFrame visible={frame !== false}>
+  return <DeviceFrame visible={true}>
     <Spinner size="large" className={`vapid-preview__loading vapid-preview--${typeof loading === 'string' ? 'error' : (loading ? 'loading' : 'success')}`} />
     <iframe src="about:blank" id="vapid-preview" class="vapid-preview__iframe" sandbox="allow-same-origin allow-scripts allow-popups allow-modals allow-forms" />
     { /* eslint-disable-next-line max-len */ }

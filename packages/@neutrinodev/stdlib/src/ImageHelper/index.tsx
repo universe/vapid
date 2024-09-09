@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 import { DirectiveProps, NeutrinoHelperOptions, ValueHelper } from '@neutrinodev/core';
-import { Focus, FocusPicker,FocusState } from '@universe/image-focus';
+import { Focus, FocusPicker, FocusState } from '@universe/image-focus';
 import jsonStringify from 'fast-json-stable-stringify';
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 
@@ -174,6 +174,7 @@ export default class ImageHelper extends ValueHelper<ImageHelperValue> {
           data-focus-x={value.current?.focus?.x || 0} 
           data-focus-y={value.current?.focus?.y || 0}
           data-focus-fit={value.current?.focus?.fit || 0}
+          data-focus-blurhash={value.current?.focus?.blurhash || undefined}
           ref={img}
         />
       </div>

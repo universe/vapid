@@ -8,11 +8,12 @@ describe('Record Models', () => {
   it('Has a default slug', () => {
     const tmpl = new Template({
       name: 'test',
+      type: PageType.PAGE,
       sortable: true,
+      anchors: false,
       options: {},
       fields: {},
       metadata: {},
-      type: PageType.PAGE,
     });
     const record = new Record({
       id: '100',
@@ -26,6 +27,7 @@ describe('Record Models', () => {
       deletedAt: null,
       content: {},
       metadata: {},
+      anchors: {},
     }, tmpl, null);
     expect(record.permalink()).toBe('/test--100');
   });

@@ -1,4 +1,4 @@
-import { FileHeaders, IProvider, IRecord, ITemplate, IWebsite, NAVIGATION_GROUP_ID, PageType, stampRecord, UploadResult } from '@neutrinodev/core';
+import { FileHeaders, IProvider, IRecord, ITemplate, IWebsite, mergeAnchor, NAVIGATION_GROUP_ID, PageType, stampRecord, UploadResult } from '@neutrinodev/core';
 import FirebaseProvider from '@neutrinodev/datastore/dist/src/providers/FireBaseProvider.js';
 import { ITheme, renderRecord } from '@neutrinodev/runtime';
 import _createDocument from '@simple-dom/document';
@@ -164,15 +164,22 @@ export class DataAdapter extends IProvider {
       const metadataFields = new Set(Object.keys(template.metadata));
       const contentFields = new Set(Object.keys(template.fields));
 
-      // Save data
+      // Save data and ensure objects exist.
       record.content = Object.assign({}, record.content || {});
       record.metadata = Object.assign({}, record.metadata || {});
+      record.anchors = Object.assign({}, record.anchors || {});
 
       // Only explicitly allowed fields are editable.
       body.content = body.content || {};
       body.metadata = body.metadata || {};
       for (const field of contentFields) { record.content[field] = Object.hasOwnProperty.call(body.content, field) ? body.content?.[field] : record.content[field]; }
       for (const field of metadataFields) { record.metadata[field] = Object.hasOwnProperty.call(body.metadata, field) ? body.metadata?.[field] : record.metadata[field]; }
+
+      // Ensure the anchors hash has all currently rendered anchors present.
+      for (const anchor of Object.values(record?.anchors || {})) { anchor && (anchor.visible = false); }
+      for (const [ key, anchor ] of Object.entries(body?.anchors || {})) {
+        anchor && (record.anchors[key] = mergeAnchor(record.anchors[key] || {}, anchor));
+      }
 
       // Save all well known page data values.
       record.id = typeof body.id === 'string' ? body.id : record.id;
@@ -329,12 +336,12 @@ export class DataAdapter extends IProvider {
     for (const record of toUpload) {
       if (record.templateId.endsWith('-settings') || record.deletedAt) { continue; }
       const document = createDocument();
+      const serializer = new Serializer({});
       const parent: IRecord | null = record.parentId ? allRecords[record.parentId] : null;
       const slug = `${[ parent?.slug, record.slug ].filter(Boolean).join('/')}`;
       discoveredDefaults.delete(slug);
-      const fragment = await renderRecord(true, document, record, website, theme, allRecords);
-      const serializer = new Serializer({});
-      const html = fragment ? serializer.serialize(fragment) : '';
+      const result = await renderRecord(true, document, record, website, theme, allRecords);
+      const html = result?.document ? serializer.serialize(result.document) : '';
       const blob = await gzipBlob(new Blob([html], { type : 'text/html' }));
       promises.push(
         logUpload(this.provider.deployFile(`${WELL_KNOWN_PAGES[slug] || slug}`, blob, { contentType: 'text/html', cacheControl: 'public,max-age=0', contentEncoding: 'gzip' })),

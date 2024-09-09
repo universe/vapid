@@ -1,6 +1,6 @@
 import { ASTv1,preprocess } from '@glimmer/syntax';
 import { DirectiveMeta, HelperType,IField, ITemplate, NeutrinoValue, PageType, ParsedExpr, stampTemplate, Template } from '@neutrinodev/core';
-import { GlimmerTemplate, HelperResolver, IParsedTemplate, ITemplateAst,parsedTemplateToAst } from '@neutrinodev/runtime';
+import { GlimmerTemplate, HelperResolver, IParsedTemplate, ITemplateAst, parsedTemplateToAst } from '@neutrinodev/runtime';
 import pino from 'pino';
 
 export type ComponentResolver = (name: string) => string | null;
@@ -93,8 +93,9 @@ function ensureBranch(template: IParsedTemplate, collectionExpr: ParsedExpr) {
   const newBranch: ITemplate = stampTemplate({
     name,
     type: PageType.COLLECTION,
-    options: collectionExpr.hash,
     sortable: !!collectionExpr.hash.sortable,
+    anchors: false,
+    options: collectionExpr.hash,
     fields: {},
     metadata: {},
   });
@@ -149,6 +150,10 @@ function addToTree(template: IParsedTemplate, leaf: ParsedExpr, path: ASTv1.Path
 
   // If this leaf node is a collection reference, make sure that colleciton exists!
   if (leaf.original.startsWith('@collection')) { ensureBranch(template, leaf); }
+  if (leaf.original.startsWith('@anchor')) {
+    const tmpl = data[`${template.name}-${template.type}`?.toLowerCase()];
+    tmpl.anchors = true;
+  }
 
   // If this is a private path, no-op.
   if (leaf.context !== PAGE_META_KEYWORD && leaf.isPrivate) { return; }
@@ -174,7 +179,6 @@ function addToTree(template: IParsedTemplate, leaf: ParsedExpr, path: ASTv1.Path
   // Ensure the model object reference exists.
   const tmpl: ITemplate = stampTemplate({ name, type });
   const sectionKey = Template.id(tmpl);
-
   data[sectionKey] = data[sectionKey] || tmpl;
 
   // Ensure the field descriptor exists. Merge settings if already exists.
@@ -427,9 +431,10 @@ const NOOP_FUNCTION = () => null;
     const template: ITemplate = stampTemplate({
       name,
       type,
+      sortable: false,
+      anchors: false,
       options: {},
       fields: {},
-      sortable: false,
     });
     templates[Template.id(template)] = templates[Template.id(template)] || template;
   }

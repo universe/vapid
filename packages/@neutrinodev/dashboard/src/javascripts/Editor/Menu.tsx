@@ -1,5 +1,8 @@
+import './Menu.css';
+
 import {
   INDEX_PAGE_ID,
+  IProvider,
   IRecord,
   ITemplate,
   NAVIGATION_GROUP_ID,
@@ -10,12 +13,13 @@ import {
   stampRecord,
   Template,
 } from "@neutrinodev/core";
-import { renderRecord, update } from "@neutrinodev/runtime";
+import { IRenderResult, renderRecord, update } from "@neutrinodev/runtime";
 import type { SimpleDocument, SimpleNode } from '@simple-dom/interface';
 import { toTitleCase } from "@universe/util";
 import { ComponentChildren } from "preact";
 import { createPortal } from "preact/compat";
 import { useContext, useEffect, useState } from "preact/hooks";
+import { route } from "preact-router";
 
 import CollectionImage from '../../images/collection.svg';
 import PageImage from '../../images/page.svg';
@@ -39,7 +43,15 @@ const NAV_ICONS = {
   [PageType.COMPONENT]: '', // Shouldn't ever happen.
 };
 
-function navLink(page: IRecord | null = null, template: ITemplate | null = null, collection: ITemplate | null, activeId = '') {
+function navLink(
+  adapter: IProvider | null,
+  page: IRecord | null = null,
+  template: ITemplate | null = null,
+  collection: ITemplate | null,
+  activeId: string,
+  result: IRenderResult | null,
+  onChange: ((record: IRecord) => Promise<void> | void) | null,
+) {
   if (!template || page?.deletedAt) { return null; }
   if (template.type === PageType.SETTINGS) {
     return <a href={`/${template.type}/${template.name}`} data-id={page?.id} class={`${(Template.id(template) === activeId) ? 'active' : ''} item`} onClick={scrollToEdit}>
@@ -48,9 +60,44 @@ function navLink(page: IRecord | null = null, template: ITemplate | null = null,
     </a>;
   }
   if (!page) { return null; }
-  return <a href={`/${template.type}/${template.name}/${page.slug}`} data-id={page.id} class={`${(page.slug === activeId) ? 'active' : ''} item`} onClick={scrollToEdit}>
+  const url = `/${template.type}/${template.name}/${page.slug}`;
+  return <a href={url} data-id={page.id} class={`${(page.slug === activeId) ? 'active' : ''} item`} onClick={scrollToEdit}>
     <img src={NAV_ICONS[collection ? PageType.COLLECTION : template.type]} />
     {DBRecord.getName(page, template)}
+    {template.anchors ? <ol
+      class="menu__anchors-button"
+      tabIndex={-1}
+      data-count={Object.values(page?.anchors || {}).reduce((total: number, anchor) => (total + (anchor?.visible ? 1 : 0)), 0)}
+      onClick={evt =>{
+        evt.preventDefault();
+        evt.stopImmediatePropagation();
+        evt.currentTarget?.focus();
+        route(url);
+      }}>
+        {Object.values(result?.anchors || {}).map(anchor => {
+          if (!anchor) { return null; }
+          const checked = page?.anchors?.[anchor.slug]?.visible || false;
+          return <li key={anchor.slug} class="menu__anchor">
+            <input
+              type="checkbox"
+              id={`anchor-${page.id}-${anchor.slug}`}
+              checked={checked}
+              class="menu__anchor-checkbox"
+            />
+            <label
+              for={`anchor-${page.id}-${anchor.slug}`}
+              class="menu__anchor-name"
+              onClick={() => {
+                page.anchors = page.anchors || {};
+                const update = page.anchors[anchor.slug] = { ...anchor };
+                update.visible = !checked;
+                adapter?.updateRecord(page);
+                onChange?.({ ...page });
+              }}
+            >{anchor.name}</label>
+          </li>;
+        })}
+      </ol> : null}
   </a>;
 }
 
@@ -59,22 +106,27 @@ export interface IMenuProps {
   pageId: string;
   templateName: string | null;
   templateType: string | null;
+  result: IRenderResult | null;
+  onChange?: ((record: IRecord) => Promise<void> | void) | null;
   onDeploy?: () => Promise<void> | void;
 }
 
 export default function Menu({
   children,
-  onDeploy,
   pageId,
+  result,
   templateName,
   templateType,
+  onChange,
+  onDeploy,
 }: IMenuProps) {
 
-  const { theme, website, records, templates, collectionFor, templateFor } = useContext(DataContext);
+  const { adapter, theme, website, records, templates, collectionFor, templateFor } = useContext(DataContext);
   const [ pageTemplatesOpen, setPageTemplatesOpen ] = useState(false);
 
   const recordsList = Object.values(records || {}).sort(sortRecords);
   const templatesList = Object.values(templates || {});
+  const cb = onChange || null;
 
   useEffect(() => {
     (async() => {
@@ -92,10 +144,9 @@ export default function Menu({
         if (!doc) { return; }
   
         // Render the site into our hidden scratch document.
-        /* eslint-disable-next-line */
-        const fragment = await renderRecord(false, doc as unknown as SimpleDocument, stampRecord(template), website, theme, records) as unknown as DocumentFragment;
-        if (fragment) {
-          update(fragment.children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
+        const result = await renderRecord(false, doc as unknown as SimpleDocument, stampRecord(template), website, theme, records);
+        if (result?.document) {
+          update((result.document as unknown as DocumentFragment).children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
           doc.children[0].querySelector('body')?.setAttribute('neutrino-preview', 'true');
         }
       }
@@ -119,10 +170,13 @@ export default function Menu({
         <div class="menu sortable">
           {recordsList.map((page) => page.parentId === NAVIGATION_GROUP_ID
             ? navLink(
+              adapter,
               page,
               templateFor(page),
               collectionFor(templateFor(page)),
               pageId,
+              result,
+              cb,
             )
             : null,
           )}
@@ -132,7 +186,7 @@ export default function Menu({
             const tmpl = templateFor(page);
             const collection = collectionFor(tmpl);
             if (!tmpl || tmpl?.type !== PageType.PAGE) { return null; }
-            return navLink(page, tmpl, collection, pageId);
+            return navLink(adapter, page, tmpl, collection, pageId, result, cb);
           })}
         </div>
       </div>
@@ -143,7 +197,7 @@ export default function Menu({
           {templatesList.sort(sortTemplatesAlphabetical).map((tmpl) => {
             if (tmpl?.type !== PageType.SETTINGS) { return null; }
             if (!Object.keys(tmpl?.fields).length) { return null; }
-            return navLink(null, tmpl, null, `${templateName}-${templateType}`);
+            return navLink(adapter, null, tmpl, null, `${templateName}-${templateType}`, result, cb );
           })}
         </div>
       </div>
@@ -207,15 +261,14 @@ export default function Menu({
                   }
 
                   // Render the site into our hidden scratch document.
-                  /* eslint-disable-next-line */
-                  const fragment = await renderRecord(false, doc as unknown as SimpleDocument, stampRecord(tmpl), website, theme, records) as unknown as DocumentFragment;
+                  const result = await renderRecord(false, doc as unknown as SimpleDocument, stampRecord(tmpl), website, theme, records);
                   if (!el.classList.contains('over')) { return; }
-                  if (fragment) {
+                  if (result?.document) {
                     // eslint-disable-next-line max-len
                     doc.children[0].querySelector('body')?.setAttribute('style', 'opacity: 0; background: transparent; overflow: hidden; transition: opacity .18s ease-in-out, background .18s ease-in-out;');
                     await new Promise(r => setTimeout(r, 180));
                     if (!el.classList.contains('over')) { return; }
-                    update(fragment.children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
+                    update((result.document as unknown as DocumentFragment).children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
                     doc.children[0].querySelector('body')?.setAttribute('neutrino-preview', 'true');
                     // eslint-disable-next-line max-len
                     doc.children[0].querySelector('body')?.setAttribute('style', 'opacity: 1; background: white; overflow: hidden; transition: opacity .18s ease-in-out, background .18s ease-in-out;');

@@ -67,7 +67,7 @@
     "@types/react-tag-autocomplete": "^6.1.1",
     "@types/sanitize-html": "^1.27.2",
     "@uiw/react-md-editor": "^3.13.0",
-    "@universe/image-focus": "^3.3.0",
+    "@universe/image-focus": "^3.3.1",
     "@universe/util": "^1.1.2",
     "@universe/wysiwyg": "^1.1.2",
     "@vitejs/plugin-basic-ssl": "^0.1.2",
@@ -84,7 +84,7 @@
     "quill-hr": "^0.0.4",
     "quill-image": "^0.0.21",
     "quill-video-embed": "^0.0.5",
-    "react-tag-autocomplete": "^6.3.0",
+    "x": "^6.3.0",
     "sanitize-html": "^1.18.2",
     "tui-image-editor": "^3.9.0"
   }

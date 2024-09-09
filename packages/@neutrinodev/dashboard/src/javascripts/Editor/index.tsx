@@ -1,6 +1,7 @@
 import "./Editor.css";
 
 import { INDEX_PAGE_ID, IRecord, PageType, Record as DBRecord, sortRecords, stampRecord, Template } from '@neutrinodev/core';
+import { IRenderResult } from '@neutrinodev/runtime';
 import Spinner from '@universe/aether/components/Spinner';
 import { ComponentChildren, Fragment } from "preact";
 import { createPortal } from 'preact/compat';
@@ -15,6 +16,7 @@ import * as sortable from './sortable.js';
 
 interface RouteParts {
   active: IRecord | null;
+  result: IRenderResult | null;
   embedded?: boolean;
   path?: string;
   id?: string;
@@ -36,6 +38,7 @@ export default function Editor(params: RouteParts) {
     children,
     embedded,
     active,
+    result,
 
     // Hooks
     onChange,
@@ -129,6 +132,8 @@ export default function Editor(params: RouteParts) {
         pageId={pageId || INDEX_PAGE_ID}
         templateName={templateName || null}
         templateType={templateType || null}
+        result={result}
+        onChange={(record) => { active && active?.id === record.id && onChange(record); }}
         onDeploy={async() => {
           const res = await beforeDeploy?.();
           if (res === false) { throw new Error('beforeDeploy hook blocked site deploy'); }
@@ -145,6 +150,7 @@ export default function Editor(params: RouteParts) {
           template={template}
           record={active}
           parent={parent}
+          result={result}
           onCancel={() => {
             delete drafts[draftKey];
             const prev = Object.values(records).find(r => r.id === active?.id);

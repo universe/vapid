@@ -1,6 +1,7 @@
 import type { ASTv1 } from '@glimmer/syntax';
-import { nanoid, NeutrinoHelperOptions, NeutrinoValue, SafeString } from '@neutrinodev/core';
+import { IAnchor, IRecordData, mergeAnchor, nanoid, NeutrinoHelperOptions, NeutrinoValue, RECORD_META, SafeString } from '@neutrinodev/core';
 import { InsertPosition, Namespace, NodeType, SimpleDocument, SimpleDocumentFragment, SimpleElement, SimpleText  } from '@simple-dom/interface';
+import { toTitleCase } from '@universe/util';
 
 import { HelperResolver } from './helpers.js';
 import { GlimmerTemplate, IPageContext, IParsedTemplate, RendererComponentResolver } from './types.js';
@@ -9,13 +10,15 @@ type SimpleParent = SimpleElement | SimpleDocument | SimpleDocumentFragment;
 
 interface VapidRuntimeEnv {
   isDevelopment: boolean;
-  document: SimpleDocument,
-  root: SimpleParent,
-  program: GlimmerTemplate | ASTv1.Block | ASTv1.Template | ASTv1.Program | ASTv1.Statement[],
-  contents: ASTv1.Statement[],
-  namespace: Namespace.HTML | Namespace.SVG,
-  resolveComponent: RendererComponentResolver,
-  resolveHelper: HelperResolver,
+  document: SimpleDocument;
+  root: SimpleParent;
+  program: GlimmerTemplate | ASTv1.Block | ASTv1.Template | ASTv1.Program | ASTv1.Statement[];
+  contents: ASTv1.Statement[];
+  namespace: Namespace.HTML | Namespace.SVG;
+  anchors: Record<string, IAnchor>;
+  keys: Set<string>;
+  resolveComponent: RendererComponentResolver;
+  resolveHelper: HelperResolver;
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -68,6 +71,7 @@ function isDocumentFragment(node: NeutrinoValue): node is SimpleDocumentFragment
 }
 
 function resolveValue(
+  env: VapidRuntimeEnv,
   node: ASTv1.MustacheStatement | ASTv1.BlockStatement | ASTv1.Expression, 
   ctx: UnknonwValueHash, 
   data: UnknonwValueHash, 
@@ -84,6 +88,9 @@ function resolveValue(
       return null;
     case 'PathExpression': {
       let obj = node.this ? ctx['this'] : (node.data ? data : ctx);
+      if (node.this) {
+        env.keys.add(node.original.replace('this.', ''));
+      }
       for (const part of node.parts) {
         obj = obj?.[part] ?? null;
       }
@@ -96,17 +103,31 @@ function resolveValue(
     }
   }
   switch(node.path.type) {
-    case 'PathExpression':
-      // If is helper
+    case 'PathExpression': {
+      const params = node.params?.map(param => resolveValue(env, param, ctx, data, resolveHelper)) || [];
+      const hash: Record<string, NeutrinoValue> = {};
+      for (const pair of (node.hash?.pairs || [])) {
+        hash[pair.key] = resolveValue(env, pair.value, ctx, data, resolveHelper);
+      }
+      // If we're referencing a page anchor, render the anchor ID.
+      if (node.path.original.startsWith('@anchor')) {
+        const params = node.params.map(param => resolveValue(env, param, ctx, data, resolveHelper));
+        const record = params[0] as IRecordData;
+        const path = node.path.original.split('.')[1];
+        const slug = (record ? record?.[RECORD_META]?.slug : path) || '';
+        env.anchors[slug] = mergeAnchor(env.anchors[slug] || {}, {
+          slug,
+          name: String(hash.name || '') || toTitleCase(slug),
+          visible: false,
+        });
+        return slug;
+      }
+
+      // If is a helper
       if (!node.path.this && (node.params?.length || node.hash?.pairs?.length)/* !node.path.data */) {
         const type = node.path.parts[0];
         const helper = resolveHelper(type);
-        if (!helper) { return resolveValue(node.path, ctx, data, resolveHelper); }
-        const params = node.params.map(param => resolveValue(param, ctx, data, resolveHelper));
-        const hash: Record<string, NeutrinoValue> = {};
-        for (const pair of node.hash.pairs) {
-          hash[pair.key] = resolveValue(pair.value, ctx, data, resolveHelper);
-        }
+        if (!helper) { return resolveValue(env, node.path, ctx, data, resolveHelper); }
 
         // If this is a collection helper, and no param has been passed to allow the user to specify
         // which collection should be used, then use the default collection for this page.
@@ -119,10 +140,10 @@ function resolveValue(
         return (helper && helper.prototype.render(params, hash, options || {})) ?? null;
       }
 
-      return resolveValue(node.path, ctx, data, resolveHelper);
-
+      return resolveValue(env, node.path, ctx, data, resolveHelper);
+    }
     default:
-      return resolveValue(node.path, ctx, data, resolveHelper);
+      return resolveValue(env, node.path, ctx, data, resolveHelper);
   }
 }
 
@@ -145,10 +166,10 @@ function applyDebugAttr(type: DebugContainerType, el: SimpleElement, statement: 
 }
 
 function getAttributeValue(
+  env: VapidRuntimeEnv,
   attr: ASTv1.MustacheStatement | ASTv1.TextNode | ASTv1.ConcatStatement,
   context: Record<string, NeutrinoValue>,
   data: IRenderPageContext,
-  env: VapidRuntimeEnv,
   el?: SimpleElement,
 ) {
   switch(attr.type) {
@@ -160,7 +181,7 @@ function getAttributeValue(
         switch(statement.type) {
           case 'TextNode': value += statement.chars; break;
           case 'MustacheStatement':
-            value += resolveValue(statement, context, data, env.resolveHelper) ?? missingData(statement);
+            value += resolveValue(env, statement, context, data, env.resolveHelper) ?? missingData(statement);
             if (el && env.isDevelopment) {
               applyDebugAttr('attribute', el, statement);
             }
@@ -170,7 +191,7 @@ function getAttributeValue(
       return value;
     }
     case 'MustacheStatement':
-      return `${resolveValue(attr, context, data, env.resolveHelper) ?? missingData(attr)}`;
+      return `${resolveValue(env, attr, context, data, env.resolveHelper) ?? missingData(attr)}`;
   }
 }
 
@@ -210,13 +231,13 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
                   switch(statement.type) {
                     case 'TextNode': value += statement.chars; break;
                     case 'MustacheStatement':
-                      value += resolveValue(statement, context, data, resolveHelper) ?? missingData(statement);
+                      value += resolveValue(env, statement, context, data, resolveHelper) ?? missingData(statement);
                       break;
                   }
                 }
                 break;
               default:
-                value = resolveValue(input, context, data, resolveHelper) ?? missingData(input) ?? '';
+                value = resolveValue(env, input, context, data, resolveHelper) ?? missingData(input) ?? '';
             }
             subData.props[key] = value;
           }
@@ -254,7 +275,7 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
           }
           else {
             for (const attr of node.attributes) {
-              const value = getAttributeValue(attr.value, context, data, env, el);
+              const value = getAttributeValue(env, attr.value, context, data, el);
               el.setAttribute(attr.name, value);
             }
           }
@@ -280,7 +301,7 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
           break;
         }
 
-        const val = resolveValue(node, context, data, resolveHelper) ?? missingData(node) ?? '';
+        const val = resolveValue(env, node, context, data, resolveHelper) ?? missingData(node) ?? '';
         let parent = root;
         if (env.isDevelopment && val.toString() && !isScriptNode(parent) && !isStyleNode(parent)) {
           const el = document.createElementNS(env.namespace, 'span');
@@ -305,7 +326,7 @@ const { document, root, program, resolveComponent, resolveHelper } = env;
         break;
       }
       case 'BlockStatement': {
-        const val = resolveValue(node, context, data, resolveHelper, {
+        const val = resolveValue(env, node, context, data, resolveHelper, {
           fragment: document.createDocumentFragment(),
           block: (blockParams: NeutrinoValue[] = [], dat: UnknonwValueHash = {}) => {
             const fragment = document.createDocumentFragment();
@@ -374,6 +395,12 @@ export type IRenderPageContext = Omit<Omit<Omit<IPageContext, 'content'>, 'colle
   component: { id: string; };
 };
 
+export interface IRenderResult {
+  document: Document | SimpleDocument | SimpleDocumentFragment;
+  anchors: Record<string, IAnchor>;
+  keys: string[];
+}
+
 /**
  * Applies content to the template
  *
@@ -387,7 +414,7 @@ export function render(
   resolveHelper: HelperResolver, 
   data: IRenderPageContext, 
   context = {},
-): SimpleDocumentFragment {
+): IRenderResult {
   // For Typescript
   document = document as SimpleDocument;
   UNIQUE_ID = 0; // Re-set our incrementing debug ID.
@@ -400,6 +427,8 @@ export function render(
     namespace: Namespace.HTML,
     program: ast,
     contents: [],
+    anchors: {},
+    keys: new Set(),
     resolveComponent,
     resolveHelper: (key: string): ReturnType<typeof resolveHelper> => {
       const helper = resolveHelper(key);
@@ -407,8 +436,10 @@ export function render(
       return helper;
     },
   };
+
+  // Run our render!
   traverse(env, tmpl, context, data);
-  
+
   // Append development styles to the document tree if needed.
   if (env.isDevelopment) {
     const style = document.createElementNS(env.namespace, 'style');
@@ -451,5 +482,9 @@ export function render(
     }
   }
 
-  return env.root as SimpleDocumentFragment;
+  return {
+    document: env.root as SimpleDocumentFragment,
+    anchors: { ...env.anchors },
+    keys: [...env.keys],
+  };
 }

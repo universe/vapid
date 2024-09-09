@@ -1,5 +1,6 @@
 export { type HelperResolver, type UnknownHelper, resolveHelper } from './helpers.js';
 export {
+  IRenderResult,
   makePageContext,
   parsedTemplateToAst,
   render,

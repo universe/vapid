@@ -1,7 +1,7 @@
 import './Page.css';
 
 import { IRecord, ITemplate, NAVIGATION_GROUP_ID, PageType, sortRecords } from '@neutrinodev/core';
-import { makePageContext, Template } from '@neutrinodev/runtime';
+import { IRenderResult, makePageContext, Template } from '@neutrinodev/runtime';
 import { Json, toTitleCase } from '@universe/util';
 import { Fragment } from 'preact';
 import { useContext,useEffect, useState } from 'preact/hooks';
@@ -18,13 +18,14 @@ interface EditorProps {
   template: ITemplate;
   record: IRecord | null;
   parent: IRecord | null;
+  result: IRenderResult | null;
   onChange: (record: IRecord) => void | Promise<void>;
   onSave: (record: IRecord | IRecord[], navigate?: boolean) => void | Promise<void>;
   onCancel: (record: IRecord) => void | Promise<void>;
 }
 
-export default function Page({ isNewRecord, template, record, parent, onChange, onSave, onCancel }: EditorProps) {
-  const { domain, website, templates, records, templateFor } = useContext(DataContext);
+export default function Page({ isNewRecord, template, record, parent, result, onChange, onSave, onCancel }: EditorProps) {
+  const { domain, website, templates, records, theme, templateFor } = useContext(DataContext);
 
   const [ metaOpen, setMetaOpen ] = useState(0);
   const [ isDirty, setIsDirty ] = useState(false);
@@ -71,9 +72,9 @@ export default function Page({ isNewRecord, template, record, parent, onChange, 
 
   // Generate all renderable fields for page metadata, theme metadata, and page content.
   /* eslint-disable max-len */
-  const pageFields = current && context ? renderFields(domain, 'page', Template.pageFields(template), current, context, onUpdate.bind(window, 'page')) : null;
-  const metaFields = current && context ? renderFields(domain, 'metadata', Template.metaFields(template), current, context, onUpdate.bind(window, 'metadata')) : null;
-  const contentFields = record && context ? renderFields(domain, 'content', Template.sortedFields(template), record, context, onUpdate.bind(window, 'content')) : null;
+  const pageFields = current && context ? renderFields(theme, domain, 'page', Template.pageFields(template), current, context, onUpdate.bind(window, 'page'), template) : null;
+  const metaFields = current && context ? renderFields(theme, domain, 'metadata', Template.metaFields(template), current, context, onUpdate.bind(window, 'metadata'), template) : null;
+  const contentFields = record && context ? renderFields(theme, domain, 'content', Template.sortedFields(template), record, context, onUpdate.bind(window, 'content'), template, result) : null;
   /* eslint-enable max-len */
 
   const templateName = toTitleCase(template.name);
@@ -149,7 +150,6 @@ export default function Page({ isNewRecord, template, record, parent, onChange, 
         style={{ height: `${(isNewRecord && template.type === PageType.SETTINGS) ? 0 : metaOpen}px` }}
       >
         {pageFields}
-        {metaFields}
         {!isNewRecord && template.type !== PageType.SETTINGS ? <button
           type="button"
           disabled={slugError}
@@ -163,6 +163,7 @@ export default function Page({ isNewRecord, template, record, parent, onChange, 
             }, 'Deleting Page...', 'Successfully Deleted', 'Error Deleting');
           }}
         >Delete</button> : null}
+        {metaFields}
       </section>
       <section class="content">
         {/* eslint-disable max-len */}

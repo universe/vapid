@@ -1,9 +1,9 @@
-import { IRecord,ITemplate, Template } from "@neutrinodev/core";
-import { IWebsite } from "@neutrinodev/runtime";
-import { Fragment } from "preact/jsx-runtime";
+import { IRecord,ITemplate, Template } from '@neutrinodev/core';
+import { IWebsite } from '@neutrinodev/runtime';
+import { Fragment } from 'preact/jsx-runtime';
 
-import { findDirective } from "./directives.js";
-import { DraggableList } from "./DraggableList.js";
+import { findDirective } from './directives.js';
+import { DraggableList } from './DraggableList.js';
 
 interface CollectionListProps {
   domain: string;

@@ -3,6 +3,7 @@ import { DirectiveProps, INDEX_PAGE_ID, SerializedRecord, ValueHelper } from '@n
 interface UrlHelperOptions {
   prefix: string;
   placeholder: string;
+  format: string;
 }
 
 /* eslint-disable max-len */
@@ -56,6 +57,13 @@ export default class UrlHelper extends ValueHelper<string, UrlHelperOptions> {
         aria-describedby={`help-${name}`}
         value={val}
         onChange={evt => directive.update((evt.target as HTMLInputElement).value)}
+        onBlur={evt => {
+          let value = (evt.target as HTMLInputElement).value;
+          if ((value.includes('.com') || value.includes('.org') || value.includes('.app')) && !value.startsWith('http://') && !value.startsWith('https://')) {
+            value = `https://${value}`;
+          }
+          directive.update(value);
+        }}
       />
     </div>;
   }

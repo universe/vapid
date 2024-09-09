@@ -1,4 +1,3 @@
-import { preprocess } from '@glimmer/syntax';
 import {
   ITemplate,
   mergeField,
@@ -7,16 +6,12 @@ import {
   Template,
 } from '@neutrinodev/core';
 import {
-  GlimmerTemplate,
   HelperResolver,
-  IPageContext,
   IParsedTemplate,
   IStylesheet,
   ITemplateAst,
   ITheme,
-  render,
 } from '@neutrinodev/runtime';
-import Serializer from '@simple-dom/serializer';
 import autoprefixer from 'autoprefixer';
 import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
@@ -24,7 +19,6 @@ import glob from 'glob';
 import { basename, dirname, join, resolve } from 'path';
 import postcss from 'postcss';
 import postcssImport from 'postcss-import';
-import { Document } from 'simple-dom';
 
 import { ComponentResolver, parse } from './parser.js';
 
@@ -43,12 +37,6 @@ export class TemplateCompiler {
   constructor(customResolveComponent: ComponentResolver = () => null, customResolveHelper: HelperResolver = () => null) {
     this.resolveComponent = customResolveComponent;
     this.resolveHelper = customResolveHelper;
-  }
-
-  private resolveComponentAst(name: string): GlimmerTemplate {
-    const path = this.resolveComponent(name);
-    if (!path) { throw new Error(`Unknown component <${name} />`); }
-    return preprocess(path);
   }
 
   /**
@@ -108,6 +96,8 @@ export class TemplateCompiler {
         // Ensure the section name and type are set.
         finalTemplate.name = parsedTemplate.name || finalTemplate.name;
         finalTemplate.type = parsedTemplate.type || finalTemplate.type;
+        finalTemplate.anchors = parsedTemplate.anchors || finalTemplate.anchors || false;
+        finalTemplate.sortable = parsedTemplate.sortable || finalTemplate.sortable || false;
 
         // Merge section options
         Object.assign(finalTemplate.options, parsedTemplate.options);
@@ -148,24 +138,4 @@ export class TemplateCompiler {
       stylesheets,
     };
   }
-
-  /**
-   * Applies content to the template
-   *
-   * @param {Object} content
-   * @return {string} - HTML that has tags replaced with content
-   */
-  async render(tmpl: IParsedTemplate, data: IPageContext) {
-    const document = new Document();
-    await render(
-      document,
-      tmpl,
-      data,
-      this.resolveComponentAst.bind(this),
-      this.resolveHelper.bind(this),
-    );
-    const serializer = new Serializer({});
-    return serializer.serialize(document);
-  }
-
 }

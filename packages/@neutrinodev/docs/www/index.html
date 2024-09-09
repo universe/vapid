@@ -1,4 +1,18 @@
 <Layout>
   <h1>Hello Universe!</h1>
   {{this.body type="html"}}
+  <section id={{@anchor.one name="First"}}>
+    <h2>Anchor Section: {{@anchor.one}}</h2>
+  </section>
+  {{#if (this.hide_two type="choice")}}
+    <section id={{@anchor.example-two}}>
+      <h2>Anchor Section: {{@anchor.example-two}}</h2>
+      <label>{{this.sub_head}}</label>
+    </section>
+  {{/if}}
+  {{#each (@collection.page this.page_collection) as |page|}}
+    <section id={{@anchor page}}>
+      <h2>Anchor Section: {{@anchor page}}</h2>
+    </section>
+  {{/each}}
 </Layout>

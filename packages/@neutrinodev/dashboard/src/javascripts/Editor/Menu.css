@@ -1,0 +1,158 @@
+.menu__anchors-button {
+  position: absolute;
+  background-color: var(--slate-6);
+  right: 2.8rem;
+  border: none;
+  padding: 0.2rem 0 0.6rem;
+  border-radius: 0.9rem;
+  max-height: 1.8rem;
+  height: fit-content;
+  font-size: 0;
+  top: 1.2rem;
+  align-items: flex-end;
+  display: flex;
+  flex-flow: column;
+  gap: 0.2rem;
+  cursor: pointer;
+  color: var(--slate-2);
+  overflow: hidden;
+  opacity: 0.75;
+  box-shadow: 0 0 0 1px currentColor;
+  transition:
+    opacity .18s ease-in-out,
+    background-color .18s ease-in-out,
+    color .18s ease-in-out,
+    box-shadow .18s ease-in-out,
+    max-height .18s ease-in-out;
+}
+
+a.item:hover .menu__anchors-button,
+a.item.active .menu__anchors-button {
+  opacity: 1;
+}
+
+.active .menu__anchors-button {
+  color: var(--slate-0);
+}
+
+.menu__anchors-button:hover, .active .menu__anchors-button:hover {
+  background-color: var(--slate-6);
+  color: var(--bold-blue-3);
+}
+
+.menu__anchors-button::before {
+  content: "\e1cb\00a0\00a0" attr(data-count);
+  font-family: var(--serif-stack), "fontawesome";
+  font-size: 1.3rem;
+  line-height: 1.2;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  padding: 0 0.8rem;
+}
+
+.menu__anchors-button::after {
+  content: "Anchor Links";
+  font-family: var(--sans-stack);
+  font-size: 1.3rem;
+  line-height: 1.2;
+  font-weight: bold;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.8rem;
+  opacity: 0;
+  color: var(--slate-0) !important;
+  transition: opacity .18s ease-in-out;
+}
+
+.menu__anchor {
+  background-color: white;
+  width: 0px;
+  opacity: 0px;
+  color: var(--slate-0);
+  transition: width .18s ease-in-out, opacity .18s ease-in-out;
+  display: flex !important;
+  flex-flow: row;
+  font-size: 1.3rem;
+  gap: 0.8rem;
+  height: 1.8rem;
+  padding: 0;
+  margin: 0 !important;
+  align-items: center;
+}
+
+.menu__anchor:first-of-type {
+  margin-top: 0.4rem !important;
+}
+
+.menu__anchors-button:focus, .menu__anchors-button:focus-within {
+  max-height: 12rem;
+  opacity: 1;
+}
+
+.menu__anchors-button:focus .menu__anchor, .menu__anchors-button:focus-within .menu__anchor {
+  width: 18rem;
+  opacity: 1;
+}
+
+.menu__anchors-button:focus::after, .menu__anchors-button:focus-within::after {
+  opacity: 1
+}
+
+.menu__anchor-checkbox {
+  position: absolute;
+  opacity: 0;
+}
+
+.menu__anchor-name {
+  width: 100%;
+  height: 1.8rem;
+  display: flex;
+  align-items: center;
+  flex-flow: row;
+  position: relative;
+  z-index: 1;
+  padding: 0 0.8rem 0 3rem;
+  cursor: pointer !important;
+  transition: color .18s ease-in-out;
+}
+
+.menu__anchor-name::before {
+  content: "\f00c";
+  position: absolute;
+  left: 0.8rem;
+  top: 0.2rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid var(--slate-1);
+  border-radius: 0.2rem;
+  font-family: 'fontawesome';
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.1rem;
+  color: transparent;
+  transition: color .18s ease-in-out, border-color .18s ease-in-out;
+}
+
+.menu__anchor-name:hover {
+  color: var(--bold-blue-3);
+}
+
+.menu__anchor-name:hover::before {
+  border-color: var(--bold-blue-3);
+}
+
+.menu__anchor-checkbox:checked + .menu__anchor-name {
+  color: var(--bold-blue-3);
+}
+
+.menu__anchor-checkbox:checked + .menu__anchor-name::before {
+  border-color: var(--bold-blue-3);
+  color: var(--bold-blue-3);
+  font-weight: bold;
+}

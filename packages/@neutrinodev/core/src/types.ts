@@ -44,13 +44,20 @@ export interface IField<DirectiveTypes=string> {
   options: Record<string, POJONeutrinoValue>;
 }
 
+export interface IAnchor {
+  slug: string;
+  name: string;
+  visible: boolean;
+}
+
 export interface ITemplate {
   name: string;
+  type: PageType;
   sortable: boolean;
+  anchors: boolean;
   options: Record<string, POJONeutrinoValue>;
   fields: Record<string, IField | undefined>;
   metadata: Record<string, IField | undefined>;
-  type: PageType;
 }
 
 export interface IRecord {
@@ -65,8 +72,9 @@ export interface IRecord {
   name: string | null;
   order: number | null;
 
-  metadata: Json;
   content: Json;
+  metadata: Json;
+  anchors: Record<string, IAnchor | undefined>;
 }
 
 export interface SerializedRecord {
@@ -85,9 +93,10 @@ export interface SerializedRecord {
   isActive: boolean;
   isParentActive: boolean;
   hasChildren: boolean;
-  children: SerializedRecord[];
-  parent: SerializedRecord | null;
 
+  parent: SerializedRecord | null;
+  children: SerializedRecord[];
+  anchors: IAnchor[];
   metadata: Json;
   content: Json;
 }
@@ -128,6 +137,7 @@ export function stampRecord(template: ITemplate, record: Partial<IRecord> = {}):
 
     content: {},
     metadata: {},
+    anchors: {},
 
     ...record,
   };
@@ -148,9 +158,18 @@ export function mergeField(field1: Partial<IField>, field2: IField): IField {
   return out;
 }
 
+export function mergeAnchor(anchor1: Partial<IAnchor>, anchor2: IAnchor): IAnchor {
+  return {
+    slug: anchor1.slug || anchor2.slug,
+    name: anchor1.name || anchor2.name,
+    visible: anchor1.visible || anchor2.visible || false,
+  };
+}
+
 export function stampTemplate(template: Partial<ITemplate> & { name: string; type: PageType; }) {
   return {
     sortable: false,
+    anchors: false,
     options: {},
     fields: {},
     metadata: {},
