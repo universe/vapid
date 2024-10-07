@@ -176,6 +176,10 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
   private tags(_name: string, values = this.default) {
     const s = useState<string>('');
     const [ localCustom, setCustom ] = s;
+
+    // Normalize for potential string or number inputs.
+    this.options.custom = String(this.options.custom) === 'true' || String(this.options.custom) === '1';
+
     values = Array.isArray(values) ? values : (typeof values === 'string' ? [values] : []);
     values = values.filter(value => Boolean(value?.trim()));
 
@@ -205,7 +209,7 @@ export default class ChoiceHelper extends ValueHelper<string[], ChoiceOptions> {
       minQueryLength={0}
       autoresize={false}
       tags={tags}
-      allowNew={this.options.custom}
+      allowNew={!!this.options.custom} /* Note: ReactTags will throw if it isn't passed a boolean here */
       suggestions={suggestions}
       placeholderText={this.options.custom ? (this.possibilities.length ? 'Select or create a value' : 'Add a value') : 'Select a value'}
       onInput={setCustom}

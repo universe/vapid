@@ -31,10 +31,14 @@ interface IDashboardProps {
 export function Dashboard({ adapter, sdk, embedded, children, root, beforeDeploy, afterDeploy }: IDashboardProps) {
   const [ localRecord, setLocalRecord ] = useState<IRecord | null>(null);
   const [ renderResult, setRenderResult ] = useState<IRenderResult | null>(null);
-
+  const domain = adapter?.getDomain();
   useEffect(() => {
     document.body.classList.toggle('dashboard--embedded', embedded);
   }, [embedded]);
+
+  useEffect(() => {
+    setLocalRecord(null);
+  }, [domain]);
 
   useEffect(() => {
     if (!localRecord || !Object.values(renderResult?.anchors || {}).length) { return; }

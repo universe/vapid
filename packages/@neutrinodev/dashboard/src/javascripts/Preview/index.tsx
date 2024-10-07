@@ -13,7 +13,7 @@ let queuedRender = 0;
 
 interface PreviewProps {
   record: IRecord | null;
-  onChange: (result: IRenderResult) => void;
+  onChange: (result: IRenderResult, record: IRecord) => void;
 }
 let prevRender: IRecord | null = null;
 
@@ -27,8 +27,7 @@ document.addEventListener('focusin', focusFieldPreview);
 document.addEventListener('focusout', focusFieldPreview);
 
 export default function Preview({ record, onChange }: PreviewProps) {
-
-  const { loading, records, theme, website } = useContext(DataContext);
+  const { domain, loading, records, theme, website } = useContext(DataContext);
 
   // If first render and we haven't found an AST match (e.g. loading a settings page), render the home page instead.
   useEffect(() => {
@@ -54,7 +53,7 @@ export default function Preview({ record, onChange }: PreviewProps) {
       const result = await renderRecord(false, doc as unknown as SimpleDocument, renderedRecord, website, theme, recordsUpdate);
       if (result?.document) {
         update((result.document as unknown as DocumentFragment).children[0] as unknown as SimpleNode, doc.children[0] as unknown as SimpleNode);
-        onChange?.(result);
+        onChange?.(result, renderedRecord);
       }
 
       // If it's our first render, inject our client side preview app script.
@@ -65,7 +64,7 @@ export default function Preview({ record, onChange }: PreviewProps) {
       }
       isFirstRender = false;
     });
-  }, [ website, theme, record, records ]);
+  }, [ domain, website, theme, record, records ]);
 
   return <DeviceFrame visible={true}>
     <Spinner size="large" className={`vapid-preview__loading vapid-preview--${typeof loading === 'string' ? 'error' : (loading ? 'loading' : 'success')}`} />

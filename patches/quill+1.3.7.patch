@@ -1,0 +1,36 @@
+diff --git a/node_modules/quill/dist/quill.js b/node_modules/quill/dist/quill.js
+index 811b3d0..b0475f7 100644
+--- a/node_modules/quill/dist/quill.js
++++ b/node_modules/quill/dist/quill.js
+@@ -7235,6 +7235,7 @@ var ScrollBlot = /** @class */ (function (_super) {
+                 return;
+             if (blot.domNode.parentNode == null)
+                 return;
++            blot.domNode[Registry.DATA_KEY] = blot.domNode[Registry.DATA_KEY] || {}; // CUSTOM
+             // @ts-ignore
+             if (blot.domNode[Registry.DATA_KEY].mutations == null) {
+                 // @ts-ignore
+@@ -7244,6 +7245,7 @@ var ScrollBlot = /** @class */ (function (_super) {
+                 mark(blot.parent);
+         };
+         var optimize = function (blot) {
++            blot.domNode[Registry.DATA_KEY] = blot.domNode[Registry.DATA_KEY] || {}; // CUSTOM
+             // Post-order traversal
+             if (
+             // @ts-ignore
+@@ -7302,6 +7304,7 @@ var ScrollBlot = /** @class */ (function (_super) {
+             var blot = Registry.find(mutation.target, true);
+             if (blot == null)
+                 return null;
++            blot.domNode[Registry.DATA_KEY] = blot.domNode[Registry.DATA_KEY] || {}; // CUSTOM
+             // @ts-ignore
+             if (blot.domNode[Registry.DATA_KEY].mutations == null) {
+                 // @ts-ignore
+@@ -7323,6 +7326,7 @@ var ScrollBlot = /** @class */ (function (_super) {
+             // @ts-ignore
+             blot.update(blot.domNode[Registry.DATA_KEY].mutations || [], context);
+         });
++        this.domNode[Registry.DATA_KEY] = this.domNode[Registry.DATA_KEY] || {}; // CUSTOM
+         // @ts-ignore
+         if (this.domNode[Registry.DATA_KEY].mutations != null) {
+             // @ts-ignore

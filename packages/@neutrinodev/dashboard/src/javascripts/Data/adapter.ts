@@ -314,7 +314,8 @@ export class DataAdapter extends IProvider {
       }
       this.trigger('change');
     }
-    catch {
+    catch (err) {
+      console.error('Could not reorder records', err);
       alert('Error: could not reorder records');
     }
   }

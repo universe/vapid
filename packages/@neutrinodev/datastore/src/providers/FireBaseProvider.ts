@@ -162,6 +162,7 @@ export default class FireBaseProvider extends IProvider {
     if (!(await getDoc(doc(db, this.getFirestorePrefix())))?.exists()) {
       throw new Error(`Website "${this.getFirestorePrefix()}" does not exist.`);
     }
+
     this.#websiteWatcher = onSnapshot(doc(db, this.getFirestorePrefix()), (res) => {
       const data = res.data() || {} as Partial<IWebsite>;
       const out: IWebsite = {

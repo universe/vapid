@@ -33,36 +33,37 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
       (async() => {
         const { options, Quill } = await import('@universe/wysiwyg');
         if (!editor.current) { return; }
-
         directive.prev = value;
         editor.current.innerHTML = '';
         directive.quill = new Quill(editor.current, options, { media: directive.meta.media, onFileUpload: ValueHelper.emitFile });
         directive.quill.pasteHTML(directive.prev);
-        directive.quill.on('editor-change', () => {
-          const $menu = menu.current;
-          if (!$menu) { return true; }
-          const range = directive.quill!.getSelection(false);
-          const hasFocus = editor.current?.querySelector(':focus-within');
-          if (!range || !hasFocus) {
-            $menu.classList.toggle('visible', false);
-            return true;
-          }
-          const [blot] = directive.quill!.getLine(range.index);
-          let showMenu = !blot.domNode.innerText.trim().length;
-          if (blot.isBlock) { showMenu = false; }
-          $menu.classList.toggle('visible', showMenu);
-          if (showMenu) {
-            $menu.style.top = `${blot.domNode.getBoundingClientRect().y - (editor.current?.getBoundingClientRect()?.y || 0) - 2}px`;
-          }
-          return true;
-        });
-
         let pending: number | null = null;
         let isFirst = true;
         directive.quill.on('editor-change', () => {
           const $editor = editor?.current;
+          const $menu = menu.current;
           if (isFirst) { return isFirst = false; }
           if (!$editor) { return; }
+          if ($menu) {
+            try {
+              const range = directive.quill!.getSelection(false);
+              const hasFocus = editor.current?.querySelector(':focus-within');
+              if (!range || !hasFocus) {
+                $menu.classList.toggle('visible', false);
+                return true;
+              }
+              const [blot] = directive.quill!.getLine(range.index);
+              let showMenu = !blot.domNode.innerText.trim().length;
+              if (blot.isBlock) { showMenu = false; }
+              $menu.classList.toggle('visible', showMenu);
+              if (showMenu) {
+                $menu.style.top = `${blot.domNode.getBoundingClientRect().y - (editor.current?.getBoundingClientRect()?.y || 0) - 2}px`;
+              }
+            }
+            catch (err) {
+              console.error('Error showing Quill menu', err);
+            }
+          }
           pending = pending || requestAnimationFrame(() => {
             pending = null;
             const $arrow = editor?.current?.querySelector('.ql-tooltip-arrow') as HTMLElement | undefined;
