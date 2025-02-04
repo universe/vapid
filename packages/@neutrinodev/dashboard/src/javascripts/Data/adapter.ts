@@ -292,7 +292,7 @@ export class DataAdapter extends IProvider {
   async updateOrder(update: SortableUpdate): Promise<void> {
     try {
       const foundRecord = await this.provider.getRecordById(update.id);
-      if (!foundRecord) { throw new Error('Record not found.'); }
+      if (!foundRecord) { throw new Error(`Record not found "${update.id}".`); }
 
       const records: IRecord[] = update.parentId ? (await this.provider.getChildren(update.parentId)).sort(sortRecords) : await this.provider.getRecordsByType(PageType.PAGE);
       const newRecords: IRecord[] = records
@@ -316,7 +316,6 @@ export class DataAdapter extends IProvider {
     }
     catch (err) {
       console.error('Could not reorder records', err);
-      alert('Error: could not reorder records');
     }
   }
 
@@ -336,11 +335,15 @@ export class DataAdapter extends IProvider {
     const toUpload = record ? [record] : Object.values(allRecords);
     for (const record of toUpload) {
       if (record.templateId.endsWith('-settings') || record.deletedAt) { continue; }
-      const document = createDocument();
-      const serializer = new Serializer({});
       const parent: IRecord | null = record.parentId ? allRecords[record.parentId] : null;
       const slug = `${[ parent?.slug, record.slug ].filter(Boolean).join('/')}`;
+      if (record.deletedAt) {
+        promises.push(this.provider.deleteFile(`${WELL_KNOWN_PAGES[slug] || slug}`));
+        continue;
+      }
       discoveredDefaults.delete(slug);
+      const document = createDocument();
+      const serializer = new Serializer({});
       const result = await renderRecord(true, document, record, website, theme, allRecords);
       const html = result?.document ? serializer.serialize(result.document) : '';
       const blob = await gzipBlob(new Blob([html], { type : 'text/html' }));

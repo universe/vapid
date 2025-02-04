@@ -7,7 +7,7 @@ import { IRenderResult } from '@neutrinodev/runtime';
 import jsonStringify from 'fast-json-stable-stringify';
 import { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import Router from 'preact-router';
+import Router, { route } from 'preact-router';
 
 import {
   DataAdapter,
@@ -38,6 +38,7 @@ export function Dashboard({ adapter, sdk, embedded, children, root, beforeDeploy
 
   useEffect(() => {
     setLocalRecord(null);
+    route('/');
   }, [domain]);
 
   useEffect(() => {

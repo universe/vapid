@@ -18,7 +18,7 @@ import {
   onSnapshot,
   setDoc, 
 } from 'firebase/firestore';
-import { connectStorageEmulator, FirebaseStorage, getStorage, ref, uploadBytesResumable, uploadString } from "firebase/storage";
+import { connectStorageEmulator, deleteObject, FirebaseStorage, getStorage, ref, uploadBytesResumable, uploadString } from "firebase/storage";
 import mime from 'mime';
 import pino from 'pino';
 
@@ -346,6 +346,12 @@ export default class FireBaseProvider extends IProvider {
       yield res;
       if (res.status !== 'pending' && res.status !== 'paused') return;
     }
+  }
+
+  async deleteFile(path: string): Promise<void> {
+    const storage = this.getStorage();
+    const fileRef = ref(storage, path);
+    await deleteObject(fileRef);
   }
 
   async * deployFile(path: string, blob: Blob, headers: FileHeaders): AsyncIterableIterator<UploadResult> {
