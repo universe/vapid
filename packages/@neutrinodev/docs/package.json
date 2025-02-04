@@ -12,6 +12,6 @@
     "build": "exit 0"
   },
   "devDependencies": {
-    "@neutrinodev/cli": "1.0.0-beta.6"
+    "@neutrinodev/cli": "1.0.0-beta.10"
   }
 }

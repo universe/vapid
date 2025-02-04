@@ -33,6 +33,7 @@ export default class HTMLHelper extends ValueHelper<string, HTMLHelperOptions> {
       (async() => {
         const { options, Quill } = await import('@universe/wysiwyg');
         if (!editor.current) { return; }
+
         directive.prev = value;
         editor.current.innerHTML = '';
         directive.quill = new Quill(editor.current, options, { media: directive.meta.media, onFileUpload: ValueHelper.emitFile });

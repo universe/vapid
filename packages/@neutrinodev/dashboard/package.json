@@ -1,6 +1,6 @@
 {
   "name": "@neutrinodev/dashboard",
-  "version": "1.0.0-beta.8",
+  "version": "1.0.0-beta.10",
   "license": "MIT",
   "description": "A template-driven content management system",
   "repository": "universe/vapid",
@@ -51,10 +51,10 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-decorators": "^7.18.2",
-    "@neutrinodev/cli": "1.0.0-beta.6",
-    "@neutrinodev/core": "1.0.0-beta.6",
-    "@neutrinodev/embed": "1.0.0-beta.6",
-    "@neutrinodev/runtime": "1.0.0-beta.6",
+    "@neutrinodev/cli": "1.0.0-beta.10",
+    "@neutrinodev/core": "1.0.0-beta.10",
+    "@neutrinodev/embed": "1.0.0-beta.10",
+    "@neutrinodev/runtime": "1.0.0-beta.10",
     "@preact/preset-vite": "^2.3.0",
     "@stripe/react-stripe-js": "^1.16.2",
     "@stripe/stripe-js": "^1.46.0",
