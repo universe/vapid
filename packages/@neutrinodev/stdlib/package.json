@@ -1,6 +1,6 @@
 {
   "name": "@neutrinodev/stdlib",
-  "version": "1.0.0-beta.10",
+  "version": "1.0.0-beta.11",
   "license": "MIT",
   "description": "A template-driven content management system",
   "repository": "universe/vapid",
@@ -49,7 +49,8 @@
   ],
   "dependencies": {
     "@neutrinodev/core": "^1.0.0-beta.10",
-    "react-fontpicker-ts": "^1.0.0"
+    "react-fontpicker-ts": "^1.0.0",
+    "react-tag-autocomplete": "^6.3.0"
   },
   "peerDependencies": {
     "preact": "^10.19.3"
