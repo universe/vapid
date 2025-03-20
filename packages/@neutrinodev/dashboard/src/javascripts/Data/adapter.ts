@@ -79,13 +79,16 @@ export class DataAdapter extends IProvider {
 
     // Attempt to bind to a livereload port to get site template updates in dev mode.
     try {
-      await await new Promise<ITheme>((resolve, reject) => {
+      await new Promise<ITheme>((resolve, reject) => {
         const ws = new WebSocket(import.meta.env.THEME_DEV_SERVER);
+        const timeout = setTimeout(reject, 1000);
         ws.onopen = () => {
+          clearTimeout(timeout);
           console.info('Using Local Theme Server');
           document.body.classList.add('neutrino--dev-mode');
         };
         ws.onclose = () => {
+          clearTimeout(timeout);
           document.body.classList.remove('neutrino--dev-mode');
           reject();
         };

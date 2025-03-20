@@ -28,12 +28,14 @@ import { DataContext } from "../Data/index.js";
 import RocketButton from './RocketButton/index.js';
 
 export function scrollToEdit() {
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const el = document.getElementById('vapid-menu') as HTMLElement;
-  el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
+  el.scrollTo({ left: el.scrollWidth, behavior: isSafari ? 'instant' : 'smooth' });
 }
 
 export function scrollToNav() {
-  document.getElementById('vapid-menu')?.scrollTo({ left: 0, behavior: 'smooth' });
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  document.getElementById('vapid-menu')?.scrollTo({ left: 0, behavior: isSafari ? 'instant' : 'smooth' });
 }
 
 const NAV_ICONS = {

@@ -84,7 +84,6 @@
     "quill-hr": "^0.0.4",
     "quill-image": "^0.0.21",
     "quill-video-embed": "^0.0.5",
-    "x": "^6.3.0",
     "sanitize-html": "^1.18.2",
     "tui-image-editor": "^3.9.0"
   }

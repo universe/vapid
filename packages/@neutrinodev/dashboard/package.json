@@ -1,6 +1,6 @@
 {
   "name": "@neutrinodev/dashboard",
-  "version": "1.0.0-beta.10",
+  "version": "1.0.0-beta.12",
   "license": "MIT",
   "description": "A template-driven content management system",
   "repository": "universe/vapid",
@@ -47,21 +47,25 @@
   ],
   "peerDependencies": {
     "firebase": "^10",
-    "preact": "^10"
+    "preact": "^10",
+    "@universe/aether": "^1"
+  },
+  "dependencies": {
+    "@neutrinodev/core": "1.0.0-beta.10",
+    "@neutrinodev/runtime": "1.0.0-beta.10",
+    "@neutrinodev/stdlib": "1.0.0-beta.10"
   },
   "devDependencies": {
     "@babel/plugin-proposal-decorators": "^7.18.2",
     "@neutrinodev/cli": "1.0.0-beta.10",
-    "@neutrinodev/core": "1.0.0-beta.10",
     "@neutrinodev/embed": "1.0.0-beta.10",
-    "@neutrinodev/runtime": "1.0.0-beta.10",
     "@preact/preset-vite": "^2.3.0",
     "@stripe/react-stripe-js": "^1.16.2",
     "@stripe/stripe-js": "^1.46.0",
     "@types/colorthief": "link:../../../types-local/colorthief",
     "@types/html-escaper": "^3.0.0",
     "@types/html5sortable": "link:../../../types-local/html5sortable",
-    "@universe/aether": "^0.15.2",
+    "@universe/aether": "^1.1.1",
     "@universe/util": "^1.1.2",
     "@vitejs/plugin-basic-ssl": "^0.1.2",
     "colorthief": "^2.3.2",
