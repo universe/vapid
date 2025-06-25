@@ -37,8 +37,12 @@ export function Dashboard({ adapter, sdk, embedded, children, root, beforeDeploy
   }, [embedded]);
 
   useEffect(() => {
-    setLocalRecord(null);
-    route('/');
+    // Only redirect to root on domain change if it's not the first render.
+    return () => {
+      if (!domain) return;
+      setLocalRecord(null);
+      route('/');
+    };
   }, [domain]);
 
   useEffect(() => {

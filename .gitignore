@@ -8,3 +8,4 @@ assets/dashboard/javascripts
 firebase-debug.log
 firestore-debug.log
 yarn-error.log
+.firebase
